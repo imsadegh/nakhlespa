@@ -2,6 +2,7 @@
 @import "tailwindcss";
 
 @theme {
+  --font-vazir: var(--font-vazir);
   --color-green-deep: #0F3D2E;
   --color-green-mid: #1F5E46;
   --color-green-soft: #4F6F52;
@@ -62,6 +63,7 @@
 }
 
 body {
+  font-family: var(--font-vazir), 'Vazirmatn', sans-serif;
   background-color: var(--bg-base);
   color: var(--text-primary);
   transition: background-color 0.3s ease, color 0.3s ease;

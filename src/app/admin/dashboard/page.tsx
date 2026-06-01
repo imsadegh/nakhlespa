@@ -34,7 +34,7 @@ export default async function DashboardPage() {
       <div className="flex flex-col gap-2">
         {upcoming.map(b => (
           <GlassCard key={b.id} className="flex items-center gap-4 p-4">
-            <div className="text-xs text-[#C6A55B] font-mono">
+            <div className="text-xs text-[#C6A55B] tabular-nums">
               {new Date(b.date.toISOString().split('T')[0] + 'T12:00:00').toLocaleDateString('fa-IR')} {b.startTime}
             </div>
             <div className="flex-1">

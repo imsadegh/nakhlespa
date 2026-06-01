@@ -29,7 +29,7 @@ export default async function BookingsPage() {
         {bookings.map(b => (
           <Link key={b.id} href={`/admin/bookings/${b.id}`}>
             <GlassCard className="flex items-center gap-4 p-4 cursor-pointer hover:glass-gold transition-all">
-              <div className="text-xs text-[#C6A55B] font-mono w-28 flex-shrink-0">
+              <div className="text-xs text-[#C6A55B] tabular-nums w-28 flex-shrink-0">
                 {new Date(b.date.toISOString().split('T')[0] + 'T12:00:00').toLocaleDateString('fa-IR')} {b.startTime}
               </div>
               <div className="flex-1">
