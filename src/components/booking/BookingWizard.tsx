@@ -28,7 +28,7 @@ export function BookingWizard({ services }: { services: ServiceDTO[] }) {
   const stepProps = { state, update, goNext, goBack, services }
 
   return (
-    <div className="px-5 sm:px-7 pt-4 pb-7">
+    <div className="px-5 sm:px-7 pt-5 pb-8">
       <StepProgress current={step} total={4} />
       <AnimatePresence mode="wait" custom={dir}>
         <motion.div

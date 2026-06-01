@@ -46,7 +46,7 @@ export function BookingDialog({ open, onClose, services }: Props) {
             className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-6 pointer-events-none"
           >
             <motion.div
-              className="relative w-full sm:max-w-lg max-h-[92dvh] overflow-y-auto pointer-events-auto
+              className="relative w-full sm:max-w-lg max-h-[92dvh] flex flex-col pointer-events-auto
                 rounded-t-3xl sm:rounded-3xl
                 border border-white/[0.12] shadow-[0_24px_80px_rgba(0,0,0,0.6)]"
               style={{ backgroundColor: 'var(--bg-base)' }}
@@ -56,28 +56,27 @@ export function BookingDialog({ open, onClose, services }: Props) {
               transition={{ type: 'spring', damping: 28, stiffness: 320 }}
               onClick={e => e.stopPropagation()}
             >
-              {/* Header bar: drag handle (mobile) + close button */}
-              <div className="flex items-center justify-between px-5 sm:px-7 pt-4 pb-2">
+              {/* Header: drag handle + close button — never scrolls away */}
+              <div className="flex-shrink-0 flex items-center justify-between px-5 sm:px-7 pt-4 pb-3 border-b"
+                style={{ borderColor: 'var(--border-base)' }}>
+                {/* Drag handle — visible on mobile */}
+                <div className="sm:hidden absolute top-3 left-1/2 -translate-x-1/2 w-10 h-1 rounded-full"
+                  style={{ background: 'var(--border-base)' }} />
+                <span className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>رزرو نوبت</span>
                 <button
                   onClick={onClose}
-                  className="w-8 h-8 rounded-full flex items-center justify-center
-                    border transition-colors text-sm font-bold"
-                  style={{
-                    background: 'var(--glass-bg)',
-                    borderColor: 'var(--border-base)',
-                    color: 'var(--text-muted)',
-                  }}
+                  className="w-8 h-8 rounded-full flex items-center justify-center border transition-colors text-sm"
+                  style={{ background: 'var(--glass-bg)', borderColor: 'var(--border-base)', color: 'var(--text-muted)' }}
                   aria-label="بستن"
                 >
                   ✕
                 </button>
-                {/* Drag handle — centered on mobile */}
-                <div className="absolute top-3 left-1/2 -translate-x-1/2 sm:hidden">
-                  <div className="w-10 h-1 rounded-full" style={{ background: 'var(--border-base)' }} />
-                </div>
               </div>
 
-              <BookingWizard services={services} />
+              {/* Scrollable wizard content */}
+              <div className="flex-1 overflow-y-auto">
+                <BookingWizard services={services} />
+              </div>
             </motion.div>
           </motion.div>
         </>
