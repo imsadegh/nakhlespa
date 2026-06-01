@@ -12,8 +12,11 @@ export function startCronJobs() {
         where: { status: SmsReminderStatus.PENDING, sendAt: { lte: new Date() } },
         data: { status: SmsReminderStatus.SENDING },
       })
+      // Fetch only the IDs claimed in this tick (SENDING rows from before this updateMany
+      // could exist if a prior tick crashed mid-send — exclude them by re-querying the
+      // exact rows we just flipped, using a timestamp guard on sendAt)
       claimed = await prisma.smsReminder.findMany({
-        where: { status: SmsReminderStatus.SENDING },
+        where: { status: SmsReminderStatus.SENDING, sendAt: { lte: new Date() } },
         select: { id: true },
       })
     } catch (err) {

@@ -1,4 +1,4 @@
-// Auth enforced by src/middleware.ts for /api/admin/* routes
+// Auth enforced by src/proxy.ts for /api/admin/* routes
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 

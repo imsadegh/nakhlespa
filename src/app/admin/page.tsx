@@ -1,12 +1,13 @@
 'use client'
 import { useState } from 'react'
-import { createClient } from '@supabase/supabase-js'
+import { createBrowserClient } from '@supabase/ssr'
 import { AmbientBackground } from '@/components/ui/AmbientBackground'
 import { GlassCard } from '@/components/ui/GlassCard'
 import { GoldButton } from '@/components/ui/GoldButton'
 import { useRouter } from 'next/navigation'
 
-const browserSupabase = createClient(
+// createBrowserClient stores session in cookies (not localStorage) so proxy.ts can read it
+const browserSupabase = createBrowserClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 )

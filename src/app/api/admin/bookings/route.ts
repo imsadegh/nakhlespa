@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { BookingStatus } from '@prisma/client'
 
-// Auth enforced by src/middleware.ts for /api/admin/* routes
+// Auth enforced by src/proxy.ts for /api/admin/* routes
 
 export async function GET(req: NextRequest) {
   const statusParam = req.nextUrl.searchParams.get('status')

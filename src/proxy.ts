@@ -1,19 +1,26 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
+import { createServerClient } from '@supabase/ssr'
 
 export async function proxy(req: NextRequest) {
-  const token = req.cookies.get('sb-access-token')?.value
-  if (!token) return NextResponse.redirect(new URL('/admin', req.url))
+  const res = NextResponse.next()
 
-  const supabase = createClient(
+  const supabase = createServerClient(
     process.env.SUPABASE_URL!,
     process.env.SUPABASE_ANON_KEY!,
-    { global: { headers: { Authorization: `Bearer ${token}` } } }
+    {
+      cookies: {
+        getAll: () => req.cookies.getAll(),
+        setAll: (cookies) => {
+          cookies.forEach(({ name, value, options }) => res.cookies.set(name, value, options))
+        },
+      },
+    }
   )
+
   const { data: { user }, error } = await supabase.auth.getUser()
   if (error) console.error('Proxy auth error', error)
   if (!user) return NextResponse.redirect(new URL('/admin', req.url))
-  return NextResponse.next()
+  return res
 }
 
 export const config = {
