@@ -19,6 +19,10 @@ export async function GET(req: NextRequest) {
   })
   if (!booking) return NextResponse.redirect(`${siteUrl}/booking/failed`)
 
+  if (booking.status === BookingStatus.PAID) {
+    return NextResponse.redirect(`${siteUrl}/booking/confirm/${booking.token}`)
+  }
+
   try {
     const { refId } = await zarinpalVerify(authority, booking.service.price)
 
@@ -47,7 +51,8 @@ export async function GET(req: NextRequest) {
     )
 
     return NextResponse.redirect(`${siteUrl}/booking/confirm/${booking.token}`)
-  } catch {
+  } catch (err) {
+    console.error('Booking verify error', err)
     return NextResponse.redirect(`${siteUrl}/booking/failed`)
   }
 }

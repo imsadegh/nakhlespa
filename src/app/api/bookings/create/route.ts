@@ -11,34 +11,49 @@ function addMinutesToTime(time: string, minutes: number): string {
 }
 
 export async function POST(req: NextRequest) {
-  const body: BookingCreateInput = await req.json()
-  const service = await prisma.service.findUnique({ where: { id: body.serviceId } })
+  let body: BookingCreateInput
+  try {
+    body = await req.json()
+  } catch {
+    return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 })
+  }
+
+  const { serviceId, customerName, customerPhone, date, startTime } = body
+  if (!serviceId || !customerName || !customerPhone || !date || !startTime) {
+    return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
+  }
+
+  const service = await prisma.service.findUnique({ where: { id: serviceId } })
   if (!service) return NextResponse.json({ error: 'Service not found' }, { status: 404 })
 
-  const [year, month, day] = body.date.split('-').map(Number)
+  const [year, month, day] = date.split('-').map(Number)
   const bookingDate = new Date(Date.UTC(year, month - 1, day))
-  const endTime = addMinutesToTime(body.startTime, service.durationMinutes)
+  const endTime = addMinutesToTime(startTime, service.durationMinutes)
 
   const booking = await prisma.booking.create({
     data: {
-      serviceId: body.serviceId,
-      customerName: body.customerName,
-      customerPhone: body.customerPhone,
+      serviceId,
+      customerName,
+      customerPhone,
       customerNotes: body.customerNotes,
       date: bookingDate,
-      startTime: body.startTime,
+      startTime,
       endTime,
       status: BookingStatus.PENDING_PAYMENT,
     },
   })
 
-  const { authority, paymentUrl } = await zarinpalRequest(
-    service.price,
-    `رزرو ${service.nameFa} — نخلسپا`,
-    body.customerPhone
-  )
-
-  await prisma.booking.update({ where: { id: booking.id }, data: { zarinpalAuthority: authority } })
-
-  return NextResponse.json({ paymentUrl })
+  try {
+    const { authority, paymentUrl } = await zarinpalRequest(
+      service.price,
+      `رزرو ${service.nameFa} — نخلسپا`,
+      customerPhone
+    )
+    await prisma.booking.update({ where: { id: booking.id }, data: { zarinpalAuthority: authority } })
+    return NextResponse.json({ paymentUrl })
+  } catch (err) {
+    await prisma.booking.delete({ where: { id: booking.id } })
+    console.error('Zarinpal request failed, booking rolled back', err)
+    return NextResponse.json({ error: 'Payment gateway error' }, { status: 502 })
+  }
 }

@@ -7,9 +7,13 @@ export async function GET(req: NextRequest) {
   const serviceId = req.nextUrl.searchParams.get('serviceId')
   if (!date || !serviceId) return NextResponse.json({ error: 'Missing params' }, { status: 400 })
 
-  const service = await prisma.service.findUnique({ where: { id: serviceId } })
-  if (!service) return NextResponse.json({ error: 'Service not found' }, { status: 404 })
-
-  const slots = await getAvailableSlots(date, service.durationMinutes)
-  return NextResponse.json(slots)
+  try {
+    const service = await prisma.service.findUnique({ where: { id: serviceId } })
+    if (!service) return NextResponse.json({ error: 'Service not found' }, { status: 404 })
+    const slots = await getAvailableSlots(date, service.durationMinutes)
+    return NextResponse.json(slots)
+  } catch (err) {
+    console.error('Slots fetch error', err)
+    return NextResponse.json({ error: 'Internal error' }, { status: 500 })
+  }
 }
