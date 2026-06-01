@@ -4,7 +4,8 @@ import { Vazirmatn } from 'next/font/google'
 import './globals.css'
 import { startCronJobs } from '@/lib/cron'
 
-if (process.env.NODE_ENV === 'production' && typeof window === 'undefined') {
+// Only instance 0 runs the cron to prevent duplicate SMS sends in cluster mode
+if (process.env.NODE_ENV === 'production' && typeof window === 'undefined' && process.env.NODE_APP_INSTANCE === '0') {
   startCronJobs()
 }
 
