@@ -17,6 +17,7 @@ model Service {
   createdAt       DateTime  @default(now())
   bookings        Booking[]
 
+  @@unique([nameFa])
   @@map("services")
 }
 
@@ -28,6 +29,7 @@ model WorkingHours {
   isOpen      Boolean  @default(true)
   createdAt   DateTime @default(now())
 
+  @@unique([dayOfWeek])
   @@map("working_hours")
 }
 
@@ -59,6 +61,9 @@ model Booking {
   createdAt          DateTime      @default(now())
   smsReminders       SmsReminder[]
 
+  @@index([date])
+  @@index([status])
+  @@index([serviceId])
   @@map("bookings")
 }
 
@@ -78,6 +83,7 @@ model SmsReminder {
   sentAt    DateTime?
   createdAt DateTime          @default(now())
 
+  @@index([status, sendAt])
   @@map("sms_reminders")
 }
 
