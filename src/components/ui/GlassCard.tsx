@@ -1,6 +1,7 @@
+import type { ReactNode } from 'react'
 import { cn } from '@/lib/utils'
 
-type Props = { children: React.ReactNode; className?: string; gold?: boolean }
+type Props = { children: ReactNode; className?: string; gold?: boolean }
 
 export function GlassCard({ children, className, gold }: Props) {
   return (

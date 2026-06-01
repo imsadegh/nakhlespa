@@ -12,6 +12,7 @@ type Props = {
 export function GhostButton({ children, onClick, className, disabled }: Props) {
   return (
     <motion.button
+      whileHover={disabled ? undefined : { y: -1 }}
       whileTap={disabled ? undefined : { scale: 0.97 }}
       disabled={disabled}
       onClick={onClick}
