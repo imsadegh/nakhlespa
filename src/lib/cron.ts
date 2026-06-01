@@ -5,18 +5,28 @@ import { SmsReminderStatus } from '@prisma/client'
 
 export function startCronJobs() {
   cron.schedule('*/15 * * * *', async () => {
-    let due
+    // Atomically claim PENDING reminders to avoid double-send if ticks overlap
+    let claimed: { id: string }[]
     try {
-      due = await prisma.smsReminder.findMany({
+      await prisma.smsReminder.updateMany({
         where: { status: SmsReminderStatus.PENDING, sendAt: { lte: new Date() } },
-        include: { booking: { include: { service: true } } },
+        data: { status: SmsReminderStatus.SENDING },
+      })
+      claimed = await prisma.smsReminder.findMany({
+        where: { status: SmsReminderStatus.SENDING },
+        select: { id: true },
       })
     } catch (err) {
-      console.error('Cron: failed to fetch reminders', err)
+      console.error('Cron: failed to claim reminders', err)
       return
     }
 
-    for (const reminder of due) {
+    const reminders = await prisma.smsReminder.findMany({
+      where: { id: { in: claimed.map(c => c.id) } },
+      include: { booking: { include: { service: true } } },
+    })
+
+    for (const reminder of reminders) {
       try {
         const { booking } = reminder
         await sendSms(
@@ -29,10 +39,14 @@ export function startCronJobs() {
         })
       } catch (err) {
         console.error(`Cron: failed to send reminder ${reminder.id}`, err)
-        await prisma.smsReminder.update({
-          where: { id: reminder.id },
-          data: { status: SmsReminderStatus.FAILED },
-        })
+        try {
+          await prisma.smsReminder.update({
+            where: { id: reminder.id },
+            data: { status: SmsReminderStatus.FAILED },
+          })
+        } catch (dbErr) {
+          console.error(`Cron: failed to mark reminder ${reminder.id} as FAILED`, dbErr)
+        }
       }
     }
   })

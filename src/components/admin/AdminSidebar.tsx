@@ -18,7 +18,7 @@ export function AdminSidebar() {
         <Link key={l.href} href={l.href}
           className={cn(
             'flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs transition-all',
-            path.startsWith(l.href) ? 'glass-gold text-[#C6A55B]' : 'text-[#F3EFE8]/50 hover:text-[#F3EFE8] hover:bg-white/[0.05]'
+            path === l.href || path.startsWith(l.href + '/') ? 'glass-gold text-[#C6A55B]' : 'text-[#F3EFE8]/50 hover:text-[#F3EFE8] hover:bg-white/[0.05]'
           )}>
           <span>{l.icon}</span>{l.label}
         </Link>

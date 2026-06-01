@@ -3,8 +3,8 @@ import { GlassCard } from '@/components/ui/GlassCard'
 import { BookingStatus } from '@prisma/client'
 
 export default async function DashboardPage() {
-  const today = new Date()
-  today.setUTCHours(0, 0, 0, 0)
+  const todayStr = new Date().toISOString().split('T')[0]
+  const today = new Date(todayStr + 'T00:00:00.000Z')
 
   const [todayCount, upcomingCount, totalPaid] = await Promise.all([
     prisma.booking.count({ where: { date: today, status: { not: BookingStatus.CANCELLED } } }),

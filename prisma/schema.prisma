@@ -89,6 +89,7 @@ model SmsReminder {
 
 enum SmsReminderStatus {
   PENDING
+  SENDING
   SENT
   FAILED
 }
