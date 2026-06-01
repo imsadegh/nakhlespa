@@ -32,8 +32,8 @@ export function Step2DateTime({ state, update, goNext, goBack }: Props) {
 
   return (
     <div>
-      <h2 className="text-xl font-light text-[#F3EFE8] mb-1">انتخاب تاریخ</h2>
-      <p className="text-xs text-[#F3EFE8]/40 mb-5 font-light">تاریخ مورد نظر را انتخاب کنید</p>
+      <h2 className="text-xl font-light mb-1" style={{ color: 'var(--text-primary)' }}>انتخاب تاریخ</h2>
+      <p className="text-xs mb-5 font-light" style={{ color: 'var(--text-muted)' }}>تاریخ مورد نظر را انتخاب کنید</p>
 
       <div className="flex gap-2 overflow-x-auto pb-3 mb-6" style={{ scrollbarWidth: 'none' }}>
         {dates.map(d => {
@@ -41,7 +41,8 @@ export function Step2DateTime({ state, update, goNext, goBack }: Props) {
           const selected = state.date === d
           return (
             <button key={d} type="button" onClick={() => update({ date: d })}
-              className={`flex-shrink-0 px-4 py-2.5 rounded-xl text-xs transition-all ${selected ? 'bg-[#C6A55B] text-[#0F3D2E] font-bold shadow-[0_4px_16px_rgba(198,165,91,0.4)]' : 'glass text-[#F3EFE8]/60 hover:text-[#F3EFE8]'}`}>
+              className={`flex-shrink-0 px-4 py-2.5 rounded-xl text-xs transition-all ${selected ? 'bg-[#C6A55B] text-[#0F3D2E] font-bold shadow-[0_4px_16px_rgba(198,165,91,0.4)]' : 'glass'}`}
+              style={selected ? {} : { color: 'var(--text-muted)' }}>
               {label}
             </button>
           )
@@ -50,11 +51,11 @@ export function Step2DateTime({ state, update, goNext, goBack }: Props) {
 
       {state.date && (
         <>
-          <p className="text-[10px] tracking-widest text-[#F3EFE8]/30 mb-3">— ساعت‌های موجود</p>
+          <p className="text-[10px] tracking-widest mb-3" style={{ color: 'var(--text-faint)' }}>— ساعت‌های موجود</p>
           {loading ? (
-            <p className="text-xs text-[#F3EFE8]/40 text-center py-8">در حال بارگذاری...</p>
+            <p className="text-xs text-center py-8" style={{ color: 'var(--text-muted)' }}>در حال بارگذاری...</p>
           ) : slots.length === 0 ? (
-            <p className="text-xs text-[#F3EFE8]/40 text-center py-8">ظرفیتی برای این روز موجود نیست</p>
+            <p className="text-xs text-center py-8" style={{ color: 'var(--text-muted)' }}>ظرفیتی برای این روز موجود نیست</p>
           ) : (
             <motion.div className="flex flex-wrap gap-2 mb-8"
               variants={{ show: { transition: { staggerChildren: 0.05 } } }} initial="hidden" animate="show">
@@ -64,7 +65,8 @@ export function Step2DateTime({ state, update, goNext, goBack }: Props) {
                   <motion.button key={slot.startTime} type="button"
                     variants={{ hidden: { opacity: 0, scale: 0.85 }, show: { opacity: 1, scale: 1 } }}
                     onClick={() => update({ startTime: slot.startTime, endTime: slot.endTime })}
-                    className={`px-4 py-2 rounded-xl text-xs transition-all ${selected ? 'bg-[#C6A55B] text-[#0F3D2E] font-bold shadow-[0_4px_16px_rgba(198,165,91,0.35)]' : 'glass text-[#F3EFE8]/70 hover:text-[#F3EFE8]'}`}>
+                    className={`px-4 py-2 rounded-xl text-xs transition-all ${selected ? 'bg-[#C6A55B] text-[#0F3D2E] font-bold shadow-[0_4px_16px_rgba(198,165,91,0.35)]' : 'glass'}`}
+                    style={selected ? {} : { color: 'var(--text-muted)' }}>
                     {slot.startTime}
                   </motion.button>
                 )
@@ -74,7 +76,7 @@ export function Step2DateTime({ state, update, goNext, goBack }: Props) {
         </>
       )}
 
-      <div className="flex gap-3">
+      <div className="flex gap-3 mt-4">
         <GhostButton onClick={goBack} className="flex-1">→ برگشت</GhostButton>
         <GoldButton onClick={goNext} className="flex-1" disabled={!state.startTime}>ادامه ←</GoldButton>
       </div>

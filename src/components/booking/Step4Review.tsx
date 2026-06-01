@@ -32,8 +32,8 @@ export function Step4Review({ state, goBack, services }: Props) {
 
   return (
     <div>
-      <h2 className="text-xl font-light text-[#F3EFE8] mb-1">مرور و پرداخت</h2>
-      <p className="text-xs text-[#F3EFE8]/40 mb-6 font-light">اطلاعات رزرو را بررسی کنید</p>
+      <h2 className="text-xl font-light mb-1" style={{ color: 'var(--text-primary)' }}>مرور و پرداخت</h2>
+      <p className="text-xs mb-6 font-light" style={{ color: 'var(--text-muted)' }}>اطلاعات رزرو را بررسی کنید</p>
       <GlassCard className="p-5 mb-6 space-y-3">
         {([
           ['خدمت', service?.nameFa ?? '—'],
@@ -45,8 +45,8 @@ export function Step4Review({ state, goBack, services }: Props) {
           ['مبلغ', service ? `${service.price.toLocaleString('fa-IR')} تومان` : '—'],
         ] as [string, string][]).map(([label, value]) => (
           <div key={label} className="flex justify-between text-xs">
-            <span className="text-[#F3EFE8]/40">{label}</span>
-            <span className="text-[#F3EFE8] font-medium">{value}</span>
+            <span style={{ color: 'var(--text-muted)' }}>{label}</span>
+            <span className="font-medium" style={{ color: 'var(--text-primary)' }}>{value}</span>
           </div>
         ))}
       </GlassCard>

@@ -56,21 +56,26 @@ export function BookingDialog({ open, onClose, services }: Props) {
               transition={{ type: 'spring', damping: 28, stiffness: 320 }}
               onClick={e => e.stopPropagation()}
             >
-              {/* Drag handle (mobile) */}
-              <div className="flex justify-center pt-3 pb-1 sm:hidden">
-                <div className="w-10 h-1 rounded-full bg-white/20" />
+              {/* Header bar: drag handle (mobile) + close button */}
+              <div className="flex items-center justify-between px-5 sm:px-7 pt-4 pb-2">
+                <button
+                  onClick={onClose}
+                  className="w-8 h-8 rounded-full flex items-center justify-center
+                    border transition-colors text-sm font-bold"
+                  style={{
+                    background: 'var(--glass-bg)',
+                    borderColor: 'var(--border-base)',
+                    color: 'var(--text-muted)',
+                  }}
+                  aria-label="بستن"
+                >
+                  ✕
+                </button>
+                {/* Drag handle — centered on mobile */}
+                <div className="absolute top-3 left-1/2 -translate-x-1/2 sm:hidden">
+                  <div className="w-10 h-1 rounded-full" style={{ background: 'var(--border-base)' }} />
+                </div>
               </div>
-
-              {/* Close button */}
-              <button
-                onClick={onClose}
-                className="absolute top-4 left-4 z-10 w-8 h-8 rounded-full flex items-center justify-center
-                  bg-white/[0.08] border border-white/[0.12] text-white/50 hover:text-white/80
-                  hover:bg-white/[0.14] transition-colors text-sm"
-                aria-label="بستن"
-              >
-                ✕
-              </button>
 
               <BookingWizard services={services} />
             </motion.div>
