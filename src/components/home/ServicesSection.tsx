@@ -1,4 +1,5 @@
 'use client'
+import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
 import { useBookingDialog } from '@/components/booking/BookingDialogProvider'
 import { GlassCard } from '@/components/ui/GlassCard'
@@ -7,7 +8,9 @@ import type { ServiceDTO } from '@/types'
 const icons: Record<string, string> = { 'ماساژ درمانی': '💆', 'ماساژ آرامش‌بخش': '🌿' }
 
 export function ServicesSection({ services }: { services: ServiceDTO[] }) {
-  const { open } = useBookingDialog()
+  const { open, available } = useBookingDialog()
+  const router = useRouter()
+  const handleBook = () => available ? open() : router.push('/book')
   return (
     <section id="services" className="px-4 sm:px-8 lg:px-16 mb-10">
       <motion.p
@@ -25,7 +28,7 @@ export function ServicesSection({ services }: { services: ServiceDTO[] }) {
             viewport={{ once: true }} transition={{ delay: i * 0.1 }}
             whileHover={{ y: -3 }}
           >
-            <button onClick={open} className="w-full text-right">
+            <button onClick={handleBook} className="w-full text-right">
               <GlassCard gold={i === 1} className="flex items-center gap-4 p-5 cursor-pointer relative overflow-hidden h-full">
                 <div className="w-12 h-12 rounded-[14px] flex items-center justify-center text-2xl flex-shrink-0 bg-[rgba(198,165,91,0.14)] border border-[rgba(198,165,91,0.28)]">
                   {icons[svc.nameFa] ?? '✦'}

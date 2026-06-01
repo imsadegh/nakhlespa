@@ -3,7 +3,8 @@ import { createContext, useContext, useState, useCallback } from 'react'
 import { BookingDialog } from './BookingDialog'
 import type { ServiceDTO } from '@/types'
 
-const Ctx = createContext<{ open: () => void }>({ open: () => {} })
+type CtxValue = { open: () => void; available: boolean }
+const Ctx = createContext<CtxValue>({ open: () => {}, available: false })
 
 export function useBookingDialog() {
   return useContext(Ctx)
@@ -15,7 +16,7 @@ export function BookingDialogProvider({ services, children }: { services: Servic
   const close = useCallback(() => setIsOpen(false), [])
 
   return (
-    <Ctx.Provider value={{ open }}>
+    <Ctx.Provider value={{ open, available: true }}>
       {children}
       <BookingDialog open={isOpen} onClose={close} services={services} />
     </Ctx.Provider>
