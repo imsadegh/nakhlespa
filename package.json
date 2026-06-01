@@ -8,8 +8,18 @@
     "start": "next start"
   },
   "dependencies": {
+    "@prisma/client": "^7.8.0",
+    "@supabase/supabase-js": "^2.106.2",
+    "@types/node-cron": "^3.0.11",
+    "axios": "^1.16.1",
+    "date-fns": "^4.4.0",
+    "date-fns-jalali": "^4.4.0-0",
+    "framer-motion": "^12.40.0",
     "next": "16.2.6",
+    "node-cron": "^4.2.1",
+    "prisma": "^7.8.0",
     "react": "19.2.4",
+    "react-day-picker": "^10.0.1",
     "react-dom": "19.2.4"
   },
   "devDependencies": {

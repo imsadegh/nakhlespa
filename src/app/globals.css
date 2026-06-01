@@ -1,26 +1,43 @@
+/* src/app/globals.css */
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+@theme {
+  --color-green-deep: #0F3D2E;
+  --color-green-mid: #1F5E46;
+  --color-green-soft: #4F6F52;
+  --color-gold: #C6A55B;
+  --color-gold-mid: #A8873A;
+  --color-gold-dark: #8C6A2F;
+  --color-brown-deep: #3B2416;
+  --color-brown-mid: #4A2F1E;
+  --color-cream: #F3EFE8;
+  --color-sage: #6E7F6A;
+  --font-vazir: 'Vazirmatn', sans-serif;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+@layer utilities {
+  .glass {
+    background: rgba(255, 255, 255, 0.07);
+    backdrop-filter: blur(40px) saturate(200%) brightness(1.05);
+    -webkit-backdrop-filter: blur(40px) saturate(200%) brightness(1.05);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.30),
+      inset 0 -1px 0 rgba(255, 255, 255, 0.06),
+      0 8px 32px rgba(0, 0, 0, 0.35);
+  }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+  .glass-gold {
+    background: rgba(198, 165, 91, 0.10);
+    backdrop-filter: blur(40px) saturate(220%) brightness(1.08);
+    -webkit-backdrop-filter: blur(40px) saturate(220%) brightness(1.08);
+    border: 1px solid rgba(198, 165, 91, 0.28);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.28),
+      inset 0 -1px 0 rgba(198, 165, 91, 0.08),
+      0 8px 40px rgba(198, 165, 91, 0.18),
+      0 2px 8px rgba(0, 0, 0, 0.3);
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
-}
+@keyframes shimmer { 0%{background-position:0%} 100%{background-position:200%} }

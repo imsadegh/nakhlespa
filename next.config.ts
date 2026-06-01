@@ -1,7 +1,8 @@
-import type { NextConfig } from "next";
+// next.config.ts
+import type { NextConfig } from 'next'
 
-const nextConfig: NextConfig = {
-  /* config options here */
-};
+const config: NextConfig = {
+  experimental: { serverActions: { allowedOrigins: ['localhost:3000'] } },
+}
 
-export default nextConfig;
+export default config
