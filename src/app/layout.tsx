@@ -13,7 +13,7 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="fa" dir="rtl" className={vazir.variable}>
-      <body className="font-vazir bg-[#04100b] text-cream antialiased">{children}</body>
+      <body className="font-vazir bg-bg-base text-cream antialiased">{children}</body>
     </html>
   )
 }

@@ -12,7 +12,7 @@
   --color-brown-mid: #4A2F1E;
   --color-cream: #F3EFE8;
   --color-sage: #6E7F6A;
-  --font-vazir: 'Vazirmatn', sans-serif;
+  --color-bg-base: #04100b;
 }
 
 @layer utilities {
@@ -39,5 +39,3 @@
       0 2px 8px rgba(0, 0, 0, 0.3);
   }
 }
-
-@keyframes shimmer { 0%{background-position:0%} 100%{background-position:200%} }
