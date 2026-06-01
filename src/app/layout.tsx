@@ -2,6 +2,11 @@
 import type { Metadata } from 'next'
 import { Vazirmatn } from 'next/font/google'
 import './globals.css'
+import { startCronJobs } from '@/lib/cron'
+
+if (process.env.NODE_ENV === 'production' && typeof window === 'undefined') {
+  startCronJobs()
+}
 
 const vazir = Vazirmatn({ subsets: ['arabic'], variable: '--font-vazir', display: 'swap' })
 
