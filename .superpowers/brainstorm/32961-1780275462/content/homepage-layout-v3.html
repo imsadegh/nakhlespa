@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>نخلسپا — انتخاب طراحی</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: #1a1a1a;
+    color: #F3EFE8;
+    direction: rtl;
+    overflow-x: hidden;
+  }
+
+  /* ── PAGE HEADER ── */
+  .page-title {
+    text-align: center;
+    padding: 32px 20px 16px;
+    background: #111;
+    border-bottom: 1px solid #333;
+  }
+  .page-title h1 { font-size: 20px; color: #C6A55B; margin-bottom: 6px; }
+  .page-title p { font-size: 13px; color: #aaa; }
+
+  /* ── DESIGN OPTIONS WRAPPER ── */
+  .designs-wrapper {
+    display: flex;
+    gap: 0;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    padding: 24px;
+    gap: 20px;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  /* ── EACH DESIGN OPTION ── */
+  .design-option {
+    flex: 0 0 340px;
+    cursor: pointer;
+    border-radius: 12px;
+    overflow: hidden;
+    border: 3px solid transparent;
+    transition: border-color 0.2s, transform 0.2s, box-shadow 0.2s;
+    scroll-snap-align: start;
+  }
+  .design-option:hover { transform: translateY(-4px); box-shadow: 0 16px 48px rgba(0,0,0,0.5); }
+  .design-option.selected { border-color: #C6A55B !important; box-shadow: 0 0 0 2px #C6A55B40, 0 16px 48px rgba(198,165,91,0.3); }
+
+  .option-label {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 14px;
+    font-size: 13px;
+    font-weight: bold;
+    background: #222;
+    color: #C6A55B;
+  }
+  .option-label .badge {
+    background: #C6A55B;
+    color: #1a1a1a;
+    border-radius: 12px;
+    padding: 2px 10px;
+    font-size: 11px;
+  }
+
+  /* ── MOCK BROWSER CHROME ── */
+  .browser-chrome {
+    background: #2a2a2a;
+    padding: 8px 12px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    border-bottom: 1px solid #333;
+  }
+  .browser-dot { width: 8px; height: 8px; border-radius: 50%; }
+  .browser-url { flex: 1; background: #1a1a1a; border-radius: 4px; padding: 3px 8px; font-size: 10px; color: #666; text-align: right; direction: ltr; }
+
+  /* ══════════════════════════════════════
+     DESIGN A — Dark Forest / Luxury
+  ══════════════════════════════════════ */
+  .design-a .site { background: #0F3D2E; min-height: 420px; }
+
+  .design-a .nav {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 14px 20px;
+    border-bottom: 1px solid rgba(198,165,91,0.2);
+  }
+  .design-a .nav-logo { color: #C6A55B; font-size: 16px; font-weight: bold; letter-spacing: 2px; }
+  .design-a .nav-links { display: flex; gap: 16px; }
+  .design-a .nav-links span { color: #F3EFE8; font-size: 10px; opacity: 0.8; }
+  .design-a .nav-cta { background: #C6A55B; color: #0F3D2E; padding: 5px 12px; border-radius: 4px; font-size: 10px; font-weight: bold; }
+
+  .design-a .hero {
+    padding: 28px 20px 20px;
+    position: relative;
+    overflow: hidden;
+  }
+  .design-a .hero-bg {
+    position: absolute; inset: 0;
+    background: radial-gradient(ellipse at 30% 50%, rgba(31,94,70,0.6) 0%, transparent 70%),
+                linear-gradient(135deg, #0F3D2E 0%, #1a4a35 50%, #0a2a1e 100%);
+  }
+  .design-a .hero-tag { font-size: 9px; letter-spacing: 4px; color: #C6A55B; margin-bottom: 8px; position: relative; }
+  .design-a .hero h2 { font-size: 22px; color: #F3EFE8; line-height: 1.5; margin-bottom: 6px; position: relative; font-weight: 300; }
+  .design-a .hero h2 strong { color: #C6A55B; font-weight: 700; }
+  .design-a .hero p { font-size: 10px; color: rgba(243,239,232,0.65); margin-bottom: 16px; position: relative; line-height: 1.8; }
+  .design-a .hero-btns { display: flex; gap: 8px; position: relative; }
+  .design-a .btn-primary { background: #C6A55B; color: #0F3D2E; padding: 8px 16px; border-radius: 4px; font-size: 10px; font-weight: bold; }
+  .design-a .btn-secondary { border: 1px solid rgba(198,165,91,0.5); color: #C6A55B; padding: 8px 16px; border-radius: 4px; font-size: 10px; }
+
+  .design-a .services {
+    padding: 16px 20px;
+    display: flex;
+    gap: 8px;
+  }
+  .design-a .service-card {
+    flex: 1;
+    background: rgba(243,239,232,0.05);
+    border: 1px solid rgba(198,165,91,0.2);
+    border-radius: 8px;
+    padding: 12px 10px;
+    text-align: center;
+  }
+  .design-a .service-card .icon { font-size: 18px; margin-bottom: 6px; }
+  .design-a .service-card h4 { font-size: 9px; color: #C6A55B; margin-bottom: 4px; }
+  .design-a .service-card p { font-size: 8px; color: rgba(243,239,232,0.5); }
+
+  .design-a .divider { width: 40px; height: 2px; background: linear-gradient(90deg, #C6A55B, transparent); margin: 0 20px 12px; }
+
+  /* ══════════════════════════════════════
+     DESIGN B — Warm Earth / Natural
+  ══════════════════════════════════════ */
+  .design-b .site { background: #F3EFE8; min-height: 420px; }
+
+  .design-b .nav {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 14px 20px;
+    background: #fff;
+    box-shadow: 0 1px 8px rgba(0,0,0,0.08);
+  }
+  .design-b .nav-logo { color: #0F3D2E; font-size: 16px; font-weight: bold; }
+  .design-b .nav-links span { color: #4F6F52; font-size: 10px; margin-right: 12px; }
+  .design-b .nav-cta { background: #1F5E46; color: #F3EFE8; padding: 5px 14px; border-radius: 20px; font-size: 10px; }
+
+  .design-b .hero {
+    display: flex;
+    align-items: stretch;
+    min-height: 160px;
+    position: relative;
+    overflow: hidden;
+  }
+  .design-b .hero-text { flex: 1; padding: 24px 20px; background: #F3EFE8; display: flex; flex-direction: column; justify-content: center; }
+  .design-b .hero-img { width: 130px; background: linear-gradient(135deg, #4F6F52 0%, #1F5E46 50%, #0F3D2E 100%); display: flex; align-items: center; justify-content: center; color: rgba(243,239,232,0.4); font-size: 9px; }
+  .design-b .hero-tag { font-size: 8px; letter-spacing: 3px; color: #A8873A; margin-bottom: 6px; }
+  .design-b .hero h2 { font-size: 18px; color: #0F3D2E; line-height: 1.6; margin-bottom: 6px; }
+  .design-b .hero p { font-size: 9px; color: #6E7F6A; margin-bottom: 14px; line-height: 1.8; }
+  .design-b .btn-primary { background: #1F5E46; color: #fff; padding: 8px 18px; border-radius: 24px; font-size: 10px; display: inline-block; }
+
+  .design-b .services {
+    padding: 16px 20px;
+    display: flex;
+    gap: 10px;
+  }
+  .design-b .service-card {
+    flex: 1;
+    background: #fff;
+    border-radius: 10px;
+    padding: 12px;
+    text-align: center;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+    border-top: 3px solid #C6A55B;
+  }
+  .design-b .service-card .icon { font-size: 18px; margin-bottom: 6px; }
+  .design-b .service-card h4 { font-size: 9px; color: #0F3D2E; font-weight: bold; margin-bottom: 3px; }
+  .design-b .service-card p { font-size: 8px; color: #6E7F6A; }
+
+  .design-b .stats {
+    display: flex;
+    background: #0F3D2E;
+    padding: 12px 20px;
+    gap: 0;
+  }
+  .design-b .stat { flex: 1; text-align: center; color: #F3EFE8; border-left: 1px solid rgba(243,239,232,0.15); padding: 4px; }
+  .design-b .stat:last-child { border-left: none; }
+  .design-b .stat .num { font-size: 16px; font-weight: bold; color: #C6A55B; }
+  .design-b .stat .lbl { font-size: 8px; opacity: 0.7; }
+
+  /* ══════════════════════════════════════
+     DESIGN C — Split Premium
+  ══════════════════════════════════════ */
+  .design-c .site { background: #F3EFE8; min-height: 420px; }
+
+  .design-c .nav {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 14px 20px;
+    background: #0F3D2E;
+  }
+  .design-c .nav-logo { color: #F3EFE8; font-size: 15px; letter-spacing: 3px; }
+  .design-c .nav-logo span { color: #C6A55B; }
+  .design-c .nav-links span { color: rgba(243,239,232,0.6); font-size: 10px; margin-right: 12px; }
+  .design-c .nav-cta { border: 1px solid #C6A55B; color: #C6A55B; padding: 5px 12px; border-radius: 3px; font-size: 10px; letter-spacing: 1px; }
+
+  .design-c .hero {
+    background: #0F3D2E;
+    padding: 28px 20px 40px;
+    position: relative;
+    overflow: hidden;
+  }
+  .design-c .hero::after {
+    content: '';
+    position: absolute;
+    bottom: -1px; left: 0; right: 0;
+    height: 28px;
+    background: #F3EFE8;
+    border-radius: 50% 50% 0 0 / 100% 100% 0 0;
+  }
+  .design-c .hero-inner { display: flex; align-items: center; gap: 16px; position: relative; }
+  .design-c .hero-text { flex: 1; }
+  .design-c .hero-img-box { width: 100px; height: 120px; background: linear-gradient(160deg, #1F5E46, #4F6F52); border-radius: 60px 60px 8px 8px; display: flex; align-items: center; justify-content: center; color: rgba(243,239,232,0.3); font-size: 8px; flex-shrink: 0; }
+  .design-c .hero-tag { font-size: 8px; letter-spacing: 4px; color: #C6A55B; margin-bottom: 6px; }
+  .design-c .hero h2 { font-size: 20px; color: #F3EFE8; line-height: 1.5; margin-bottom: 6px; font-weight: 300; }
+  .design-c .hero h2 em { color: #C6A55B; font-style: normal; font-weight: 700; }
+  .design-c .hero p { font-size: 9px; color: rgba(243,239,232,0.55); line-height: 1.9; margin-bottom: 14px; }
+  .design-c .btn-primary { background: #C6A55B; color: #0F3D2E; padding: 8px 18px; border-radius: 3px; font-size: 10px; font-weight: bold; letter-spacing: 1px; }
+
+  .design-c .services {
+    padding: 20px 20px 12px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+  .design-c .service-card {
+    background: #fff;
+    border-radius: 8px;
+    padding: 12px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    box-shadow: 0 2px 12px rgba(15,61,46,0.08);
+    border-right: 3px solid #1F5E46;
+  }
+  .design-c .service-card .icon { font-size: 20px; flex-shrink: 0; }
+  .design-c .service-card h4 { font-size: 9px; color: #0F3D2E; font-weight: bold; margin-bottom: 2px; }
+  .design-c .service-card p { font-size: 8px; color: #6E7F6A; }
+
+  .design-c .book-bar {
+    background: #3B2416;
+    padding: 10px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .design-c .book-bar span { font-size: 10px; color: rgba(243,239,232,0.7); }
+  .design-c .book-bar .btn { background: #C6A55B; color: #3B2416; padding: 6px 16px; border-radius: 3px; font-size: 10px; font-weight: bold; }
+
+  /* ── SELECTION ── */
+  .select-indicator {
+    text-align: center;
+    padding: 16px;
+    background: #111;
+    font-size: 13px;
+    color: #666;
+  }
+  .select-indicator.has-selection { color: #C6A55B; }
+</style>
+
+<div class="page-title">
+  <h1>انتخاب سبک طراحی — نخلسپا</h1>
+  <p>روی هر طراحی کلیک کنید تا انتخاب کنید</p>
+</div>
+
+<div class="designs-wrapper">
+
+  <!-- ═══ DESIGN A ═══ -->
+  <div class="design-option design-a" data-choice="a" onclick="toggleSelect(this)">
+    <div class="option-label">
+      <span>A — جنگل تاریک (Dark Luxury)</span>
+      <span class="badge">لوکس</span>
+    </div>
+    <div class="browser-chrome">
+      <div class="browser-dot" style="background:#ff5f57"></div>
+      <div class="browser-dot" style="background:#febc2e"></div>
+      <div class="browser-dot" style="background:#28c840"></div>
+      <div class="browser-url">nakhlespa.ir</div>
+    </div>
+    <div class="site">
+      <div class="nav">
+        <div class="nav-logo">✦ نخل سپا</div>
+        <div class="nav-links">
+          <span>خدمات</span>
+          <span>درباره ما</span>
+          <span>تماس</span>
+        </div>
+        <div class="nav-cta">رزرو نوبت</div>
+      </div>
+      <div class="hero">
+        <div class="hero-bg"></div>
+        <div class="hero-tag">LUXURY SPA & WELLNESS</div>
+        <h2>تجربه‌ای که<br><strong>فراموش نمی‌کنید</strong></h2>
+        <p>ماساژ تخصصی درمانی و آرامش‌بخش<br>با بهترین متخصصان</p>
+        <div class="hero-btns">
+          <div class="btn-primary">← رزرو آنلاین</div>
+          <div class="btn-secondary">مشاهده خدمات</div>
+        </div>
+      </div>
+      <div class="divider"></div>
+      <div class="services">
+        <div class="service-card">
+          <div class="icon">💆</div>
+          <h4>ماساژ درمانی</h4>
+          <p>Swedish · Deep Tissue</p>
+        </div>
+        <div class="service-card">
+          <div class="icon">🌿</div>
+          <h4>ماساژ آرامش‌بخش</h4>
+          <p>Aroma · Hot Stone</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ DESIGN B ═══ -->
+  <div class="design-option design-b" data-choice="b" onclick="toggleSelect(this)">
+    <div class="option-label" style="background:#F3EFE8; color:#0F3D2E; border-bottom: 1px solid #e0d9ce;">
+      <span>B — خاک گرم (Warm Earth)</span>
+      <span class="badge" style="background:#1F5E46; color:#fff;">طبیعی</span>
+    </div>
+    <div class="browser-chrome">
+      <div class="browser-dot" style="background:#ff5f57"></div>
+      <div class="browser-dot" style="background:#febc2e"></div>
+      <div class="browser-dot" style="background:#28c840"></div>
+      <div class="browser-url">nakhlespa.ir</div>
+    </div>
+    <div class="site">
+      <div class="nav">
+        <div class="nav-logo">🌿 نخلسپا</div>
+        <div class="nav-links">
+          <span>خدمات</span>
+          <span>درباره ما</span>
+          <span>تماس</span>
+        </div>
+        <div class="nav-cta">رزرو آنلاین</div>
+      </div>
+      <div class="hero">
+        <div class="hero-text">
+          <div class="hero-tag">مرکز آرامش و سلامت</div>
+          <h2>آرامش واقعی<br>در دل طبیعت</h2>
+          <p>ماساژ تخصصی با متخصصان<br>مجرب نخلسپا</p>
+          <div class="btn-primary">رزرو نوبت →</div>
+        </div>
+        <div class="hero-img">[ تصویر ]</div>
+      </div>
+      <div class="stats">
+        <div class="stat"><div class="num">۵۰۰+</div><div class="lbl">مشتری راضی</div></div>
+        <div class="stat"><div class="num">۱۰+</div><div class="lbl">سال تجربه</div></div>
+        <div class="stat"><div class="num">۱۵+</div><div class="lbl">نوع خدمات</div></div>
+      </div>
+      <div class="services">
+        <div class="service-card">
+          <div class="icon">💆</div>
+          <h4>ماساژ درمانی</h4>
+          <p>Swedish · Deep Tissue</p>
+        </div>
+        <div class="service-card">
+          <div class="icon">🌿</div>
+          <h4>ماساژ آرامش‌بخش</h4>
+          <p>Aroma · Hot Stone</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ DESIGN C ═══ -->
+  <div class="design-option design-c" data-choice="c" onclick="toggleSelect(this)">
+    <div class="option-label">
+      <span>C — پریمیوم اسپلیت (Split Premium)</span>
+      <span class="badge">مدرن</span>
+    </div>
+    <div class="browser-chrome">
+      <div class="browser-dot" style="background:#ff5f57"></div>
+      <div class="browser-dot" style="background:#febc2e"></div>
+      <div class="browser-dot" style="background:#28c840"></div>
+      <div class="browser-url">nakhlespa.ir</div>
+    </div>
+    <div class="site">
+      <div class="nav">
+        <div class="nav-logo">نخل<span>سپا</span></div>
+        <div class="nav-links">
+          <span>خدمات</span>
+          <span>درباره ما</span>
+          <span>تماس</span>
+        </div>
+        <div class="nav-cta">رزرو</div>
+      </div>
+      <div class="hero">
+        <div class="hero-inner">
+          <div class="hero-text">
+            <div class="hero-tag">SPA & MASSAGE</div>
+            <h2>لحظه‌ای برای<br><em>خودت</em> باش</h2>
+            <p>تجربه ماساژ حرفه‌ای در<br>محیطی آرام و انحصاری</p>
+            <div class="btn-primary">← رزرو نوبت</div>
+          </div>
+          <div class="hero-img-box">[ عکس ]</div>
+        </div>
+      </div>
+      <div class="services">
+        <div class="service-card">
+          <div class="icon">💆</div>
+          <div>
+            <h4>ماساژ درمانی</h4>
+            <p>Swedish · Deep Tissue</p>
+          </div>
+        </div>
+        <div class="service-card">
+          <div class="icon">🌿</div>
+          <div>
+            <h4>ماساژ آرامش‌بخش</h4>
+            <p>Aroma · Hot Stone</p>
+          </div>
+        </div>
+        <div class="service-card">
+          <div class="icon">⏰</div>
+          <div>
+            <h4>رزرو آنلاین ۲۴/۷</h4>
+            <p>بدون نیاز به تماس</p>
+          </div>
+        </div>
+        <div class="service-card">
+          <div class="icon">⭐</div>
+          <div>
+            <h4>متخصصان مجرب</h4>
+            <p>+۱۰ سال تجربه</p>
+          </div>
+        </div>
+      </div>
+      <div class="book-bar">
+        <span>آماده رزرو هستید؟</span>
+        <div class="btn">رزرو آنلاین ←</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="select-indicator" id="sel-indicator">
+  روی یک طراحی کلیک کنید تا انتخاب کنید
+</div>
+
+<script>
+function toggleSelect(el) {
+  document.querySelectorAll('.design-option').forEach(o => o.classList.remove('selected'));
+  el.classList.add('selected');
+  const names = { a: 'A — جنگل تاریک', b: 'B — خاک گرم', c: 'C — پریمیوم اسپلیت' };
+  const ind = document.getElementById('sel-indicator');
+  ind.textContent = '✓ انتخاب شما: ' + names[el.dataset.choice];
+  ind.classList.add('has-selection');
+  // fire event for companion
+  if (window.__companion_select) window.__companion_select(el.dataset.choice, el.querySelector('.option-label span').textContent);
+}
+</script>

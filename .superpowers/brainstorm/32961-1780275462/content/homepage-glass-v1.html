@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>نخلسپا — Glassmorphism Design</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;700&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Vazirmatn', 'Segoe UI', Tahoma, sans-serif;
+    background: #060f0b;
+    color: #F3EFE8;
+    direction: rtl;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ── AMBIENT BACKGROUND ── */
+  .bg-scene {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    overflow: hidden;
+  }
+
+  /* Deep base gradient */
+  .bg-scene::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(ellipse 80% 60% at 20% 20%, #0F3D2E 0%, transparent 60%),
+      radial-gradient(ellipse 60% 50% at 80% 70%, #1F5E46 0%, transparent 55%),
+      radial-gradient(ellipse 50% 40% at 50% 90%, #3B2416 0%, transparent 50%),
+      #060f0b;
+  }
+
+  /* Floating orbs */
+  .orb {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(80px);
+    opacity: 0.45;
+    animation: float 12s ease-in-out infinite;
+  }
+  .orb-1 { width: 380px; height: 380px; background: #0F3D2E; top: -80px; right: -60px; animation-delay: 0s; }
+  .orb-2 { width: 280px; height: 280px; background: #C6A55B; bottom: 10%; left: -40px; opacity: 0.2; animation-delay: -4s; }
+  .orb-3 { width: 220px; height: 220px; background: #1F5E46; top: 40%; left: 30%; opacity: 0.3; animation-delay: -8s; }
+  .orb-4 { width: 180px; height: 180px; background: #4F6F52; bottom: 20%; right: 10%; opacity: 0.25; animation-delay: -2s; }
+
+  @keyframes float {
+    0%, 100% { transform: translate(0, 0) scale(1); }
+    33% { transform: translate(20px, -30px) scale(1.05); }
+    66% { transform: translate(-15px, 20px) scale(0.95); }
+  }
+
+  /* ── GLASS UTILITY ── */
+  .glass {
+    background: rgba(243, 239, 232, 0.06);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    border: 1px solid rgba(243, 239, 232, 0.12);
+  }
+
+  .glass-gold {
+    background: rgba(198, 165, 91, 0.08);
+    backdrop-filter: blur(24px) saturate(200%);
+    -webkit-backdrop-filter: blur(24px) saturate(200%);
+    border: 1px solid rgba(198, 165, 91, 0.25);
+  }
+
+  .glass-green {
+    background: rgba(31, 94, 70, 0.25);
+    backdrop-filter: blur(20px) saturate(160%);
+    -webkit-backdrop-filter: blur(20px) saturate(160%);
+    border: 1px solid rgba(79, 111, 82, 0.35);
+  }
+
+  /* ── WRAPPER ── */
+  .page-wrap {
+    position: relative;
+    z-index: 1;
+    max-width: 420px;
+    margin: 0 auto;
+    min-height: 100vh;
+  }
+
+  /* ── NAV ── */
+  .nav {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 14px 20px;
+    background: rgba(6, 15, 11, 0.5);
+    backdrop-filter: blur(32px) saturate(200%);
+    -webkit-backdrop-filter: blur(32px) saturate(200%);
+    border-bottom: 1px solid rgba(198, 165, 91, 0.15);
+  }
+
+  .nav-logo {
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    color: #F3EFE8;
+  }
+  .nav-logo span { color: #C6A55B; }
+
+  .nav-links { display: flex; gap: 14px; }
+  .nav-links a {
+    color: rgba(243,239,232,0.6);
+    font-size: 11px;
+    text-decoration: none;
+    transition: color 0.2s;
+  }
+  .nav-links a:hover { color: #C6A55B; }
+
+  .nav-cta {
+    background: rgba(198,165,91,0.15);
+    border: 1px solid rgba(198,165,91,0.4);
+    color: #C6A55B;
+    padding: 6px 14px;
+    border-radius: 6px;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    cursor: pointer;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    transition: background 0.2s;
+  }
+  .nav-cta:hover { background: rgba(198,165,91,0.25); }
+
+  /* ── HERO ── */
+  .hero {
+    padding: 48px 20px 32px;
+    position: relative;
+  }
+
+  .hero-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 9px;
+    letter-spacing: 4px;
+    color: #C6A55B;
+    margin-bottom: 16px;
+    opacity: 0.9;
+  }
+  .hero-tag::before, .hero-tag::after {
+    content: '';
+    width: 24px;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, #C6A55B);
+  }
+  .hero-tag::before { background: linear-gradient(90deg, #C6A55B, transparent); }
+
+  .hero h1 {
+    font-size: 32px;
+    font-weight: 300;
+    line-height: 1.5;
+    color: #F3EFE8;
+    margin-bottom: 8px;
+  }
+  .hero h1 em {
+    font-style: normal;
+    font-weight: 700;
+    background: linear-gradient(135deg, #C6A55B, #A8873A, #C6A55B);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .hero p {
+    font-size: 12px;
+    color: rgba(243,239,232,0.55);
+    line-height: 2;
+    margin-bottom: 28px;
+    max-width: 260px;
+  }
+
+  .hero-btns { display: flex; gap: 10px; margin-bottom: 36px; flex-wrap: wrap; }
+
+  .btn-gold {
+    background: linear-gradient(135deg, #C6A55B, #A8873A);
+    color: #0F3D2E;
+    padding: 11px 22px;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: 0 4px 20px rgba(198,165,91,0.35), inset 0 1px 0 rgba(255,255,255,0.2);
+    transition: transform 0.2s, box-shadow 0.2s;
+  }
+  .btn-gold:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(198,165,91,0.45); }
+
+  .btn-glass {
+    background: rgba(243,239,232,0.07);
+    border: 1px solid rgba(243,239,232,0.2);
+    color: rgba(243,239,232,0.8);
+    padding: 11px 20px;
+    border-radius: 8px;
+    font-size: 12px;
+    cursor: pointer;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    transition: background 0.2s;
+  }
+  .btn-glass:hover { background: rgba(243,239,232,0.12); }
+
+  /* ── STATS STRIP ── */
+  .stats-strip {
+    display: flex;
+    gap: 0;
+    border-radius: 14px;
+    overflow: hidden;
+    margin-bottom: 32px;
+  }
+  .stats-strip .glass {
+    flex: 1;
+    padding: 14px 10px;
+    text-align: center;
+    border-radius: 0;
+    border-right: none;
+    border-left: 1px solid rgba(243,239,232,0.08);
+  }
+  .stats-strip .glass:first-child { border-radius: 14px 0 0 14px; border-left: 1px solid rgba(243,239,232,0.12); }
+  .stats-strip .glass:last-child { border-radius: 0 14px 14px 0; border-left: none; }
+  .stat-num { font-size: 20px; font-weight: 700; color: #C6A55B; margin-bottom: 2px; }
+  .stat-lbl { font-size: 8px; color: rgba(243,239,232,0.5); letter-spacing: 1px; }
+
+  /* ── SECTION TITLE ── */
+  .section-title {
+    font-size: 11px;
+    letter-spacing: 3px;
+    color: rgba(243,239,232,0.4);
+    margin-bottom: 14px;
+    padding: 0 20px;
+  }
+
+  /* ── SERVICE CARDS ── */
+  .services { padding: 0 20px; display: flex; flex-direction: column; gap: 10px; margin-bottom: 32px; }
+
+  .service-card {
+    border-radius: 16px;
+    padding: 18px 20px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    cursor: pointer;
+    transition: transform 0.2s, background 0.2s;
+    position: relative;
+    overflow: hidden;
+  }
+  .service-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 16px;
+    background: linear-gradient(135deg, rgba(243,239,232,0.04) 0%, transparent 100%);
+    pointer-events: none;
+  }
+  .service-card:hover { transform: translateX(-4px); }
+
+  .service-card .icon-wrap {
+    width: 44px; height: 44px;
+    border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px;
+    flex-shrink: 0;
+  }
+  .icon-wrap-gold { background: rgba(198,165,91,0.15); border: 1px solid rgba(198,165,91,0.3); }
+  .icon-wrap-green { background: rgba(31,94,70,0.3); border: 1px solid rgba(79,111,82,0.4); }
+
+  .service-card .info { flex: 1; }
+  .service-card h3 { font-size: 13px; font-weight: 600; color: #F3EFE8; margin-bottom: 3px; }
+  .service-card p { font-size: 10px; color: rgba(243,239,232,0.45); }
+
+  .service-card .price-arrow {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 2px;
+  }
+  .price { font-size: 11px; color: #C6A55B; font-weight: 600; }
+  .arrow { font-size: 14px; color: rgba(243,239,232,0.2); }
+
+  /* ── BOOKING CTA CARD ── */
+  .book-cta {
+    margin: 0 20px 32px;
+    border-radius: 20px;
+    padding: 24px;
+    position: relative;
+    overflow: hidden;
+    background: linear-gradient(135deg, rgba(198,165,91,0.12) 0%, rgba(31,94,70,0.15) 100%);
+    backdrop-filter: blur(24px) saturate(200%);
+    -webkit-backdrop-filter: blur(24px) saturate(200%);
+    border: 1px solid rgba(198,165,91,0.2);
+  }
+  .book-cta::before {
+    content: '';
+    position: absolute;
+    top: -40px; left: -40px;
+    width: 180px; height: 180px;
+    background: radial-gradient(circle, rgba(198,165,91,0.12) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .book-cta h3 { font-size: 16px; font-weight: 600; color: #F3EFE8; margin-bottom: 6px; position: relative; }
+  .book-cta p { font-size: 11px; color: rgba(243,239,232,0.5); margin-bottom: 18px; line-height: 1.8; position: relative; }
+  .book-cta .btn-gold { position: relative; width: 100%; text-align: center; display: block; padding: 13px; font-size: 13px; border-radius: 10px; }
+
+  /* ── FLOATING GLASS FEATURE ── */
+  .feature-pills {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    padding: 0 20px;
+    margin-bottom: 28px;
+  }
+  .pill {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 12px;
+    border-radius: 30px;
+    font-size: 10px;
+    color: rgba(243,239,232,0.75);
+    background: rgba(243,239,232,0.06);
+    border: 1px solid rgba(243,239,232,0.12);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+  }
+  .pill-dot { width: 6px; height: 6px; border-radius: 50%; }
+
+  /* ── SCROLL LABEL ── */
+  .scroll-hint {
+    text-align: center;
+    padding: 16px;
+    font-size: 9px;
+    letter-spacing: 3px;
+    color: rgba(243,239,232,0.2);
+  }
+
+</style>
+
+<div class="bg-scene">
+  <div class="orb orb-1"></div>
+  <div class="orb orb-2"></div>
+  <div class="orb orb-3"></div>
+  <div class="orb orb-4"></div>
+</div>
+
+<div class="page-wrap">
+
+  <!-- NAV -->
+  <nav class="nav">
+    <div class="nav-logo">نخل<span>سپا</span></div>
+    <div class="nav-links">
+      <a href="#">خدمات</a>
+      <a href="#">درباره ما</a>
+      <a href="#">تماس</a>
+    </div>
+    <div class="nav-cta">رزرو</div>
+  </nav>
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="hero-tag">SPA & WELLNESS</div>
+    <h1>لحظه‌ای برای<br><em>خودت</em> باش</h1>
+    <p>ماساژ تخصصی درمانی و آرامش‌بخش با بهترین متخصصان — در محیطی آرام و انحصاری</p>
+    <div class="hero-btns">
+      <div class="btn-gold">← رزرو آنلاین</div>
+      <div class="btn-glass">مشاهده خدمات</div>
+    </div>
+
+    <!-- Stats -->
+    <div class="stats-strip glass">
+      <div class="glass">
+        <div class="stat-num">۵۰۰+</div>
+        <div class="stat-lbl">مشتری راضی</div>
+      </div>
+      <div class="glass">
+        <div class="stat-num">۱۰+</div>
+        <div class="stat-lbl">سال تجربه</div>
+      </div>
+      <div class="glass">
+        <div class="stat-num">۲۴/۷</div>
+        <div class="stat-lbl">رزرو آنلاین</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FEATURE PILLS -->
+  <div class="feature-pills">
+    <div class="pill"><div class="pill-dot" style="background:#4F6F52"></div>متخصصان مجرب</div>
+    <div class="pill"><div class="pill-dot" style="background:#C6A55B"></div>پرداخت آنلاین</div>
+    <div class="pill"><div class="pill-dot" style="background:#1F5E46"></div>محیط آرام</div>
+    <div class="pill"><div class="pill-dot" style="background:#A8873A"></div>رزرو فوری</div>
+  </div>
+
+  <!-- SERVICES -->
+  <div class="section-title">— خدمات ما</div>
+  <div class="services">
+
+    <div class="service-card glass">
+      <div class="icon-wrap icon-wrap-gold">💆</div>
+      <div class="info">
+        <h3>ماساژ درمانی</h3>
+        <p>Swedish · Deep Tissue · Sports</p>
+      </div>
+      <div class="price-arrow">
+        <div class="price">از ۳۵۰ هزار</div>
+        <div class="arrow">←</div>
+      </div>
+    </div>
+
+    <div class="service-card glass-green">
+      <div class="icon-wrap icon-wrap-green">🌿</div>
+      <div class="info">
+        <h3>ماساژ آرامش‌بخش</h3>
+        <p>Aromatherapy · Hot Stone · Luxury</p>
+      </div>
+      <div class="price-arrow">
+        <div class="price">از ۴۵۰ هزار</div>
+        <div class="arrow">←</div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- BOOKING CTA -->
+  <div class="book-cta">
+    <h3>آماده رزرو هستید؟</h3>
+    <p>همین الان نوبت بگیرید و بعد از تأیید، پرداخت آنلاین انجام دهید.</p>
+    <div class="btn-gold">← رزرو نوبت آنلاین</div>
+  </div>
+
+  <div class="scroll-hint">● ● ●</div>
+
+</div>
+

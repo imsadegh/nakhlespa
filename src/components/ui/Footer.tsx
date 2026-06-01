@@ -1,10 +1,19 @@
 export function Footer() {
   return (
-    <footer id="contact" className="relative z-10 border-t border-white/[0.08] mt-16 px-6 py-10 text-center">
-      <div className="text-xl font-bold text-[#F3EFE8] mb-2">نخل<span className="text-[#C6A55B]">سپا</span></div>
-      <p className="text-xs text-[#F3EFE8]/40 mb-1">مرکز ماساژ و آرامش</p>
-      <p className="text-xs text-[#F3EFE8]/40">تهران — تلفن: ۰۲۱-XXXXXXXX</p>
-      <p className="text-xs text-[#F3EFE8]/20 mt-6">© ۱۴۰۴ نخلسپا. تمام حقوق محفوظ است.</p>
+    <footer id="contact" className="relative z-10 border-t mt-16 py-10"
+      style={{ borderColor: 'var(--border-base)' }}>
+      <div className="mx-auto max-w-screen-xl px-4 sm:px-8 lg:px-16 sm:flex sm:items-center sm:justify-between">
+        <div className="text-center sm:text-right mb-4 sm:mb-0">
+          <div className="text-xl font-bold mb-1" style={{ color: 'var(--text-primary)' }}>
+            نخل<span className="text-[#C6A55B]">سپا</span>
+          </div>
+          <p className="text-xs" style={{ color: 'var(--text-muted)' }}>مرکز ماساژ و آرامش</p>
+        </div>
+        <div className="text-center sm:text-left">
+          <p className="text-xs mb-1" style={{ color: 'var(--text-muted)' }}>تهران — تلفن: ۰۲۱-XXXXXXXX</p>
+          <p className="text-xs" style={{ color: 'var(--text-faint)' }}>© ۱۴۰۴ نخلسپا. تمام حقوق محفوظ است.</p>
+        </div>
+      </div>
     </footer>
   )
 }

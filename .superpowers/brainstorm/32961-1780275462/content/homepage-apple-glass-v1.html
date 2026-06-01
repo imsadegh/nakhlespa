@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>نخلسپا — Apple Liquid Glass</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@200;300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --gold:        #C6A55B;
+    --gold-dim:    #A8873A;
+    --green-deep:  #0F3D2E;
+    --green-mid:   #1F5E46;
+    --green-soft:  #4F6F52;
+    --cream:       #F3EFE8;
+    --brown-deep:  #3B2416;
+    --glass-white: rgba(255,255,255,0.08);
+    --glass-border: rgba(255,255,255,0.18);
+    --glass-shine: rgba(255,255,255,0.32);
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: 'Vazirmatn', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: #04100b;
+    color: var(--cream);
+    direction: rtl;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ════════════════════════════════
+     BACKGROUND — layered depth
+  ════════════════════════════════ */
+  .bg {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    background:
+      radial-gradient(ellipse 90% 70% at 15% 10%,  #0F3D2E 0%, transparent 55%),
+      radial-gradient(ellipse 70% 60% at 85% 30%,  #1a4a35 0%, transparent 50%),
+      radial-gradient(ellipse 60% 50% at 60% 80%,  #3B2416 0%, transparent 50%),
+      radial-gradient(ellipse 80% 40% at 10% 80%,  #1F5E46 0%, transparent 45%),
+      #04100b;
+  }
+
+  /* Animated color orbs */
+  .orb {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(100px);
+    animation: drift linear infinite;
+  }
+  .o1 { width:500px; height:500px; background:#0F3D2E; top:-150px; right:-100px; opacity:.6; animation-duration:20s; }
+  .o2 { width:350px; height:350px; background:#C6A55B; bottom:-80px; left:-60px;  opacity:.18; animation-duration:25s; animation-direction:reverse; }
+  .o3 { width:280px; height:280px; background:#1F5E46; top:35%;   left:20%;      opacity:.35; animation-duration:18s; animation-delay:-6s; }
+  .o4 { width:200px; height:200px; background:#4F6F52; bottom:25%; right:5%;     opacity:.28; animation-duration:22s; animation-delay:-10s; }
+  .o5 { width:160px; height:160px; background:#A8873A; top:55%;   right:40%;    opacity:.15; animation-duration:30s; animation-delay:-3s; }
+
+  @keyframes drift {
+    0%   { transform: translate(0,   0  ) scale(1);    }
+    25%  { transform: translate(30px,-40px) scale(1.06); }
+    50%  { transform: translate(-20px,30px) scale(0.94); }
+    75%  { transform: translate(15px, 15px) scale(1.03); }
+    100% { transform: translate(0,   0  ) scale(1);    }
+  }
+
+  /* Fine grain texture overlay */
+  .noise {
+    position: fixed;
+    inset: 0;
+    z-index: 1;
+    opacity: .035;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+    background-size: 200px;
+    pointer-events: none;
+  }
+
+  /* ════════════════════════════════
+     LIQUID GLASS MIXIN
+  ════════════════════════════════ */
+  .liq {
+    background:    rgba(255,255,255,0.07);
+    backdrop-filter: blur(40px) saturate(200%) brightness(1.05);
+    -webkit-backdrop-filter: blur(40px) saturate(200%) brightness(1.05);
+    border: 1px solid rgba(255,255,255,0.15);
+    /* Specular top edge — the key Apple detail */
+    box-shadow:
+      inset 0 1px 0   rgba(255,255,255,0.30),   /* top shine  */
+      inset 0 -1px 0  rgba(255,255,255,0.06),   /* bottom dim */
+      inset 1px 0 0   rgba(255,255,255,0.10),   /* side catch */
+      0 8px 32px rgba(0,0,0,0.35),
+      0 2px 8px  rgba(0,0,0,0.25);
+  }
+
+  .liq-gold {
+    background: rgba(198,165,91,0.10);
+    backdrop-filter: blur(40px) saturate(220%) brightness(1.08);
+    -webkit-backdrop-filter: blur(40px) saturate(220%) brightness(1.08);
+    border: 1px solid rgba(198,165,91,0.28);
+    box-shadow:
+      inset 0 1px 0   rgba(255,255,255,0.28),
+      inset 0 -1px 0  rgba(198,165,91,0.08),
+      0 8px 40px rgba(198,165,91,0.18),
+      0 2px 8px  rgba(0,0,0,0.3);
+  }
+
+  /* ════════════════════════════════
+     PAGE SHELL
+  ════════════════════════════════ */
+  .shell {
+    position: relative;
+    z-index: 2;
+    max-width: 430px;
+    margin: 0 auto;
+    min-height: 100vh;
+    padding-bottom: 60px;
+  }
+
+  /* ════════════════════════════════
+     NAV — Apple-style frosted bar
+  ════════════════════════════════ */
+  .nav {
+    position: sticky;
+    top: 0;
+    z-index: 200;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 13px 22px;
+    background: rgba(4,16,11,0.45);
+    backdrop-filter: blur(48px) saturate(220%);
+    -webkit-backdrop-filter: blur(48px) saturate(220%);
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+    box-shadow: 0 1px 0 rgba(255,255,255,0.06), 0 4px 24px rgba(0,0,0,0.4);
+  }
+
+  .logo {
+    font-size: 17px;
+    font-weight: 700;
+    letter-spacing: .5px;
+    color: var(--cream);
+  }
+  .logo span { color: var(--gold); }
+
+  .nav-links { display: flex; gap: 18px; }
+  .nav-links a { font-size: 11px; color: rgba(243,239,232,.55); text-decoration: none; font-weight: 400; transition: color .2s; }
+  .nav-links a:hover { color: var(--cream); }
+
+  .nav-pill {
+    padding: 6px 14px;
+    border-radius: 30px;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--gold);
+    cursor: pointer;
+    transition: background .2s;
+    background: rgba(198,165,91,0.12);
+    border: 1px solid rgba(198,165,91,0.30);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.2), 0 2px 8px rgba(198,165,91,0.15);
+  }
+  .nav-pill:hover { background: rgba(198,165,91,0.2); }
+
+  /* ════════════════════════════════
+     HERO
+  ════════════════════════════════ */
+  .hero {
+    padding: 52px 22px 28px;
+  }
+
+  .eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 18px;
+    padding: 5px 14px;
+    border-radius: 30px;
+    font-size: 9px;
+    letter-spacing: 3.5px;
+    color: var(--gold);
+    background: rgba(198,165,91,0.08);
+    border: 1px solid rgba(198,165,91,0.22);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.15);
+  }
+  .eyebrow-dot { width:5px; height:5px; border-radius:50%; background:var(--gold); opacity:.8; animation: pulse 2.5s ease-in-out infinite; }
+  @keyframes pulse { 0%,100%{opacity:.4} 50%{opacity:1} }
+
+  .hero-h1 {
+    font-size: 38px;
+    font-weight: 200;
+    line-height: 1.35;
+    color: var(--cream);
+    margin-bottom: 14px;
+    letter-spacing: -.5px;
+  }
+  .hero-h1 strong {
+    font-weight: 700;
+    background: linear-gradient(120deg, #C6A55B 0%, #e8c87a 40%, #A8873A 70%, #C6A55B 100%);
+    background-size: 200%;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    animation: shimmer 4s linear infinite;
+  }
+  @keyframes shimmer { 0%{background-position:0%} 100%{background-position:200%} }
+
+  .hero-sub {
+    font-size: 13px;
+    font-weight: 300;
+    color: rgba(243,239,232,.5);
+    line-height: 2;
+    margin-bottom: 30px;
+    max-width: 280px;
+  }
+
+  /* CTA buttons */
+  .cta-row { display: flex; gap: 10px; margin-bottom: 40px; align-items: center; }
+
+  .btn-primary {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 13px 24px;
+    border-radius: 14px;
+    font-size: 13px;
+    font-weight: 700;
+    color: #0F3D2E;
+    cursor: pointer;
+    background: linear-gradient(145deg, #d4b368, #C6A55B, #9a7830);
+    box-shadow:
+      inset 0 1px 0 rgba(255,255,255,.40),
+      inset 0 -2px 0 rgba(0,0,0,.18),
+      0 6px 24px rgba(198,165,91,.40),
+      0 2px 6px rgba(0,0,0,.25);
+    transition: transform .18s, box-shadow .18s;
+  }
+  .btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.40), 0 10px 36px rgba(198,165,91,.55), 0 2px 6px rgba(0,0,0,.25);
+  }
+  .btn-primary:active { transform: translateY(0); }
+
+  .btn-ghost {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 12px 20px;
+    border-radius: 14px;
+    font-size: 13px;
+    font-weight: 400;
+    color: rgba(243,239,232,.8);
+    cursor: pointer;
+    background: rgba(255,255,255,0.07);
+    border: 1px solid rgba(255,255,255,0.14);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.22), 0 4px 16px rgba(0,0,0,.25);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    transition: background .18s;
+  }
+  .btn-ghost:hover { background: rgba(255,255,255,0.12); }
+
+  /* ════════════════════════════════
+     STATS ROW — inline glass pills
+  ════════════════════════════════ */
+  .stats {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 36px;
+  }
+  .stat-pill {
+    flex: 1;
+    padding: 12px 8px;
+    border-radius: 16px;
+    text-align: center;
+  }
+  .stat-pill .num {
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--gold);
+    line-height: 1;
+    margin-bottom: 4px;
+  }
+  .stat-pill .lbl {
+    font-size: 8px;
+    color: rgba(243,239,232,.4);
+    letter-spacing: 1px;
+    font-weight: 300;
+  }
+
+  /* ════════════════════════════════
+     SERVICES
+  ════════════════════════════════ */
+  .section-label {
+    font-size: 10px;
+    letter-spacing: 3px;
+    color: rgba(243,239,232,.3);
+    padding: 0 22px;
+    margin-bottom: 12px;
+    font-weight: 300;
+  }
+
+  .services {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 0 22px;
+    margin-bottom: 28px;
+  }
+
+  .svc-card {
+    padding: 18px 20px;
+    border-radius: 20px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    cursor: pointer;
+    transition: transform .2s;
+    position: relative;
+    overflow: hidden;
+  }
+  .svc-card:hover { transform: translateX(-3px) translateY(-1px); }
+
+  /* Specular glint sweep */
+  .svc-card::after {
+    content: '';
+    position: absolute;
+    top: 0; right: -60%; width: 40%; height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,.06), transparent);
+    transform: skewX(-15deg);
+    pointer-events: none;
+    transition: right .5s ease;
+  }
+  .svc-card:hover::after { right: 120%; transition: right .7s ease; }
+
+  .svc-icon {
+    width: 48px; height: 48px;
+    border-radius: 14px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px;
+    flex-shrink: 0;
+    position: relative;
+  }
+  .svc-icon-gold {
+    background: rgba(198,165,91,0.14);
+    border: 1px solid rgba(198,165,91,0.28);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.25), 0 4px 12px rgba(198,165,91,.15);
+  }
+  .svc-icon-green {
+    background: rgba(31,94,70,0.30);
+    border: 1px solid rgba(79,111,82,0.40);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.20), 0 4px 12px rgba(31,94,70,.25);
+  }
+
+  .svc-info { flex: 1; }
+  .svc-info h3 { font-size: 14px; font-weight: 600; color: var(--cream); margin-bottom: 3px; }
+  .svc-info p  { font-size: 10px; color: rgba(243,239,232,.4); font-weight: 300; }
+
+  .svc-meta { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
+  .svc-price { font-size: 11px; color: var(--gold); font-weight: 600; }
+  .svc-arrow { font-size: 16px; color: rgba(243,239,232,.2); }
+
+  /* ════════════════════════════════
+     BOOKING CTA CARD — hero glass
+  ════════════════════════════════ */
+  .book-card {
+    margin: 0 22px 28px;
+    border-radius: 24px;
+    padding: 28px 24px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* Inner glow */
+  .book-card::before {
+    content: '';
+    position: absolute;
+    top: -60px; left: -60px;
+    width: 220px; height: 220px;
+    background: radial-gradient(circle, rgba(198,165,91,0.18) 0%, transparent 65%);
+    pointer-events: none;
+  }
+  .book-card::after {
+    content: '';
+    position: absolute;
+    bottom: -40px; right: -40px;
+    width: 160px; height: 160px;
+    background: radial-gradient(circle, rgba(31,94,70,0.25) 0%, transparent 65%);
+    pointer-events: none;
+  }
+
+  .book-card h2 {
+    font-size: 20px;
+    font-weight: 500;
+    color: var(--cream);
+    margin-bottom: 8px;
+    position: relative;
+    z-index: 1;
+  }
+  .book-card p {
+    font-size: 12px;
+    color: rgba(243,239,232,.45);
+    line-height: 1.9;
+    margin-bottom: 22px;
+    font-weight: 300;
+    position: relative;
+    z-index: 1;
+  }
+  .book-card .btn-primary {
+    width: 100%;
+    justify-content: center;
+    font-size: 14px;
+    padding: 15px;
+    border-radius: 14px;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* ════════════════════════════════
+     FEATURE PILLS
+  ════════════════════════════════ */
+  .pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 0 22px;
+    margin-bottom: 28px;
+  }
+  .pill {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    padding: 7px 14px;
+    border-radius: 30px;
+    font-size: 10px;
+    font-weight: 400;
+    color: rgba(243,239,232,.65);
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.10);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.14);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+  }
+  .pill-dot { width:6px; height:6px; border-radius:50%; flex-shrink:0; }
+
+</style>
+
+<!-- Ambient Background -->
+<div class="bg">
+  <div class="orb o1"></div>
+  <div class="orb o2"></div>
+  <div class="orb o3"></div>
+  <div class="orb o4"></div>
+  <div class="orb o5"></div>
+</div>
+<div class="noise"></div>
+
+<div class="shell">
+
+  <!-- ── NAV ── -->
+  <nav class="nav">
+    <div class="logo">نخل<span>سپا</span></div>
+    <div class="nav-links">
+      <a href="#">خدمات</a>
+      <a href="#">درباره ما</a>
+      <a href="#">تماس</a>
+    </div>
+    <div class="nav-pill">رزرو</div>
+  </nav>
+
+  <!-- ── HERO ── -->
+  <section class="hero">
+    <div class="eyebrow">
+      <div class="eyebrow-dot"></div>
+      SPA &amp; WELLNESS
+    </div>
+
+    <h1 class="hero-h1">
+      لحظه‌ای برای<br>
+      <strong>خودت</strong> باش
+    </h1>
+
+    <p class="hero-sub">
+      ماساژ تخصصی درمانی و آرامش‌بخش<br>
+      با بهترین متخصصان — در فضایی آرام
+    </p>
+
+    <div class="cta-row">
+      <div class="btn-primary">← رزرو آنلاین</div>
+      <div class="btn-ghost">مشاهده خدمات</div>
+    </div>
+
+    <!-- Stats -->
+    <div class="stats">
+      <div class="stat-pill liq">
+        <div class="num">۵۰۰+</div>
+        <div class="lbl">مشتری راضی</div>
+      </div>
+      <div class="stat-pill liq">
+        <div class="num">۱۰+</div>
+        <div class="lbl">سال تجربه</div>
+      </div>
+      <div class="stat-pill liq">
+        <div class="num">۲۴/۷</div>
+        <div class="lbl">رزرو آنلاین</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── PILLS ── -->
+  <div class="pills">
+    <div class="pill"><div class="pill-dot" style="background:#4F6F52"></div>متخصصان مجرب</div>
+    <div class="pill"><div class="pill-dot" style="background:#C6A55B"></div>پرداخت آنلاین</div>
+    <div class="pill"><div class="pill-dot" style="background:#1F5E46"></div>محیط آرام</div>
+    <div class="pill"><div class="pill-dot" style="background:#A8873A"></div>رزرو فوری</div>
+  </div>
+
+  <!-- ── SERVICES ── -->
+  <div class="section-label">— خدمات ما</div>
+  <div class="services">
+
+    <div class="svc-card liq">
+      <div class="svc-icon svc-icon-gold">💆</div>
+      <div class="svc-info">
+        <h3>ماساژ درمانی</h3>
+        <p>Swedish · Deep Tissue · Sports</p>
+      </div>
+      <div class="svc-meta">
+        <div class="svc-price">از ۳۵۰,۰۰۰</div>
+        <div class="svc-arrow">←</div>
+      </div>
+    </div>
+
+    <div class="svc-card liq-gold">
+      <div class="svc-icon svc-icon-green">🌿</div>
+      <div class="svc-info">
+        <h3>ماساژ آرامش‌بخش</h3>
+        <p>Aromatherapy · Hot Stone · Luxury</p>
+      </div>
+      <div class="svc-meta">
+        <div class="svc-price">از ۴۵۰,۰۰۰</div>
+        <div class="svc-arrow">←</div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ── BOOKING CTA ── -->
+  <div class="book-card liq">
+    <h2>آماده رزرو هستید؟</h2>
+    <p>همین الان نوبت بگیرید — بعد از تأیید، پرداخت آنلاین از طریق زرین‌پال انجام می‌شود.</p>
+    <div class="btn-primary">← رزرو نوبت آنلاین</div>
+  </div>
+
+</div>

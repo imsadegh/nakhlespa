@@ -19,12 +19,14 @@ export default async function HomePage() {
   return (
     <>
       <AmbientBackground />
-      <div className="relative z-10 max-w-lg mx-auto min-h-screen">
+      <div className="relative z-10 min-h-screen">
         <Navbar />
-        <HeroSection />
-        <ServicesSection services={serviceDTOs} />
-        <HowItWorksSection />
-        <BookingCtaSection />
+        <main className="mx-auto w-full max-w-screen-xl">
+          <HeroSection />
+          <ServicesSection services={serviceDTOs} />
+          <HowItWorksSection />
+          <BookingCtaSection />
+        </main>
         <Footer />
       </div>
     </>

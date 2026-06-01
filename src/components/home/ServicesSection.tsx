@@ -8,33 +8,34 @@ const icons: Record<string, string> = { 'ماساژ درمانی': '💆', 'ما
 
 export function ServicesSection({ services }: { services: ServiceDTO[] }) {
   return (
-    <section id="services" className="px-6 mb-8">
+    <section id="services" className="px-4 sm:px-8 lg:px-16 mb-10">
       <motion.p
         initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }}
-        className="text-[10px] tracking-[3px] text-[#F3EFE8]/30 mb-3 font-light"
+        className="text-[10px] tracking-[3px] mb-4 font-light"
+        style={{ color: 'var(--text-faint)' }}
       >
         — خدمات ما
       </motion.p>
-      <div className="flex flex-col gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
         {services.map((svc, i) => (
           <motion.div
             key={svc.id}
             initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }} transition={{ delay: i * 0.1 }}
-            whileHover={{ x: -3, y: -1 }}
+            whileHover={{ y: -3 }}
           >
             <Link href="/book">
-              <GlassCard gold={i === 1} className="flex items-center gap-4 p-5 cursor-pointer relative overflow-hidden">
+              <GlassCard gold={i === 1} className="flex items-center gap-4 p-5 cursor-pointer relative overflow-hidden h-full">
                 <div className="w-12 h-12 rounded-[14px] flex items-center justify-center text-2xl flex-shrink-0 bg-[rgba(198,165,91,0.14)] border border-[rgba(198,165,91,0.28)]">
                   {icons[svc.nameFa] ?? '✦'}
                 </div>
-                <div className="flex-1">
-                  <h3 className="text-sm font-semibold text-[#F3EFE8] mb-0.5">{svc.nameFa}</h3>
-                  <p className="text-[10px] text-[#F3EFE8]/40">{svc.descriptionFa}</p>
+                <div className="flex-1 min-w-0">
+                  <h3 className="text-sm font-semibold mb-0.5" style={{ color: 'var(--text-primary)' }}>{svc.nameFa}</h3>
+                  <p className="text-[10px]" style={{ color: 'var(--text-faint)' }}>{svc.descriptionFa}</p>
                 </div>
-                <div className="text-left flex flex-col items-end gap-1">
+                <div className="text-left flex flex-col items-end gap-1 flex-shrink-0">
                   <span className="text-xs text-[#C6A55B] font-semibold">از {svc.price.toLocaleString('fa-IR')}</span>
-                  <span className="text-base text-[#F3EFE8]/20">←</span>
+                  <span className="text-base" style={{ color: 'var(--text-faint)' }}>←</span>
                 </div>
               </GlassCard>
             </Link>

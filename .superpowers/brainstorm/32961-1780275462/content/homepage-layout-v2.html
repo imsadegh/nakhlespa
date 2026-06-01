@@ -1,0 +1,96 @@
+<h2>طراحی صفحه اصلی — رنگ‌بندی رسمی نخلسپا</h2>
+<p class="subtitle">کدام رویکرد بصری با پالت رنگی برند مناسب‌تر است؟</p>
+
+<style>
+  .sp-card-img { padding: 16px; border-radius: 8px; font-family: 'Segoe UI', Tahoma, serif; direction: rtl; }
+  .sp-label { font-size: 8px; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 2px; }
+  .sp-hero { height: 56px; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 10px; margin-bottom: 8px; }
+  .sp-btn { text-align: center; padding: 6px 10px; border-radius: 4px; font-size: 10px; font-weight: bold; margin-bottom: 8px; cursor: pointer; }
+  .sp-chips { display: flex; gap: 4px; }
+  .sp-chip { flex: 1; padding: 4px; border-radius: 4px; text-align: center; font-size: 8px; }
+</style>
+
+<div class="cards">
+
+  <!-- Option A: Dark Forest — deep greens + gold on dark brown -->
+  <div class="card" data-choice="a" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div class="sp-card-img" style="background: linear-gradient(160deg, #3B2416 0%, #0F3D2E 60%, #1F5E46 100%);">
+        <div class="sp-label" style="color: #C6A55B; text-align:center;">✦ نخل سپا ✦</div>
+        <div style="color: #F3EFE8; font-size: 20px; font-weight: bold; text-align: center; margin-bottom: 8px;">نخلسپا</div>
+        <div class="sp-hero" style="background: rgba(198,165,91,0.12); border: 1px solid rgba(198,165,91,0.3); color: #C6A55B;">تصویر سینماتیک محیط سپا</div>
+        <div class="sp-btn" style="background: #C6A55B; color: #3B2416;">رزرو نوبت آنلاین ←</div>
+        <div class="sp-chips">
+          <div class="sp-chip" style="background: rgba(198,165,91,0.15); border: 1px solid rgba(198,165,91,0.4); color: #C6A55B;">ماساژ درمانی</div>
+          <div class="sp-chip" style="background: rgba(198,165,91,0.15); border: 1px solid rgba(198,165,91,0.4); color: #C6A55B;">ماساژ آرامش‌بخش</div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>A — جنگل تاریک (Dark Forest)</h3>
+      <p>زمینه سبز تیره و قهوه‌ای عمیق، جزئیات طلایی. حس لوکس، طبیعی و مرموز. برای مشتری که دنبال تجربه پریمیوم است.</p>
+    </div>
+  </div>
+
+  <!-- Option B: Warm Earth — cream background with green + gold accents -->
+  <div class="card" data-choice="b" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div class="sp-card-img" style="background: linear-gradient(160deg, #F3EFE8 0%, #e8e2d6 100%);">
+        <div style="color: #0F3D2E; font-size: 20px; font-weight: bold; text-align: center; margin-bottom: 2px;">🌿 نخلسپا</div>
+        <div class="sp-label" style="color: #A8873A; text-align:center; margin-bottom: 8px;">مرکز آرامش و سلامت</div>
+        <div class="sp-hero" style="background: rgba(79,111,82,0.12); border: 1px solid rgba(79,111,82,0.25); color: #1F5E46;">تصویر روشن و آرامش‌بخش</div>
+        <div class="sp-btn" style="background: #1F5E46; color: #F3EFE8; border-radius: 24px;">رزرو آنلاین</div>
+        <div class="sp-chips">
+          <div class="sp-chip" style="background: #fff; border: 1px solid #4F6F52; color: #0F3D2E; box-shadow: 0 1px 3px rgba(0,0,0,0.08);">ماساژ درمانی</div>
+          <div class="sp-chip" style="background: #fff; border: 1px solid #4F6F52; color: #0F3D2E; box-shadow: 0 1px 3px rgba(0,0,0,0.08);">ماساژ آرامش‌بخش</div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>B — خاک گرم (Warm Earth)</h3>
+      <p>زمینه کرم روشن با سبزهای طبیعی و طلایی. حس آرامش، صداقت و طبیعی بودن. قابل دسترس برای همه مشتریان.</p>
+    </div>
+  </div>
+
+  <!-- Option C: Dual-tone — split dark/light with strong contrast -->
+  <div class="card" data-choice="c" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div class="sp-card-img" style="background: #0F3D2E; position: relative; overflow: hidden;">
+        <div style="position: absolute; bottom: 0; left: 0; right: 0; height: 45%; background: #F3EFE8; border-radius: 12px 12px 0 0;"></div>
+        <div style="position: relative; z-index:1;">
+          <div style="color: #F3EFE8; font-size: 18px; font-weight: bold; text-align: center; margin-bottom: 2px; letter-spacing: 3px;">نخل سپا</div>
+          <div class="sp-label" style="color: #C6A55B; text-align:center; margin-bottom: 8px;">SPA & WELLNESS</div>
+          <div class="sp-hero" style="background: rgba(243,239,232,0.08); border: 1px solid rgba(243,239,232,0.2); color: #F3EFE8; margin-bottom: 4px;">ویدیو / تصویر fullscreen</div>
+        </div>
+        <div style="position: relative; z-index:1; padding: 4px 0 0 0;">
+          <div class="sp-btn" style="background: #C6A55B; color: #0F3D2E; margin-bottom: 4px;">رزرو نوبت ←</div>
+          <div class="sp-chips">
+            <div class="sp-chip" style="background: #1F5E46; color: #F3EFE8; border-radius: 3px;">ماساژ درمانی</div>
+            <div class="sp-chip" style="background: #1F5E46; color: #F3EFE8; border-radius: 3px;">ماساژ آرامش‌بخش</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>C — دو بخشی (Split Tone)</h3>
+      <p>Hero تیره سبز با کارت‌های روشن پایین. کنتراست قوی، مدرن و جذاب. حس برند بین‌المللی با هویت ایرانی.</p>
+    </div>
+  </div>
+
+</div>
+
+<div style="margin-top: 20px; padding: 12px; background: rgba(198,165,91,0.1); border-radius: 8px; direction: rtl; font-size: 11px; color: #555;">
+  <strong>پالت رنگی برند:</strong>
+  <div style="display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px;">
+    <div style="display:flex;align-items:center;gap:3px;"><div style="width:16px;height:16px;border-radius:3px;background:#0F3D2E;border:1px solid #ccc"></div><span>#0F3D2E</span></div>
+    <div style="display:flex;align-items:center;gap:3px;"><div style="width:16px;height:16px;border-radius:3px;background:#1F5E46;border:1px solid #ccc"></div><span>#1F5E46</span></div>
+    <div style="display:flex;align-items:center;gap:3px;"><div style="width:16px;height:16px;border-radius:3px;background:#4F6F52;border:1px solid #ccc"></div><span>#4F6F52</span></div>
+    <div style="display:flex;align-items:center;gap:3px;"><div style="width:16px;height:16px;border-radius:3px;background:#C6A55B;border:1px solid #ccc"></div><span>#C6A55B</span></div>
+    <div style="display:flex;align-items:center;gap:3px;"><div style="width:16px;height:16px;border-radius:3px;background:#A8873A;border:1px solid #ccc"></div><span>#A8873A</span></div>
+    <div style="display:flex;align-items:center;gap:3px;"><div style="width:16px;height:16px;border-radius:3px;background:#8C6A2F;border:1px solid #ccc"></div><span>#8C6A2F</span></div>
+    <div style="display:flex;align-items:center;gap:3px;"><div style="width:16px;height:16px;border-radius:3px;background:#3B2416;border:1px solid #ccc"></div><span>#3B2416</span></div>
+    <div style="display:flex;align-items:center;gap:3px;"><div style="width:16px;height:16px;border-radius:3px;background:#4A2F1E;border:1px solid #ccc"></div><span>#4A2F1E</span></div>
+    <div style="display:flex;align-items:center;gap:3px;"><div style="width:16px;height:16px;border-radius:3px;background:#F3EFE8;border:1px solid #ccc"></div><span>#F3EFE8</span></div>
+    <div style="display:flex;align-items:center;gap:3px;"><div style="width:16px;height:16px;border-radius:3px;background:#6E7F6A;border:1px solid #ccc"></div><span>#6E7F6A</span></div>
+  </div>
+</div>
