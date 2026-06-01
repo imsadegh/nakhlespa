@@ -13,7 +13,7 @@ export default async function ConfirmPage({ params }: { params: Promise<{ token:
     where: { token },
     include: { service: true },
   })
-  if (!booking || booking.status === BookingStatus.PENDING_PAYMENT) notFound()
+  if (!booking || (booking.status !== BookingStatus.PAID && booking.status !== BookingStatus.CONFIRMED)) notFound()
 
   return (
     <>
@@ -25,7 +25,7 @@ export default async function ConfirmPage({ params }: { params: Promise<{ token:
         <GlassCard className="w-full p-5 mb-8 space-y-3">
           {([
             ['خدمت', booking.service.nameFa],
-            ['تاریخ', booking.date.toLocaleDateString('fa-IR')],
+            ['تاریخ', new Date(booking.date.toISOString().split('T')[0] + 'T12:00:00').toLocaleDateString('fa-IR')],
             ['ساعت', booking.startTime],
             ['نام', booking.customerName],
             ['کد پیگیری', booking.zarinpalRefId ?? '—'],

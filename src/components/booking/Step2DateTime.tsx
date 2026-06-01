@@ -22,13 +22,13 @@ export function Step2DateTime({ state, update, goNext, goBack }: Props) {
 
   useEffect(() => {
     if (!state.date || !state.serviceId) return
+    setSlots([]); update({ startTime: undefined, endTime: undefined })
     setLoading(true)
     fetch(`/api/slots?date=${state.date}&serviceId=${state.serviceId}`)
       .then(r => r.json())
-      .then((data: SlotDTO[]) => { setSlots(data); update({ startTime: undefined, endTime: undefined }) })
+      .then((data: SlotDTO[]) => { setSlots(data) })
       .finally(() => setLoading(false))
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [state.date, state.serviceId])
+  }, [state.date, state.serviceId, update])
 
   return (
     <div>

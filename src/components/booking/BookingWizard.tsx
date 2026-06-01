@@ -1,5 +1,5 @@
 'use client'
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { StepProgress } from './StepProgress'
 import { Step1Service } from './Step1Service'
@@ -23,7 +23,7 @@ export function BookingWizard({ services }: { services: ServiceDTO[] }) {
 
   function goNext() { setDir(1); setStep(s => s + 1) }
   function goBack() { setDir(-1); setStep(s => s - 1) }
-  function update(patch: Partial<WizardState>) { setState(s => ({ ...s, ...patch })) }
+  const update = useCallback((patch: Partial<WizardState>) => setState(s => ({ ...s, ...patch })), [])
 
   const stepProps = { state, update, goNext, goBack, services }
 
