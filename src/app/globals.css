@@ -13,6 +13,12 @@
   --color-cream: #F3EFE8;
   --color-sage: #6E7F6A;
   --color-bg-base: #04100b;
+  --animate-shimmer: shimmer 4s linear infinite;
+}
+
+@keyframes shimmer {
+  0% { background-position: 0% }
+  100% { background-position: 200% }
 }
 
 @layer utilities {
