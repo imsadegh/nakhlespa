@@ -1,3 +1,5 @@
+import { BookingStatus } from '@prisma/client'
+
 export type ServiceDTO = {
   id: string
   nameFa: string
@@ -28,7 +30,7 @@ export type BookingSummary = {
   date: string
   startTime: string
   endTime: string
-  status: string
+  status: BookingStatus
   service: ServiceDTO
   createdAt: string
 }

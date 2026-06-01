@@ -1,8 +1,9 @@
 import { BookingStatus } from '@prisma/client'
 import { prisma } from '@/lib/prisma'
 
-function timeToMinutes(t: string) {
+function timeToMinutes(t: string): number {
   const [h, m] = t.split(':').map(Number)
+  if (isNaN(h) || isNaN(m)) throw new Error(`Invalid time format: "${t}"`)
   return h * 60 + m
 }
 
@@ -11,10 +12,11 @@ function minutesToTime(m: number) {
 }
 
 export async function getAvailableSlots(date: string, durationMinutes: number): Promise<{ startTime: string; endTime: string }[]> {
-  const jsDate = new Date(date)
-  // Iranian week: Saturday=0 ... Friday=6. JS getDay: Sunday=0 ... Saturday=6
+  const [year, month, day] = date.split('-').map(Number)
+  const jsDate = new Date(Date.UTC(year, month - 1, day))
+  // Iranian week: Saturday=0 ... Friday=6. JS getUTCDay: Sunday=0 ... Saturday=6
   const jsDayMap: Record<number, number> = { 6: 0, 0: 1, 1: 2, 2: 3, 3: 4, 4: 5, 5: 6 }
-  const dayOfWeek = jsDayMap[jsDate.getDay()]
+  const dayOfWeek = jsDayMap[jsDate.getUTCDay()]
 
   const workingDay = await prisma.workingHours.findFirst({ where: { dayOfWeek, isOpen: true } })
   if (!workingDay) return []
@@ -23,12 +25,12 @@ export async function getAvailableSlots(date: string, durationMinutes: number): 
   const close = timeToMinutes(workingDay.closeTime)
 
   const existingBookings = await prisma.booking.findMany({
-    where: { date: new Date(date), status: { not: BookingStatus.CANCELLED } },
+    where: { date: jsDate, status: { not: BookingStatus.CANCELLED } },
     select: { startTime: true, endTime: true },
   })
 
   const blocked = await prisma.blockedSlot.findMany({
-    where: { date: new Date(date) },
+    where: { date: jsDate },
     select: { startTime: true, endTime: true },
   })
 

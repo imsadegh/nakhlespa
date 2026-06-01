@@ -5,28 +5,46 @@ const CALLBACK = process.env.ZARINPAL_CALLBACK_URL!
 const BASE = 'https://api.zarinpal.com/pg/v4/payment'
 
 export async function zarinpalRequest(amount: number, description: string, mobile: string) {
-  const { data } = await axios.post(`${BASE}/request.json`, {
-    merchant_id: MERCHANT,
-    amount,
-    description,
-    callback_url: CALLBACK,
-    metadata: { mobile },
-  })
-  if (data.data.code !== 100) throw new Error(`Zarinpal request failed: ${data.errors?.message}`)
+  let res
+  try {
+    res = await axios.post(`${BASE}/request.json`, {
+      merchant_id: MERCHANT,
+      amount,
+      description,
+      callback_url: CALLBACK,
+      metadata: { mobile },
+    })
+  } catch (err: any) {
+    throw new Error(`Zarinpal request network error: ${err?.message}`)
+  }
+  const { data } = res
+  const responseData = data?.data
+  if (!responseData || responseData.code !== 100) {
+    const msg = data?.errors?.message ?? data?.errors?.[0]?.message ?? 'Unknown error'
+    throw new Error(`Zarinpal request failed: ${msg}`)
+  }
   return {
-    authority: data.data.authority as string,
-    paymentUrl: `https://www.zarinpal.com/pg/StartPay/${data.data.authority}`,
+    authority: responseData.authority as string,
+    paymentUrl: `https://www.zarinpal.com/pg/StartPay/${responseData.authority}`,
   }
 }
 
 export async function zarinpalVerify(authority: string, amount: number) {
-  const { data } = await axios.post(`${BASE}/verify.json`, {
-    merchant_id: MERCHANT,
-    amount,
-    authority,
-  })
-  if (data.data.code !== 100 && data.data.code !== 101) {
-    throw new Error(`Zarinpal verify failed: ${data.errors?.message}`)
+  let res
+  try {
+    res = await axios.post(`${BASE}/verify.json`, {
+      merchant_id: MERCHANT,
+      amount,
+      authority,
+    })
+  } catch (err: any) {
+    throw new Error(`Zarinpal verify network error: ${err?.message}`)
   }
-  return { refId: String(data.data.ref_id) }
+  const { data } = res
+  const responseData = data?.data
+  if (!responseData || (responseData.code !== 100 && responseData.code !== 101)) {
+    const msg = data?.errors?.message ?? data?.errors?.[0]?.message ?? 'Unknown error'
+    throw new Error(`Zarinpal verify failed: ${msg}`)
+  }
+  return { refId: String(responseData.ref_id) }
 }
