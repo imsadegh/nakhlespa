@@ -6,6 +6,7 @@ import { HeroSection } from '@/components/home/HeroSection'
 import { ServicesSection } from '@/components/home/ServicesSection'
 import { HowItWorksSection } from '@/components/home/HowItWorksSection'
 import { BookingCtaSection } from '@/components/home/BookingCtaSection'
+import { BookingDialogProvider } from '@/components/booking/BookingDialogProvider'
 
 export default async function HomePage() {
   const services = await prisma.service.findMany({ where: { isActive: true } })
@@ -17,7 +18,7 @@ export default async function HomePage() {
     price: s.price,
   }))
   return (
-    <>
+    <BookingDialogProvider services={serviceDTOs}>
       <AmbientBackground />
       <div className="relative z-10 min-h-screen">
         <Navbar />
@@ -29,6 +30,6 @@ export default async function HomePage() {
         </main>
         <Footer />
       </div>
-    </>
+    </BookingDialogProvider>
   )
 }

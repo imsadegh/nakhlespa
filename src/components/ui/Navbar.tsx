@@ -1,6 +1,6 @@
 import Link from 'next/link'
-import { GoldButton } from './GoldButton'
 import { ThemeToggle } from './ThemeToggle'
+import { NavBookButton } from './NavBookButton'
 
 export function Navbar() {
   return (
@@ -25,9 +25,7 @@ export function Navbar() {
 
       <div className="flex items-center gap-2">
         <ThemeToggle />
-        <Link href="/book">
-          <GoldButton className="text-xs px-3 py-2 sm:px-4 sm:py-2">رزرو</GoldButton>
-        </Link>
+        <NavBookButton />
       </div>
     </nav>
   )

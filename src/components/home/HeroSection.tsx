@@ -1,7 +1,6 @@
 'use client'
 import { motion } from 'framer-motion'
-import Link from 'next/link'
-import { GoldButton } from '@/components/ui/GoldButton'
+import { BookButton } from '@/components/booking/BookButton'
 import { GhostButton } from '@/components/ui/GhostButton'
 import { GlassCard } from '@/components/ui/GlassCard'
 
@@ -38,7 +37,7 @@ export function HeroSection() {
           </motion.p>
 
           <motion.div variants={fadeUp} className="flex gap-3 mb-10 flex-wrap">
-            <Link href="/book"><GoldButton>← رزرو آنلاین</GoldButton></Link>
+            <BookButton>← رزرو آنلاین</BookButton>
             <GhostButton>مشاهده خدمات</GhostButton>
           </motion.div>
         </div>

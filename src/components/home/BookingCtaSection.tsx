@@ -1,8 +1,7 @@
 'use client'
 import { motion } from 'framer-motion'
-import Link from 'next/link'
 import { GlassCard } from '@/components/ui/GlassCard'
-import { GoldButton } from '@/components/ui/GoldButton'
+import { BookButton } from '@/components/booking/BookButton'
 
 export function BookingCtaSection() {
   return (
@@ -21,9 +20,7 @@ export function BookingCtaSection() {
               همین الان نوبت بگیرید — بعد از تأیید، پرداخت آنلاین از طریق زرین‌پال انجام می‌شود.
             </p>
           </div>
-          <Link href="/book" className="block relative flex-shrink-0">
-            <GoldButton className="w-full sm:w-auto text-sm py-4 px-8 rounded-[14px]">← رزرو نوبت آنلاین</GoldButton>
-          </Link>
+          <BookButton className="w-full sm:w-auto text-sm py-4 px-8 rounded-[14px] flex-shrink-0">← رزرو نوبت آنلاین</BookButton>
         </div>
       </GlassCard>
     </motion.section>

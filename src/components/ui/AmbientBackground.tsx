@@ -12,7 +12,14 @@ const orbs: Orb[] = [
   { size: 160, colorVar: '--orb-b', top: '55%', right: '40%', opacity: 0.13, duration: 30, delay: -3 },
 ]
 
-type Particle = { x: number; y: number; vx: number; vy: number; r: number; alpha: number; alphaDir: number }
+type Particle = {
+  x: number; y: number
+  vx: number; vy: number
+  baseVy: number           // resting upward drift
+  r: number
+  alpha: number; alphaDir: number
+  burst: boolean           // true = click-spawned, fades out then removed
+}
 
 function ParticleCanvas() {
   const canvasRef = useRef<HTMLCanvasElement>(null)
@@ -26,20 +33,47 @@ function ParticleCanvas() {
     let W = window.innerWidth
     let H = window.innerHeight
     let rafId: number
+    let scrollBoost = 0   // 0–1, decays each frame
+    let lastScrollY = window.scrollY
 
     canvas.width = W
     canvas.height = H
 
     const COUNT = Math.min(Math.floor((W * H) / 14000), 80)
-    const particles: Particle[] = Array.from({ length: COUNT }, () => ({
-      x: Math.random() * W,
-      y: Math.random() * H,
-      vx: (Math.random() - 0.5) * 0.25,
-      vy: -(Math.random() * 0.3 + 0.08),
-      r: Math.random() * 1.8 + 0.4,
-      alpha: Math.random() * 0.35 + 0.08,
-      alphaDir: Math.random() > 0.5 ? 1 : -1,
-    }))
+    const particles: Particle[] = Array.from({ length: COUNT }, () => {
+      const baseVy = -(Math.random() * 0.3 + 0.08)
+      return {
+        x: Math.random() * W,
+        y: Math.random() * H,
+        vx: (Math.random() - 0.5) * 0.25,
+        vy: baseVy,
+        baseVy,
+        r: Math.random() * 1.8 + 0.4,
+        alpha: Math.random() * 0.35 + 0.08,
+        alphaDir: Math.random() > 0.5 ? 1 : -1,
+        burst: false,
+      }
+    })
+
+    // Spawn burst particles at click point
+    function spawnBurst(cx: number, cy: number) {
+      const count = 18
+      for (let i = 0; i < count; i++) {
+        const angle = (i / count) * Math.PI * 2 + Math.random() * 0.3
+        const speed = Math.random() * 2.5 + 0.8
+        particles.push({
+          x: cx,
+          y: cy,
+          vx: Math.cos(angle) * speed,
+          vy: Math.sin(angle) * speed,
+          baseVy: 0,
+          r: Math.random() * 2.2 + 0.6,
+          alpha: Math.random() * 0.5 + 0.25,
+          alphaDir: -1,  // always fading out
+          burst: true,
+        })
+      }
+    }
 
     const onResize = () => {
       W = window.innerWidth
@@ -47,7 +81,18 @@ function ParticleCanvas() {
       canvas.width = W
       canvas.height = H
     }
+
+    const onScroll = () => {
+      const delta = Math.abs(window.scrollY - lastScrollY)
+      scrollBoost = Math.min(1, scrollBoost + delta * 0.012)
+      lastScrollY = window.scrollY
+    }
+
+    const onClick = (e: MouseEvent) => spawnBurst(e.clientX, e.clientY)
+
     window.addEventListener('resize', onResize)
+    window.addEventListener('scroll', onScroll, { passive: true })
+    window.addEventListener('click', onClick)
 
     function isLightTheme() {
       const attr = document.documentElement.getAttribute('data-theme')
@@ -58,15 +103,33 @@ function ParticleCanvas() {
 
     function draw() {
       ctx!.clearRect(0, 0, W, H)
+
+      // Decay scroll boost
+      scrollBoost = Math.max(0, scrollBoost - 0.018)
+      const speedMul = 1 + scrollBoost * 3.5
+
       const light = isLightTheme()
-      for (const p of particles) {
-        p.x += p.vx
-        p.y += p.vy
-        p.alpha += p.alphaDir * 0.0015
-        if (p.alpha > 0.45 || p.alpha < 0.05) p.alphaDir *= -1
-        if (p.y < -10) { p.y = H + 10; p.x = Math.random() * W }
-        if (p.x < -10) p.x = W + 10
-        if (p.x > W + 10) p.x = -10
+
+      for (let i = particles.length - 1; i >= 0; i--) {
+        const p = particles[i]
+
+        if (p.burst) {
+          p.x += p.vx
+          p.y += p.vy
+          p.vx *= 0.96
+          p.vy *= 0.96
+          p.alpha -= 0.012
+          if (p.alpha <= 0) { particles.splice(i, 1); continue }
+        } else {
+          p.vy = p.baseVy * speedMul
+          p.x += p.vx
+          p.y += p.vy
+          p.alpha += p.alphaDir * 0.0015
+          if (p.alpha > 0.45 || p.alpha < 0.05) p.alphaDir *= -1
+          if (p.y < -10) { p.y = H + 10; p.x = Math.random() * W }
+          if (p.x < -10) p.x = W + 10
+          if (p.x > W + 10) p.x = -10
+        }
 
         ctx!.beginPath()
         ctx!.arc(p.x, p.y, p.r, 0, Math.PI * 2)
@@ -75,6 +138,7 @@ function ParticleCanvas() {
           : `rgba(198,165,91,${p.alpha})`
         ctx!.fill()
       }
+
       rafId = requestAnimationFrame(draw)
     }
 
@@ -82,6 +146,8 @@ function ParticleCanvas() {
     return () => {
       cancelAnimationFrame(rafId)
       window.removeEventListener('resize', onResize)
+      window.removeEventListener('scroll', onScroll)
+      window.removeEventListener('click', onClick)
     }
   }, [])
 
@@ -127,7 +193,7 @@ export function AmbientBackground() {
         />
       ))}
 
-      {/* Floating particles */}
+      {/* Floating particles — reactive to scroll and click */}
       <ParticleCanvas />
     </div>
   )
