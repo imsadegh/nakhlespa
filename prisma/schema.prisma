@@ -1,0 +1,88 @@
+// prisma/schema.prisma
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Service {
+  id              String    @id @default(uuid())
+  nameFa          String
+  descriptionFa   String?
+  durationMinutes Int
+  price           Int
+  isActive        Boolean   @default(true)
+  createdAt       DateTime  @default(now())
+  bookings        Booking[]
+
+  @@map("services")
+}
+
+model WorkingHours {
+  id          String   @id @default(uuid())
+  dayOfWeek   Int
+  openTime    String
+  closeTime   String
+  isOpen      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+
+  @@map("working_hours")
+}
+
+model BlockedSlot {
+  id        String   @id @default(uuid())
+  date      DateTime @db.Date
+  startTime String
+  endTime   String
+  reason    String?
+  createdAt DateTime @default(now())
+
+  @@map("blocked_slots")
+}
+
+model Booking {
+  id                 String        @id @default(uuid())
+  token              String        @unique @default(uuid())
+  service            Service       @relation(fields: [serviceId], references: [id])
+  serviceId          String
+  customerName       String
+  customerPhone      String
+  customerNotes      String?
+  date               DateTime      @db.Date
+  startTime          String
+  endTime            String
+  status             BookingStatus @default(PENDING_PAYMENT)
+  zarinpalAuthority  String?
+  zarinpalRefId      String?
+  createdAt          DateTime      @default(now())
+  smsReminders       SmsReminder[]
+
+  @@map("bookings")
+}
+
+enum BookingStatus {
+  PENDING_PAYMENT
+  PAID
+  CONFIRMED
+  CANCELLED
+}
+
+model SmsReminder {
+  id        String            @id @default(uuid())
+  booking   Booking           @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  bookingId String
+  sendAt    DateTime
+  status    SmsReminderStatus @default(PENDING)
+  sentAt    DateTime?
+  createdAt DateTime          @default(now())
+
+  @@map("sms_reminders")
+}
+
+enum SmsReminderStatus {
+  PENDING
+  SENT
+  FAILED
+}
