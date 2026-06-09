@@ -4,7 +4,7 @@ import { NavBookButton } from './NavBookButton'
 
 export function Navbar() {
   return (
-    {/* gradient haze — bleeds below the pill to lift it off the page */}
+    <>
     <div className="fixed top-0 inset-x-0 h-28 pointer-events-none"
       style={{ zIndex: 49, background: 'linear-gradient(to bottom, var(--bg-base) 0%, transparent 100%)' }} />
     <div className="fixed top-0 inset-x-0 z-50 flex justify-center px-4 pt-3 pointer-events-none">
@@ -37,5 +37,6 @@ export function Navbar() {
       </div>
     </nav>
     </div>
+    </>
   )
 }
