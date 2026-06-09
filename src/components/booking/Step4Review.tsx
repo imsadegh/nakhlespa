@@ -38,8 +38,8 @@ export function Step4Review({ state, goBack, services }: Props) {
         {([
           ['خدمت', service?.nameFa ?? '—'],
           ['تاریخ', state.date ? new Date(state.date).toLocaleDateString('fa-IR') : '—'],
-          ['ساعت', state.startTime ?? '—'],
-          ['مدت', service ? `${service.durationMinutes} دقیقه` : '—'],
+          ['ساعت', state.startTime ? state.startTime.replace(/\d/g, d => '۰۱۲۳۴۵۶۷۸۹'[+d]) : '—'],
+          ['مدت', service ? `${service.durationMinutes.toLocaleString('fa-IR')} دقیقه` : '—'],
           ['نام', state.customerName ?? '—'],
           ['موبایل', state.customerPhone ?? '—'],
           ['مبلغ', service ? `${service.price.toLocaleString('fa-IR')} تومان` : '—'],
