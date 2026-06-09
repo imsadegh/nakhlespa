@@ -52,7 +52,12 @@ export function Step2DateTime({ state, update, goNext, goBack }: Props) {
             return (
               <button key={d} type="button" onClick={() => update({ date: d })}
                 className={`flex-shrink-0 px-4 py-2.5 rounded-xl text-xs transition-all ${selected ? 'bg-[#C6A55B] text-[#0F3D2E] font-bold shadow-[0_4px_16px_rgba(198,165,91,0.4)]' : ''}`}
-                style={selected ? {} : { color: 'var(--text-muted)', background: 'var(--bg-surface)', border: '1px solid transparent' }}>
+                style={selected ? {} : {
+                  color: 'var(--text-muted)',
+                  background: 'var(--bg-surface)',
+                  border: '1px solid var(--border-base)',
+                  boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.18)',
+                }}>
                 {label}
               </button>
             )
@@ -77,7 +82,12 @@ export function Step2DateTime({ state, update, goNext, goBack }: Props) {
                     variants={{ hidden: { opacity: 0, scale: 0.85 }, show: { opacity: 1, scale: 1 } }}
                     onClick={() => update({ startTime: slot.startTime, endTime: slot.endTime })}
                     className={`px-4 py-2 rounded-xl text-xs transition-all ${selected ? 'bg-[#C6A55B] text-[#0F3D2E] font-bold shadow-[0_4px_16px_rgba(198,165,91,0.35)]' : ''}`}
-                    style={selected ? {} : { color: 'var(--text-muted)', background: 'var(--bg-surface)', border: '1px solid transparent' }}>
+                    style={selected ? {} : {
+                      color: 'var(--text-muted)',
+                      background: 'var(--bg-surface)',
+                      border: '1px solid var(--border-base)',
+                      boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.18)',
+                    }}>
                     {toFaTime(slot.startTime)}
                   </motion.button>
                 )
