@@ -5,15 +5,15 @@ import { NavBookButton } from './NavBookButton'
 export function Navbar() {
   return (
     <>
-    <div className="fixed top-0 inset-x-0 h-28 pointer-events-none"
-      style={{ zIndex: 49, background: 'linear-gradient(to bottom, var(--bg-base) 0%, transparent 100%)' }} />
-    <div className="fixed top-0 inset-x-0 z-50 flex justify-center px-4 pt-3 pointer-events-none">
+    <div className="fixed top-0 inset-x-0 h-20 pointer-events-none"
+      style={{ zIndex: 49, background: 'linear-gradient(to bottom, color-mix(in srgb, var(--bg-base) 85%, transparent) 0%, transparent 100%)' }} />
+    <div className="fixed top-0 inset-x-0 z-50 flex justify-center px-3 sm:px-6 pt-3 pointer-events-none">
     <nav className="w-full max-w-screen-xl flex items-center justify-between px-5 sm:px-7 py-3
       rounded-2xl pointer-events-auto
-      backdrop-blur-[48px] saturate-150
-      border shadow-[0_8px_32px_rgba(0,0,0,0.18),inset_0_1px_0_rgba(255,255,255,0.18)]"
+      backdrop-blur-[56px] saturate-150
+      border shadow-[0_4px_24px_rgba(0,0,0,0.10),0_1px_4px_rgba(0,0,0,0.06),inset_0_1px_0_rgba(255,255,255,0.20)]"
       style={{
-        backgroundColor: 'color-mix(in srgb, var(--bg-base) 72%, transparent)',
+        backgroundColor: 'color-mix(in srgb, var(--bg-base) 65%, transparent)',
         borderColor: 'var(--border-base)',
       }}>
 
