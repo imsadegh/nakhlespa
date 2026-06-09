@@ -25,8 +25,8 @@ export function AdminSidebar() {
   }
 
   return (
-    <aside className="w-48 p-4 flex flex-col gap-2 border-l" style={{ borderColor: 'var(--border-base)' }}>
-      <div className="text-sm font-bold mb-4 px-2" style={{ color: 'var(--text-primary)' }}>
+    <aside className="w-48 p-4 flex flex-col gap-2 border-l border-border">
+      <div className="text-sm font-bold mb-4 px-2 text-foreground">
         نخل<span className="text-[#C6A55B]">سپا</span>
       </div>
       {links.map(l => (
@@ -35,9 +35,8 @@ export function AdminSidebar() {
             'flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs transition-all',
             path === l.href || path.startsWith(l.href + '/')
               ? 'glass-gold text-[#C6A55B]'
-              : 'hover:bg-white/[0.05]'
+              : 'text-muted-foreground hover:bg-white/[0.05]'
           )}
-          style={path === l.href || path.startsWith(l.href + '/') ? {} : { color: 'var(--text-muted)' }}
         >
           <span>{l.icon}</span>{l.label}
         </Link>
@@ -45,8 +44,7 @@ export function AdminSidebar() {
       <div className="flex-1" />
       <button
         onClick={handleLogout}
-        className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs transition-all hover:bg-white/[0.05]"
-        style={{ color: 'var(--text-muted)' }}
+        className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs transition-all text-muted-foreground hover:bg-white/[0.05]"
       >
         <span>🚪</span>خروج
       </button>

@@ -1,8 +1,7 @@
 'use client'
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { GoldButton } from '@/components/ui/GoldButton'
-import { GhostButton } from '@/components/ui/GhostButton'
+import { Button } from '@/components/ui/button'
 import { BookingStatus } from '@prisma/client'
 
 export function BookingActions({ bookingId, currentStatus }: { bookingId: string; currentStatus: BookingStatus }) {
@@ -33,17 +32,17 @@ export function BookingActions({ bookingId, currentStatus }: { bookingId: string
 
   return (
     <div className="flex flex-col gap-3">
-      {error && <p className="text-red-400 text-xs text-center">{error}</p>}
+      {error && <p className="text-destructive text-xs text-center">{error}</p>}
       <div className="flex gap-3">
         {currentStatus !== BookingStatus.CONFIRMED && currentStatus !== BookingStatus.CANCELLED && (
-          <GoldButton disabled={loading} onClick={() => updateStatus(BookingStatus.CONFIRMED)} className="flex-1">
+          <Button variant="gold" disabled={loading} onClick={() => updateStatus(BookingStatus.CONFIRMED)} className="flex-1 rounded-xl">
             تأیید رزرو
-          </GoldButton>
+          </Button>
         )}
         {currentStatus !== BookingStatus.CANCELLED && (
-          <GhostButton disabled={loading} onClick={() => updateStatus(BookingStatus.CANCELLED)} className="flex-1 text-red-400">
+          <Button variant="ghost" disabled={loading} onClick={() => updateStatus(BookingStatus.CANCELLED)} className="flex-1 rounded-xl text-destructive hover:text-destructive">
             لغو رزرو
-          </GhostButton>
+          </Button>
         )}
       </div>
     </div>
