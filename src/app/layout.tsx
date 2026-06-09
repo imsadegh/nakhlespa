@@ -17,7 +17,7 @@ export const metadata: Metadata = {
 }
 
 // This script is a hardcoded string with no user input — safe from XSS
-const themeInitScript = `(function(){var t=localStorage.getItem('theme');if(t&&t!=='auto')document.documentElement.setAttribute('data-theme',t)})()`
+const themeInitScript = `(function(){var t=localStorage.getItem('theme');var prefersDark=window.matchMedia('(prefers-color-scheme: dark)').matches;var isDark=t==='dark'||((!t||t==='auto')&&prefersDark);if(t&&t!=='auto')document.documentElement.setAttribute('data-theme',t);if(isDark)document.documentElement.classList.add('dark')})()`
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (

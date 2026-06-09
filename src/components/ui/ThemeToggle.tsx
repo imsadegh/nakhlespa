@@ -35,11 +35,17 @@ function ThemeIcon({ theme }: { theme: Theme }) {
 }
 
 function applyTheme(t: Theme) {
+  const isDark =
+    t === 'dark' ||
+    (t === 'auto' && window.matchMedia('(prefers-color-scheme: dark)').matches)
+
   if (t === 'auto') {
     document.documentElement.removeAttribute('data-theme')
   } else {
     document.documentElement.setAttribute('data-theme', t)
   }
+
+  document.documentElement.classList.toggle('dark', isDark)
 }
 
 export function ThemeToggle() {
