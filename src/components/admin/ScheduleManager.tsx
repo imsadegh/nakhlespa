@@ -66,25 +66,21 @@ export function ScheduleManager({ hours, blocks }: { hours: Hour[]; blocks: Bloc
         {localHours.map((h, i) => (
           <GlassCard key={h.id} className="flex items-center gap-3 p-3">
             <span className="text-xs w-16 flex-shrink-0" style={{ color: 'var(--text-muted)' }}>{DAY_NAMES[h.dayOfWeek]}</span>
-            <input id={`open-${h.id}`} type="time" value={h.openTime}
-              onChange={e => { const next = [...localHours]; next[i] = { ...h, openTime: e.target.value }; setLocalHours(next) }}
-              className="sr-only" />
-            <button type="button"
-              onClick={() => document.getElementById(`open-${h.id}`)?.showPicker?.()}
-              className={`${inputClass} min-w-[64px] text-center cursor-pointer`}
-              style={{ color: 'var(--text-primary)' }}>
-              {toFaTime(h.openTime || '00:00')}
-            </button>
+            {/* open time — transparent input sits over Persian label */}
+            <div className={`${inputClass} relative min-w-[64px] text-center`}>
+              <span style={{ color: 'var(--text-primary)' }}>{toFaTime(h.openTime || '00:00')}</span>
+              <input type="time" value={h.openTime}
+                onChange={e => { const next = [...localHours]; next[i] = { ...h, openTime: e.target.value }; setLocalHours(next) }}
+                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" />
+            </div>
             <span className="text-xs" style={{ color: 'var(--text-faint)' }}>تا</span>
-            <input id={`close-${h.id}`} type="time" value={h.closeTime}
-              onChange={e => { const next = [...localHours]; next[i] = { ...h, closeTime: e.target.value }; setLocalHours(next) }}
-              className="sr-only" />
-            <button type="button"
-              onClick={() => document.getElementById(`close-${h.id}`)?.showPicker?.()}
-              className={`${inputClass} min-w-[64px] text-center cursor-pointer`}
-              style={{ color: 'var(--text-primary)' }}>
-              {toFaTime(h.closeTime || '00:00')}
-            </button>
+            {/* close time */}
+            <div className={`${inputClass} relative min-w-[64px] text-center`}>
+              <span style={{ color: 'var(--text-primary)' }}>{toFaTime(h.closeTime || '00:00')}</span>
+              <input type="time" value={h.closeTime}
+                onChange={e => { const next = [...localHours]; next[i] = { ...h, closeTime: e.target.value }; setLocalHours(next) }}
+                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" />
+            </div>
             <button type="button"
               onClick={() => { const next = [...localHours]; next[i] = { ...h, isOpen: !h.isOpen }; setLocalHours(next) }}
               className={`text-[9px] px-2 py-1 rounded-full transition-all ${h.isOpen ? 'bg-[rgba(31,94,70,0.3)] text-[#4F6F52]' : 'bg-white/[0.08]'}`}
@@ -98,39 +94,33 @@ export function ScheduleManager({ hours, blocks }: { hours: Hour[]; blocks: Bloc
 
       <h2 className="text-sm mb-3" style={{ color: 'var(--text-muted)' }}>مسدود کردن زمان</h2>
       <GlassCard className="p-4 mb-4 flex flex-col gap-3">
-        {/* Date picker — shown via hidden native input, display as Jalali */}
-        <div className="relative">
-          <input id="block-date" type="date" value={newBlock.date}
-            onChange={e => setNewBlock(b => ({ ...b, date: e.target.value }))}
-            className="sr-only" />
-          <button type="button" onClick={() => document.getElementById('block-date')?.showPicker?.()}
-            className={`${inputClass} w-full text-right`}
-            style={{ color: newBlock.date ? 'var(--text-primary)' : 'var(--text-faint)' }}>
+        {/* Date — transparent input over Jalali display text */}
+        <div className={`${inputClass} relative w-full`}>
+          <span style={{ color: newBlock.date ? 'var(--text-primary)' : 'var(--text-faint)' }}>
             {newBlock.date ? gregToFaDate(newBlock.date) : 'انتخاب تاریخ'}
-          </button>
+          </span>
+          <input type="date" value={newBlock.date}
+            onChange={e => setNewBlock(b => ({ ...b, date: e.target.value }))}
+            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" />
         </div>
         <div className="flex gap-2">
           {/* Start time */}
-          <div className="relative flex-1">
-            <input id="block-start" type="time" value={newBlock.startTime}
-              onChange={e => setNewBlock(b => ({ ...b, startTime: e.target.value }))}
-              className="sr-only" />
-            <button type="button" onClick={() => document.getElementById('block-start')?.showPicker?.()}
-              className={`${inputClass} w-full text-center`}
-              style={{ color: newBlock.startTime ? 'var(--text-primary)' : 'var(--text-faint)' }}>
+          <div className={`${inputClass} relative flex-1 text-center`}>
+            <span style={{ color: newBlock.startTime ? 'var(--text-primary)' : 'var(--text-faint)' }}>
               {newBlock.startTime ? toFaTime(newBlock.startTime) : 'از ساعت'}
-            </button>
+            </span>
+            <input type="time" value={newBlock.startTime}
+              onChange={e => setNewBlock(b => ({ ...b, startTime: e.target.value }))}
+              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" />
           </div>
           {/* End time */}
-          <div className="relative flex-1">
-            <input id="block-end" type="time" value={newBlock.endTime}
-              onChange={e => setNewBlock(b => ({ ...b, endTime: e.target.value }))}
-              className="sr-only" />
-            <button type="button" onClick={() => document.getElementById('block-end')?.showPicker?.()}
-              className={`${inputClass} w-full text-center`}
-              style={{ color: newBlock.endTime ? 'var(--text-primary)' : 'var(--text-faint)' }}>
+          <div className={`${inputClass} relative flex-1 text-center`}>
+            <span style={{ color: newBlock.endTime ? 'var(--text-primary)' : 'var(--text-faint)' }}>
               {newBlock.endTime ? toFaTime(newBlock.endTime) : 'تا ساعت'}
-            </button>
+            </span>
+            <input type="time" value={newBlock.endTime}
+              onChange={e => setNewBlock(b => ({ ...b, endTime: e.target.value }))}
+              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" />
           </div>
         </div>
         <input value={newBlock.reason} onChange={e => setNewBlock(b => ({ ...b, reason: e.target.value }))}

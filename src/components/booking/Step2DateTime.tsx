@@ -47,7 +47,8 @@ export function Step2DateTime({ state, update, goNext, goBack }: Props) {
           style={{ background: 'linear-gradient(to right, var(--bg-base), transparent)' }} />
         <div className="flex gap-2 overflow-x-auto pb-3" style={{ scrollbarWidth: 'none' }}>
           {dates.map(d => {
-            const label = new Date(d).toLocaleDateString('fa-IR', { month: 'short', day: 'numeric' })
+            const [y, mo, day] = d.split('-').map(Number)
+            const label = new Date(y, mo - 1, day).toLocaleDateString('fa-IR', { month: 'short', day: 'numeric' })
             const selected = state.date === d
             return (
               <button key={d} type="button" onClick={() => update({ date: d })}
