@@ -3,7 +3,7 @@
 @import "../styles/typography.css";
 @import "tw-animate-css";
 
-@custom-variant dark (&:is(.dark *));
+@custom-variant dark (:root:not([data-theme="light"]) &);
 
 @theme {
   --font-vazir: var(--font-vazir);
@@ -84,39 +84,6 @@
   --orb-c: #1F5E46;
 }
 
-.dark {
-  --background: oklch(0.12 0.03 160);
-  --foreground: oklch(0.95 0.01 80);
-  --card: oklch(0.15 0.02 160);
-  --card-foreground: oklch(0.95 0.01 80);
-  --popover: oklch(0.15 0.02 160);
-  --popover-foreground: oklch(0.95 0.01 80);
-  --primary: oklch(0.72 0.10 75);
-  --primary-foreground: oklch(0.22 0.05 160);
-  --secondary: oklch(0.35 0.08 160);
-  --secondary-foreground: oklch(0.95 0.01 80);
-  --muted: oklch(0.20 0.02 160);
-  --muted-foreground: oklch(0.65 0.02 80);
-  --accent: oklch(0.72 0.10 75);
-  --accent-foreground: oklch(0.22 0.05 160);
-  --destructive: oklch(0.63 0.22 25);
-  --destructive-foreground: oklch(0.98 0 0);
-  --border: oklch(0.28 0.02 160);
-  --input: oklch(0.28 0.02 160);
-  --ring: oklch(0.72 0.10 75);
-
-  --bg-base:      #04100b;
-  --bg-surface:   rgba(255,255,255,0.07);
-  --border-base:  rgba(255,255,255,0.15);
-  --text-primary: #F3EFE8;
-  --text-muted:   rgba(243,239,232,0.50);
-  --text-faint:   rgba(243,239,232,0.28);
-  --glass-bg:     rgba(255,255,255,0.07);
-  --glass-gold-bg: rgba(198,165,91,0.10);
-  --orb-a: #0F3D2E;
-  --orb-b: #C6A55B;
-  --orb-c: #1F5E46;
-}
 
 [data-theme="light"] {
   --background: oklch(0.94 0.02 75);
@@ -225,9 +192,9 @@ body {
       0 2px 8px rgba(0,0,0,0.12);
   }
 
-  .text-primary  { color: var(--text-primary) !important; }
-  .text-muted    { color: var(--text-muted) !important; }
-  .text-faint    { color: var(--text-faint) !important; }
+  .text-site-primary  { color: var(--text-primary) !important; }
+  .text-site-muted    { color: var(--text-muted) !important; }
+  .text-site-faint    { color: var(--text-faint) !important; }
 }
 
 @layer base {
