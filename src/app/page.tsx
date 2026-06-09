@@ -22,7 +22,7 @@ export default async function HomePage() {
       <AmbientBackground />
       <div className="relative z-10 min-h-screen">
         <Navbar />
-        <main className="mx-auto w-full max-w-screen-xl">
+        <main className="mx-auto w-full max-w-screen-xl pt-20">
           <HeroSection />
           <ServicesSection services={serviceDTOs} />
           <HowItWorksSection />
