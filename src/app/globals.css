@@ -1,5 +1,6 @@
 /* src/app/globals.css */
 @import "tailwindcss";
+@import "../styles/typography.css";
 
 @theme {
   --font-vazir: var(--font-vazir);
@@ -63,7 +64,6 @@
 }
 
 body {
-  font-family: var(--font-vazir), 'Vazirmatn', sans-serif;
   background-color: var(--bg-base);
   color: var(--text-primary);
   transition: background-color 0.3s ease, color 0.3s ease;

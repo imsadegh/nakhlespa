@@ -1,0 +1,86 @@
+/* ─────────────────────────────────────────────────────────────────
+   TYPOGRAPHY CONTROL FILE
+   Change fonts and sizes here — everything else inherits.
+   ───────────────────────────────────────────────────────────────── */
+
+@theme {
+  /* ── Font families ──────────────────────────────────────────────
+     To swap a font:
+       1. Import it in src/app/layout.tsx via next/font/google
+       2. Set its CSS variable name here (e.g. var(--font-your-font))
+     ──────────────────────────────────────────────────────────────── */
+  --font-heading: var(--font-vazir), 'Vazirmatn', sans-serif;
+  --font-body:    var(--font-vazir), 'Vazirmatn', sans-serif;
+  --font-ui:      var(--font-vazir), 'Vazirmatn', sans-serif;
+  --font-mono:    ui-monospace, 'Menlo', monospace;
+
+  /* ── Base scale (rem) ───────────────────────────────────────────
+     All type scales below are defined relative to these.
+     Increase --font-base to scale everything up proportionally.
+     Current value: 1.2rem = 19.2px (20% larger than browser 16px default)
+     ──────────────────────────────────────────────────────────────── */
+  --font-base: 1.2rem;
+
+  /* ── Type scale ─────────────────────────────────────────────────
+     Named steps — use these as CSS vars throughout the app.
+     ──────────────────────────────────────────────────────────────── */
+  --text-xs:   calc(var(--font-base) * 0.694);   /* ~13.3px */
+  --text-sm:   calc(var(--font-base) * 0.833);   /* ~16px   */
+  --text-base: var(--font-base);                 /* ~19.2px */
+  --text-md:   calc(var(--font-base) * 1.125);   /* ~21.6px */
+  --text-lg:   calc(var(--font-base) * 1.333);   /* ~25.6px */
+  --text-xl:   calc(var(--font-base) * 1.667);   /* ~32px   */
+  --text-2xl:  calc(var(--font-base) * 2.083);   /* ~40px   */
+  --text-3xl:  calc(var(--font-base) * 2.5);     /* ~48px   */
+
+  /* ── Line heights ───────────────────────────────────────────────*/
+  --leading-tight:  1.25;
+  --leading-snug:   1.4;
+  --leading-normal: 1.6;
+  --leading-loose:  1.8;
+
+  /* ── Font weights ───────────────────────────────────────────────*/
+  --weight-light:   300;
+  --weight-normal:  400;
+  --weight-medium:  500;
+  --weight-semibold: 600;
+  --weight-bold:    700;
+}
+
+/* ── Apply base size to root ────────────────────────────────────── */
+:root {
+  font-size: var(--font-base);
+}
+
+/* ── Semantic element defaults ──────────────────────────────────── */
+body {
+  font-family: var(--font-body);
+  font-size: 1rem;           /* = var(--font-base) */
+  line-height: var(--leading-normal);
+  font-weight: var(--weight-normal);
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-heading);
+  line-height: var(--leading-tight);
+  font-weight: var(--weight-bold);
+}
+
+h1 { font-size: var(--text-3xl); }
+h2 { font-size: var(--text-2xl); }
+h3 { font-size: var(--text-xl);  }
+h4 { font-size: var(--text-lg);  }
+h5 { font-size: var(--text-md);  }
+h6 { font-size: var(--text-base);}
+
+p, li, span {
+  font-family: var(--font-body);
+}
+
+input, button, select, textarea {
+  font-family: var(--font-ui);
+}
+
+code, pre, kbd {
+  font-family: var(--font-mono);
+}
