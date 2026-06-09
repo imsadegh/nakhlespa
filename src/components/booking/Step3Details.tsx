@@ -1,6 +1,8 @@
 'use client'
 import { GoldButton } from '@/components/ui/GoldButton'
 import { GhostButton } from '@/components/ui/GhostButton'
+import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
 import type { WizardState } from './BookingWizard'
 
 type Props = { state: WizardState; update: (p: Partial<WizardState>) => void; goNext: () => void; goBack: () => void }
@@ -8,30 +10,25 @@ type Props = { state: WizardState; update: (p: Partial<WizardState>) => void; go
 export function Step3Details({ state, update, goNext, goBack }: Props) {
   return (
     <div>
-      <h2 className="text-xl font-light mb-1" style={{ color: 'var(--text-primary)' }}>اطلاعات شما</h2>
-      <p className="text-xs mb-6 font-light" style={{ color: 'var(--text-muted)' }}>لطفاً اطلاعات تماس را وارد کنید</p>
+      <h2 className="text-xl font-light mb-1 text-foreground">اطلاعات شما</h2>
+      <p className="text-xs mb-6 font-light text-muted-foreground">لطفاً اطلاعات تماس را وارد کنید</p>
       <div className="flex flex-col gap-3 mb-8">
-        <input
-          className="w-full glass rounded-xl px-4 py-3 text-sm bg-transparent outline-none focus:ring-1 focus:ring-[rgba(198,165,91,0.4)] transition-all"
-          style={{ color: 'var(--text-primary)' }}
+        <Input
           placeholder="نام و نام خانوادگی *"
           value={state.customerName ?? ''}
           onChange={e => update({ customerName: e.target.value })}
         />
-        <input
-          className="w-full glass rounded-xl px-4 py-3 text-sm bg-transparent outline-none focus:ring-1 focus:ring-[rgba(198,165,91,0.4)] transition-all"
-          style={{ color: 'var(--text-primary)' }}
+        <Input
           placeholder="شماره موبایل *"
           type="tel"
           value={state.customerPhone ?? ''}
           onChange={e => update({ customerPhone: e.target.value })}
         />
-        <textarea
-          className="w-full glass rounded-xl px-4 py-3 text-sm bg-transparent outline-none focus:ring-1 focus:ring-[rgba(198,165,91,0.4)] transition-all resize-none h-24"
-          style={{ color: 'var(--text-primary)' }}
+        <Textarea
           placeholder="توضیحات (اختیاری)"
           value={state.customerNotes ?? ''}
           onChange={e => update({ customerNotes: e.target.value })}
+          className="h-24"
         />
       </div>
       <div className="flex gap-3">

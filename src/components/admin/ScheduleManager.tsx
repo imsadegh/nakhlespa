@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { GlassCard } from '@/components/ui/GlassCard'
 import { GoldButton } from '@/components/ui/GoldButton'
+import { Input } from '@/components/ui/input'
 
 const DAY_NAMES = ['شنبه', 'یکشنبه', 'دوشنبه', 'سه‌شنبه', 'چهارشنبه', 'پنجشنبه', 'جمعه']
 
@@ -56,6 +57,7 @@ export function ScheduleManager({ hours, blocks }: { hours: Hour[]; blocks: Bloc
   }
 
   const inputClass = 'glass rounded-xl px-3 py-2 text-xs bg-transparent outline-none focus:ring-1 focus:ring-[rgba(198,165,91,0.4)]'
+  // Note: inputClass is kept for the wrapper divs that display Persian date/time with hidden overlay inputs
 
   return (
     <div>
@@ -123,9 +125,8 @@ export function ScheduleManager({ hours, blocks }: { hours: Hour[]; blocks: Bloc
               className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" />
           </div>
         </div>
-        <input value={newBlock.reason} onChange={e => setNewBlock(b => ({ ...b, reason: e.target.value }))}
-          placeholder="دلیل (اختیاری)"
-          className={inputClass} style={{ color: 'var(--text-primary)' }} />
+        <Input value={newBlock.reason} onChange={e => setNewBlock(b => ({ ...b, reason: e.target.value }))}
+          placeholder="دلیل (اختیاری)" />
         <GoldButton onClick={addBlock} className="w-full">افزودن بلاک</GoldButton>
       </GlassCard>
 
