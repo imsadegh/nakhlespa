@@ -24,14 +24,14 @@
   /* ── Type scale ─────────────────────────────────────────────────
      Named steps — use these as CSS vars throughout the app.
      ──────────────────────────────────────────────────────────────── */
-  --text-xs:   calc(var(--font-base) * 0.694);   /* ~13.3px */
-  --text-sm:   calc(var(--font-base) * 0.833);   /* ~16px   */
-  --text-base: var(--font-base);                 /* ~19.2px */
-  --text-md:   calc(var(--font-base) * 1.125);   /* ~21.6px */
-  --text-lg:   calc(var(--font-base) * 1.333);   /* ~25.6px */
-  --text-xl:   calc(var(--font-base) * 1.667);   /* ~32px   */
-  --text-2xl:  calc(var(--font-base) * 2.083);   /* ~40px   */
-  --text-3xl:  calc(var(--font-base) * 2.5);     /* ~48px   */
+  --text-xs:   calc(var(--font-base) * 0.7);   /* ~13.3px */
+  --text-sm:   calc(var(--font-base) * 0.8);   /* ~16px   */
+  --text-base: calc(var(--font-base) * 0.8);     /* ~19.2px */
+  --text-md:   calc(var(--font-base) * 1.1);   /* ~21.6px */
+  --text-lg:   calc(var(--font-base) * 1.3);   /* ~25.6px */
+  --text-xl:   calc(var(--font-base) * 1.1);   /* ~32px   */
+  --text-2xl:  calc(var(--font-base) * 1.5);   /* ~40px   */
+  --text-3xl:  calc(var(--font-base) * 1.9);     /* ~48px   */
 
   /* ── Line heights ───────────────────────────────────────────────*/
   --leading-tight:  1.25;
