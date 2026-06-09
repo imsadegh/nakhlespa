@@ -1,36 +1,122 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# نخلسپا — Nakhlespa
 
-## Getting Started
+Persian spa booking web app. Customers browse services and book appointments through a guided wizard with Zarinpal payment integration. Admins manage bookings, working hours, and blocked slots through a protected dashboard.
 
-First, run the development server:
+**Stack:** Next.js 16 · Prisma v7 · Supabase Auth · Tailwind v4 · Bun
+
+---
+
+## Prerequisites
+
+- [Bun](https://bun.sh) — `curl -fsSL https://bun.sh/install | bash`
+- [Supabase CLI](https://supabase.com/docs/guides/cli) — `brew install supabase/tap/supabase`
+- [Docker](https://www.docker.com/products/docker-desktop) or [OrbStack](https://orbstack.dev) (required by Supabase local)
+
+---
+
+## Local Setup
+
+### 1. Install dependencies
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+bun install
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### 2. Start Supabase
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+supabase start
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+This prints the local credentials — copy them for the next step:
 
-## Learn More
+```
+API URL:         http://127.0.0.1:54321
+DB URL:          postgresql://postgres:postgres@127.0.0.1:54322/postgres
+anon key:        eyJ...
+service_role key: eyJ...
+Studio URL:      http://127.0.0.1:54323
+```
 
-To learn more about Next.js, take a look at the following resources:
+### 3. Configure environment
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Create `.env.local` (Next.js runtime):
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```bash
+DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:54322/postgres
+SUPABASE_URL=http://127.0.0.1:54321
+SUPABASE_ANON_KEY=<anon key from above>
+SUPABASE_SERVICE_ROLE_KEY=<service_role key from above>
+NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:54321
+NEXT_PUBLIC_SUPABASE_ANON_KEY=<anon key from above>
 
-## Deploy on Vercel
+# Payment (Zarinpal) — leave as placeholder for local dev
+ZARINPAL_MERCHANT_ID=your_merchant_id
+ZARINPAL_CALLBACK_URL=http://localhost:3000/api/bookings/verify
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+# SMS (SMS.ir) — optional for local dev
+SMSIR_API_KEY=your_api_key
+SMSIR_LINE_NUMBER=your_line_number
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Create `.env` (Prisma CLI — must match `DATABASE_URL` above):
+
+```bash
+DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:54322/postgres
+```
+
+### 4. Migrate and seed the database
+
+```bash
+bunx prisma migrate dev --name init
+bun prisma/seed.ts
+```
+
+The seed creates two services (ماساژ درمانی, ماساژ آرامش‌بخش) and working hours (Saturday–Friday, 09:00–21:00).
+
+### 5. Create an admin user
+
+Open Supabase Studio at `http://127.0.0.1:54323` → **Authentication** → **Users** → **Add user**, then enter your email and password.
+
+Or via CLI:
+
+```bash
+supabase auth add-user --email admin@example.com --password YourPassword123
+```
+
+### 6. Run the dev server
+
+```bash
+bun run dev
+```
+
+Open [http://localhost:3000](http://localhost:3000).
+
+---
+
+## Pages
+
+| URL | Description |
+|-----|-------------|
+| `/` | Home — hero, services, booking CTA |
+| `/book` | Standalone booking page (fallback when outside home) |
+| `/booking/confirm/[token]` | Post-payment confirmation |
+| `/booking/failed` | Payment failure page |
+| `/admin` | Admin login |
+| `/admin/dashboard` | Stats and upcoming bookings |
+| `/admin/bookings` | Full booking list |
+| `/admin/bookings/[id]` | Booking detail and status actions |
+| `/admin/schedule` | Working hours and blocked slots |
+
+Admin routes (`/admin/dashboard`, `/admin/bookings`, `/admin/schedule`) are protected by `src/proxy.ts` — unauthenticated requests redirect to `/admin`.
+
+---
+
+## Useful Commands
+
+```bash
+bun run build          # Production build
+bunx prisma studio     # Visual DB browser at http://localhost:5555
+supabase stop          # Stop local Supabase containers
+supabase status        # Show running services and credentials
+```
