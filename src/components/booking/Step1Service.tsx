@@ -11,9 +11,9 @@ const icons: Record<string, string> = { 'ماساژ درمانی': '💆', 'ما
 export function Step1Service({ state, update, goNext, services }: Props) {
   return (
     <div>
-      <h2 className="text-xl font-light mb-1" style={{ color: 'var(--text-primary)' }}>خدمت مورد نظر</h2>
-      <p className="text-xs mb-6 font-light" style={{ color: 'var(--text-muted)' }}>یک سرویس انتخاب کنید</p>
-      <div className="flex flex-col gap-3 mb-8">
+      <h2 className="text-base font-light mb-0.5" style={{ color: 'var(--text-primary)' }}>خدمت مورد نظر</h2>
+      <p className="text-xs mb-3 font-light" style={{ color: 'var(--text-muted)' }}>یک سرویس انتخاب کنید</p>
+      <div className="flex flex-col gap-2 mb-4">
         {services.map((svc, i) => {
           const selected = state.serviceId === svc.id
           return (
@@ -21,9 +21,9 @@ export function Step1Service({ state, update, goNext, services }: Props) {
               <button type="button" className="w-full text-right" onClick={() => update({ serviceId: svc.id, endTime: undefined })}>
                 <GlassCard
                   gold={selected}
-                  className={`flex items-center gap-4 p-5 cursor-pointer transition-all ${selected ? 'shadow-[0_0_0_2px_#C6A55B,0_8px_32px_rgba(198,165,91,0.3)]' : ''}`}
+                  className={`flex items-center gap-3 p-3 cursor-pointer transition-all ${selected ? 'shadow-[0_0_0_2px_#C6A55B,0_8px_32px_rgba(198,165,91,0.3)]' : ''}`}
                 >
-                  <div className="w-12 h-12 rounded-[14px] flex items-center justify-center text-2xl flex-shrink-0 bg-[rgba(198,165,91,0.14)] border border-[rgba(198,165,91,0.28)]">
+                  <div className="w-9 h-9 rounded-xl flex items-center justify-center text-lg flex-shrink-0 bg-[rgba(198,165,91,0.14)] border border-[rgba(198,165,91,0.28)]">
                     {icons[svc.nameFa] ?? '✦'}
                   </div>
                   <div className="flex-1">
@@ -37,7 +37,7 @@ export function Step1Service({ state, update, goNext, services }: Props) {
           )
         })}
       </div>
-      <GoldButton className="w-full py-4" onClick={goNext} disabled={!state.serviceId}>ادامه ←</GoldButton>
+      <GoldButton className="w-full" onClick={goNext} disabled={!state.serviceId}>ادامه ←</GoldButton>
     </div>
   )
 }

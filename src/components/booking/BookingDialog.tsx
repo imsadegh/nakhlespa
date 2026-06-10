@@ -24,7 +24,7 @@ export function BookingDialog({ open, onClose, services }: Props) {
       >
         <DialogTitle className="sr-only">رزرو آنلاین</DialogTitle>
         {/* Header: drag handle + close button */}
-        <div className="flex-shrink-0 flex items-center justify-between px-5 sm:px-7 pt-4 pb-3 border-b"
+        <div className="flex-shrink-0 flex items-center justify-between px-4 sm:px-5 pt-3 pb-2.5 border-b"
           style={{ borderColor: 'var(--border-base)' }}>
           {/* Drag handle — visible on mobile */}
           <div className="sm:hidden absolute top-3 left-1/2 -translate-x-1/2 w-10 h-1 rounded-full"

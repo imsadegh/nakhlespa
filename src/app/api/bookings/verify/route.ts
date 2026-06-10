@@ -23,12 +23,27 @@ export async function GET(req: NextRequest) {
     return NextResponse.redirect(`${siteUrl}/booking/confirm/${booking.token}`)
   }
 
+  if (booking.status !== BookingStatus.PENDING_PAYMENT) {
+    return NextResponse.redirect(`${siteUrl}/booking/failed`)
+  }
+
+  // Atomic status transition: only one concurrent callback wins the update.
+  // If another request already moved the booking out of PENDING_PAYMENT,
+  // this update matches 0 rows and we bail out before calling Zarinpal.
+  const updated = await prisma.booking.updateMany({
+    where: { id: booking.id, status: BookingStatus.PENDING_PAYMENT },
+    data: { status: BookingStatus.PAID },
+  })
+  if (updated.count === 0) {
+    return NextResponse.redirect(`${siteUrl}/booking/confirm/${booking.token}`)
+  }
+
   try {
     const { refId } = await zarinpalVerify(authority, booking.service.price)
 
     await prisma.booking.update({
       where: { id: booking.id },
-      data: { status: BookingStatus.PAID, zarinpalRefId: refId },
+      data: { zarinpalRefId: refId },
     })
 
     // Compute appointment datetime in UTC for reminder scheduling
@@ -53,6 +68,10 @@ export async function GET(req: NextRequest) {
     return NextResponse.redirect(`${siteUrl}/booking/confirm/${booking.token}`)
   } catch (err) {
     console.error('Booking verify error', err)
+    await prisma.booking.update({
+      where: { id: booking.id },
+      data: { status: BookingStatus.PENDING_PAYMENT },
+    }).catch(() => {})
     return NextResponse.redirect(`${siteUrl}/booking/failed`)
   }
 }

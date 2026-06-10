@@ -47,6 +47,10 @@
   --radius-xl: calc(var(--radius) + 4px);
 }
 
+/* ── Native date/time picker follows theme ──────────────────────── */
+:root { color-scheme: dark; }
+[data-theme="light"] { color-scheme: light; }
+
 /* ── shadcn + project theme tokens ─────────────────────────────── */
 :root {
   --background: oklch(0.12 0.03 160);
@@ -74,6 +78,8 @@
   --bg-base:      #04100b;
   --bg-surface:   rgba(255,255,255,0.07);
   --border-base:  rgba(255,255,255,0.15);
+  --picker-bg:    rgba(10,30,22,0.96);
+  --picker-border: rgba(255,255,255,0.14);
   --text-primary: #F3EFE8;
   --text-muted:   rgba(243,239,232,0.50);
   --text-faint:   rgba(243,239,232,0.28);
@@ -109,6 +115,8 @@
   --bg-base:      #f5ede0;
   --bg-surface:   rgba(255,255,255,0.55);
   --border-base:  rgba(139,110,60,0.22);
+  --picker-bg:    rgba(250,244,232,0.98);
+  --picker-border: rgba(139,110,60,0.25);
   --text-primary: #1a1006;
   --text-muted:   rgba(26,16,6,0.52);
   --text-faint:   rgba(26,16,6,0.30);
@@ -144,6 +152,8 @@
     --bg-base:      #f5ede0;
     --bg-surface:   rgba(255,255,255,0.55);
     --border-base:  rgba(139,110,60,0.22);
+    --picker-bg:    rgba(250,244,232,0.98);
+    --picker-border: rgba(139,110,60,0.25);
     --text-primary: #1a1006;
     --text-muted:   rgba(26,16,6,0.52);
     --text-faint:   rgba(26,16,6,0.30);

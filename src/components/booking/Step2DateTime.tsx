@@ -36,10 +36,10 @@ export function Step2DateTime({ state, update, goNext, goBack }: Props) {
 
   return (
     <div>
-      <h2 className="text-xl font-light mb-1" style={{ color: 'var(--text-primary)' }}>انتخاب تاریخ</h2>
-      <p className="text-xs mb-5 font-light" style={{ color: 'var(--text-muted)' }}>تاریخ مورد نظر را انتخاب کنید</p>
+      <h2 className="text-base font-light mb-0.5" style={{ color: 'var(--text-primary)' }}>انتخاب تاریخ</h2>
+      <p className="text-xs mb-3 font-light" style={{ color: 'var(--text-muted)' }}>تاریخ مورد نظر را انتخاب کنید</p>
 
-      <div className="relative mb-6">
+      <div className="relative mb-3">
         {/* fade edges */}
         <div className="pointer-events-none absolute right-0 top-0 bottom-3 w-8 z-10"
           style={{ background: 'linear-gradient(to left, var(--bg-base), transparent)' }} />
@@ -74,7 +74,7 @@ export function Step2DateTime({ state, update, goNext, goBack }: Props) {
           ) : slots.length === 0 ? (
             <p className="text-xs text-center py-8" style={{ color: 'var(--text-muted)' }}>ظرفیتی برای این روز موجود نیست</p>
           ) : (
-            <motion.div className="flex flex-wrap gap-2 mb-8"
+            <motion.div className="flex flex-wrap gap-2 mb-4"
               variants={{ show: { transition: { staggerChildren: 0.05 } } }} initial="hidden" animate="show">
               {slots.map(slot => {
                 const selected = state.startTime === slot.startTime
@@ -98,7 +98,7 @@ export function Step2DateTime({ state, update, goNext, goBack }: Props) {
         </>
       )}
 
-      <div className="flex gap-3 mt-4">
+      <div className="flex gap-3 mt-2">
         <GhostButton onClick={goBack} className="flex-1">→ برگشت</GhostButton>
         <GoldButton onClick={goNext} className="flex-1" disabled={!state.startTime}>ادامه ←</GoldButton>
       </div>

@@ -30,7 +30,7 @@ export default async function DashboardPage() {
         {([['رزرو امروز', todayCount], ['رزرو آینده', upcomingCount], ['پرداخت موفق', totalPaid]] as [string, number][]).map(([label, val]) => (
           <GlassCard key={label} className="p-4 text-center">
             <div className="text-2xl font-bold text-[#C6A55B] mb-1">{val.toLocaleString('fa-IR')}</div>
-            <div className="text-[10px]" style={{ color: 'var(--text-faint)' }}>{label}</div>
+            <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-faint)' }}>{label}</div>
           </GlassCard>
         ))}
       </div>

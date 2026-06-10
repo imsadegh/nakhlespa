@@ -4,6 +4,8 @@ import { useRouter } from 'next/navigation'
 import { GlassCard } from '@/components/ui/GlassCard'
 import { GoldButton } from '@/components/ui/GoldButton'
 import { Input } from '@/components/ui/input'
+import { DatePicker } from '@/components/ui/DatePicker'
+import { TimePicker } from '@/components/ui/TimePicker'
 
 const DAY_NAMES = ['شنبه', 'یکشنبه', 'دوشنبه', 'سه‌شنبه', 'چهارشنبه', 'پنجشنبه', 'جمعه']
 
@@ -12,13 +14,6 @@ type Block = { id: string; date: Date; startTime: string; endTime: string; reaso
 
 function toFaDate(date: Date) {
   return new Date(date.toISOString().split('T')[0] + 'T12:00:00').toLocaleDateString('fa-IR')
-}
-
-// Convert a YYYY-MM-DD string to Jalali Persian display
-function gregToFaDate(iso: string) {
-  if (!iso) return ''
-  const [y, m, d] = iso.split('-').map(Number)
-  return new Date(Date.UTC(y, m - 1, d) + 12 * 3600000).toLocaleDateString('fa-IR')
 }
 
 // Convert HH:mm to Persian digits
@@ -56,74 +51,41 @@ export function ScheduleManager({ hours, blocks }: { hours: Hour[]; blocks: Bloc
     router.refresh()
   }
 
-  const inputClass = 'glass rounded-xl px-3 py-2 text-xs bg-transparent outline-none focus:ring-1 focus:ring-[rgba(198,165,91,0.4)]'
-  // Note: inputClass is kept for the wrapper divs that display Persian date/time with hidden overlay inputs
 
   return (
     <div>
       <h1 className="text-xl font-light mb-6" style={{ color: 'var(--text-primary)' }}>زمان‌بندی</h1>
 
-      <h2 className="text-sm mb-3" style={{ color: 'var(--text-muted)' }}>ساعت کاری</h2>
-      <div className="flex flex-col gap-2 mb-6">
+      <h2 className="text-sm mb-2" style={{ color: 'var(--text-muted)' }}>ساعت کاری</h2>
+      <GlassCard className="mb-4 overflow-hidden">
         {localHours.map((h, i) => (
-          <GlassCard key={h.id} className="flex items-center gap-3 p-3">
-            <span className="text-xs w-16 flex-shrink-0" style={{ color: 'var(--text-muted)' }}>{DAY_NAMES[h.dayOfWeek]}</span>
-            {/* open time — transparent input sits over Persian label */}
-            <div className={`${inputClass} relative min-w-[64px] text-center`}>
-              <span style={{ color: 'var(--text-primary)' }}>{toFaTime(h.openTime || '00:00')}</span>
-              <input type="time" value={h.openTime}
-                onChange={e => { const next = [...localHours]; next[i] = { ...h, openTime: e.target.value }; setLocalHours(next) }}
-                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" />
-            </div>
-            <span className="text-xs" style={{ color: 'var(--text-faint)' }}>تا</span>
-            {/* close time */}
-            <div className={`${inputClass} relative min-w-[64px] text-center`}>
-              <span style={{ color: 'var(--text-primary)' }}>{toFaTime(h.closeTime || '00:00')}</span>
-              <input type="time" value={h.closeTime}
-                onChange={e => { const next = [...localHours]; next[i] = { ...h, closeTime: e.target.value }; setLocalHours(next) }}
-                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" />
-            </div>
+          <div key={h.id} className={`flex items-center gap-2 px-3 py-1.5 ${i < localHours.length - 1 ? 'border-b border-white/[0.06]' : ''}`}>
+            <span className="w-14 flex-shrink-0" style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>{DAY_NAMES[h.dayOfWeek]}</span>
+            <TimePicker value={h.openTime} onChange={v => { const next = [...localHours]; next[i] = { ...h, openTime: v }; setLocalHours(next) }} className="min-w-[90px]" />
+            <span className="text-[10px]" style={{ color: 'var(--text-faint)' }}>تا</span>
+            <TimePicker value={h.closeTime} onChange={v => { const next = [...localHours]; next[i] = { ...h, closeTime: v }; setLocalHours(next) }} className="min-w-[90px]" />
+            <div className="flex-1" />
             <button type="button"
               onClick={() => { const next = [...localHours]; next[i] = { ...h, isOpen: !h.isOpen }; setLocalHours(next) }}
-              className={`text-[9px] px-2 py-1 rounded-full transition-all ${h.isOpen ? 'bg-[rgba(31,94,70,0.3)] text-[#4F6F52]' : 'bg-white/[0.08]'}`}
-              style={h.isOpen ? {} : { color: 'var(--text-faint)' }}>
+              className={`text-xs px-3 py-1 rounded-full font-medium transition-all duration-150 min-w-[52px] ${
+                h.isOpen
+                  ? 'bg-[rgba(31,94,70,0.35)] text-[#6abf8a] border border-[rgba(74,180,120,0.3)] hover:bg-[rgba(31,94,70,0.5)]'
+                  : 'bg-white/[0.08] border border-white/[0.14] hover:bg-white/[0.14]'
+              }`}
+              style={h.isOpen ? {} : { color: 'var(--text-muted)' }}>
               {h.isOpen ? 'باز' : 'بسته'}
             </button>
-          </GlassCard>
+          </div>
         ))}
-      </div>
-      <GoldButton onClick={saveHours} className="w-full mb-8">ذخیره ساعت‌ها</GoldButton>
+      </GlassCard>
+      <GoldButton onClick={saveHours} className="w-full mb-6">ذخیره ساعت‌ها</GoldButton>
 
       <h2 className="text-sm mb-3" style={{ color: 'var(--text-muted)' }}>مسدود کردن زمان</h2>
       <GlassCard className="p-4 mb-4 flex flex-col gap-3">
-        {/* Date — transparent input over Jalali display text */}
-        <div className={`${inputClass} relative w-full`}>
-          <span style={{ color: newBlock.date ? 'var(--text-primary)' : 'var(--text-faint)' }}>
-            {newBlock.date ? gregToFaDate(newBlock.date) : 'انتخاب تاریخ'}
-          </span>
-          <input type="date" value={newBlock.date}
-            onChange={e => setNewBlock(b => ({ ...b, date: e.target.value }))}
-            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" />
-        </div>
+        <DatePicker value={newBlock.date} onChange={v => setNewBlock(b => ({ ...b, date: v }))} />
         <div className="flex gap-2">
-          {/* Start time */}
-          <div className={`${inputClass} relative flex-1 text-center`}>
-            <span style={{ color: newBlock.startTime ? 'var(--text-primary)' : 'var(--text-faint)' }}>
-              {newBlock.startTime ? toFaTime(newBlock.startTime) : 'از ساعت'}
-            </span>
-            <input type="time" value={newBlock.startTime}
-              onChange={e => setNewBlock(b => ({ ...b, startTime: e.target.value }))}
-              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" />
-          </div>
-          {/* End time */}
-          <div className={`${inputClass} relative flex-1 text-center`}>
-            <span style={{ color: newBlock.endTime ? 'var(--text-primary)' : 'var(--text-faint)' }}>
-              {newBlock.endTime ? toFaTime(newBlock.endTime) : 'تا ساعت'}
-            </span>
-            <input type="time" value={newBlock.endTime}
-              onChange={e => setNewBlock(b => ({ ...b, endTime: e.target.value }))}
-              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" />
-          </div>
+          <TimePicker value={newBlock.startTime} onChange={v => setNewBlock(b => ({ ...b, startTime: v }))} placeholder="از ساعت" className="flex-1" />
+          <TimePicker value={newBlock.endTime} onChange={v => setNewBlock(b => ({ ...b, endTime: v }))} placeholder="تا ساعت" className="flex-1" />
         </div>
         <Input value={newBlock.reason} onChange={e => setNewBlock(b => ({ ...b, reason: e.target.value }))}
           placeholder="دلیل (اختیاری)" />

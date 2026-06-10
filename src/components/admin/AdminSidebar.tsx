@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { createBrowserClient } from '@supabase/ssr'
 import { cn } from '@/lib/utils'
+import { ThemeToggle } from '@/components/ui/ThemeToggle'
 
 const browserSupabase = createBrowserClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -42,6 +43,7 @@ export function AdminSidebar() {
         </Link>
       ))}
       <div className="flex-1" />
+      <ThemeToggle />
       <button
         onClick={handleLogout}
         className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs transition-all text-muted-foreground hover:bg-white/[0.05]"

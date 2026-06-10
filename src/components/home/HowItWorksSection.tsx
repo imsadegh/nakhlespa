@@ -13,8 +13,8 @@ export function HowItWorksSection() {
     <section id="how" className="px-4 sm:px-8 lg:px-16 mb-10">
       <motion.p
         initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }}
-        className="text-[10px] tracking-[3px] mb-4 font-light"
-        style={{ color: 'var(--text-faint)' }}
+        className="tracking-[3px] mb-4 font-light"
+        style={{ fontSize: 'var(--text-xs)', color: 'var(--text-faint)' }}
       >
         — چطور کار می‌کند
       </motion.p>

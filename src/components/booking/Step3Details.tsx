@@ -10,9 +10,9 @@ type Props = { state: WizardState; update: (p: Partial<WizardState>) => void; go
 export function Step3Details({ state, update, goNext, goBack }: Props) {
   return (
     <div>
-      <h2 className="text-xl font-light mb-1 text-foreground">اطلاعات شما</h2>
-      <p className="text-xs mb-6 font-light text-muted-foreground">لطفاً اطلاعات تماس را وارد کنید</p>
-      <div className="flex flex-col gap-3 mb-8">
+      <h2 className="text-base font-light mb-0.5 text-foreground">اطلاعات شما</h2>
+      <p className="text-xs mb-3 font-light text-muted-foreground">لطفاً اطلاعات تماس را وارد کنید</p>
+      <div className="flex flex-col gap-2 mb-4">
         <Input
           placeholder="نام و نام خانوادگی *"
           value={state.customerName ?? ''}
@@ -28,7 +28,7 @@ export function Step3Details({ state, update, goNext, goBack }: Props) {
           placeholder="توضیحات (اختیاری)"
           value={state.customerNotes ?? ''}
           onChange={e => update({ customerNotes: e.target.value })}
-          className="h-24"
+          className="h-16"
         />
       </div>
       <div className="flex gap-3">

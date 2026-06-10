@@ -2,7 +2,9 @@ import axios from 'axios'
 
 const MERCHANT = process.env.ZARINPAL_MERCHANT_ID!
 const CALLBACK = process.env.ZARINPAL_CALLBACK_URL!
-const BASE = 'https://api.zarinpal.com/pg/v4/payment'
+const SANDBOX = process.env.ZARINPAL_SANDBOX === 'true'
+const HOST = SANDBOX ? 'sandbox.zarinpal.com' : 'payment.zarinpal.com'
+const BASE = `https://${HOST}/pg/v4/payment`
 
 export async function zarinpalRequest(amount: number, description: string, mobile: string) {
   let res
@@ -12,6 +14,7 @@ export async function zarinpalRequest(amount: number, description: string, mobil
       amount,
       description,
       callback_url: CALLBACK,
+      currency: 'IRT',
       metadata: { mobile },
     })
   } catch (err: any) {
@@ -25,7 +28,7 @@ export async function zarinpalRequest(amount: number, description: string, mobil
   }
   return {
     authority: responseData.authority as string,
-    paymentUrl: `https://www.zarinpal.com/pg/StartPay/${responseData.authority}`,
+    paymentUrl: `https://${HOST}/pg/StartPay/${responseData.authority}`,
   }
 }
 

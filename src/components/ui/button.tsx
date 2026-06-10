@@ -18,7 +18,7 @@ const buttonVariants = cva(
         destructive:
           "bg-destructive/10 text-destructive hover:bg-destructive/20 focus-visible:border-destructive/40 focus-visible:ring-destructive/20 dark:bg-destructive/20 dark:hover:bg-destructive/30 dark:focus-visible:ring-destructive/40",
         link: "text-primary underline-offset-4 hover:underline",
-        gold: 'bg-gradient-to-br from-[#d4b368] via-[#C6A55B] to-[#9a7830] text-[#0F3D2E] font-bold shadow-[inset_0_1px_0_rgba(255,255,255,0.4),inset_0_-2px_0_rgba(0,0,0,0.18),0_6px_24px_rgba(198,165,91,0.4)] hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.4),0_10px_36px_rgba(198,165,91,0.55)] hover:bg-none',
+        gold: 'bg-gradient-to-br from-[#e0c276] via-[#d4b368] to-[#a8893a] text-[#0F3D2E] font-bold transition-[filter,box-shadow] duration-200 shadow-[inset_0_1px_0_rgba(255,255,255,0.4),inset_0_-2px_0_rgba(0,0,0,0.18),0_6px_24px_rgba(198,165,91,0.4)] hover:brightness-110 hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.5),0_10px_36px_rgba(198,165,91,0.55)]',
       },
       size: {
         default:

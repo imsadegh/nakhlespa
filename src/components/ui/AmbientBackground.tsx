@@ -2,14 +2,36 @@
 import { motion } from 'framer-motion'
 import { useEffect, useRef } from 'react'
 
-type Orb = { size: number; colorVar: string; opacity: number; duration: number; delay: number; top?: string; right?: string; bottom?: string; left?: string }
+
+type OrbMotion = { x: number[]; y: number[]; scale: number[] }
+
+type Orb = {
+  size: number; colorVar: string; opacity: number; duration: number; delay: number
+  top?: string; right?: string; bottom?: string; left?: string
+  motion: OrbMotion
+}
 
 const orbs: Orb[] = [
-  { size: 500, colorVar: '--orb-a', top: '-150px', right: '-100px', opacity: 0.55, duration: 20, delay: 0 },
-  { size: 350, colorVar: '--orb-b', bottom: '-80px', left: '-60px', opacity: 0.18, duration: 25, delay: -4 },
-  { size: 280, colorVar: '--orb-c', top: '35%', left: '20%', opacity: 0.30, duration: 18, delay: -8 },
-  { size: 200, colorVar: '--orb-a', bottom: '25%', right: '5%', opacity: 0.20, duration: 22, delay: -10 },
-  { size: 160, colorVar: '--orb-b', top: '55%', right: '40%', opacity: 0.13, duration: 30, delay: -3 },
+  {
+    size: 500, colorVar: '--orb-a', top: '-150px', right: '-100px', opacity: 0.55, duration: 22, delay: 0,
+    motion: { x: [0, -80, 40, -60, 0], y: [0, 90, -60, 40, 0], scale: [1, 1.08, 0.95, 1.04, 1] },
+  },
+  {
+    size: 350, colorVar: '--orb-b', bottom: '-80px', left: '-60px', opacity: 0.22, duration: 28, delay: -7,
+    motion: { x: [0, 70, -40, 55, 0], y: [0, -80, 50, -30, 0], scale: [1, 1.06, 0.96, 1.03, 1] },
+  },
+  {
+    size: 280, colorVar: '--orb-c', top: '35%', left: '20%', opacity: 0.32, duration: 19, delay: -4,
+    motion: { x: [0, 60, -50, 35, 0], y: [0, -70, 60, -40, 0], scale: [1, 1.07, 0.93, 1.05, 1] },
+  },
+  {
+    size: 200, colorVar: '--orb-a', bottom: '25%', right: '5%', opacity: 0.22, duration: 24, delay: -12,
+    motion: { x: [0, -55, 45, -30, 0], y: [0, 65, -55, 30, 0], scale: [1, 1.09, 0.94, 1.06, 1] },
+  },
+  {
+    size: 160, colorVar: '--orb-b', top: '55%', right: '40%', opacity: 0.16, duration: 32, delay: -9,
+    motion: { x: [0, 45, -35, 50, 0], y: [0, -60, 45, -35, 0], scale: [1, 1.05, 0.97, 1.04, 1] },
+  },
 ]
 
 type Particle = {
@@ -160,36 +182,36 @@ export function AmbientBackground() {
       {/* Solid base color */}
       <div className="absolute inset-0 transition-colors duration-500" style={{ backgroundColor: 'var(--bg-base)' }} />
 
-      {/* Gradient layer */}
+      {/* Gradient layer — soft multi-stop radials so no hard color edge */}
       <div
-        className="absolute inset-0 transition-all duration-500"
+        className="absolute inset-0"
         style={{
           background:
-            'radial-gradient(ellipse 90% 70% at 15% 10%, var(--orb-a) 0%, transparent 55%), ' +
-            'radial-gradient(ellipse 70% 60% at 85% 30%, var(--orb-c) 0%, transparent 50%), ' +
-            'radial-gradient(ellipse 60% 50% at 60% 80%, var(--orb-b) 0%, transparent 50%)',
-          opacity: 0.45,
+            'radial-gradient(ellipse 90% 70% at 15% 10%, var(--orb-a) 0%, color-mix(in srgb, var(--orb-a) 40%, transparent) 35%, transparent 65%), ' +
+            'radial-gradient(ellipse 70% 60% at 85% 30%, var(--orb-c) 0%, color-mix(in srgb, var(--orb-c) 40%, transparent) 30%, transparent 60%), ' +
+            'radial-gradient(ellipse 60% 50% at 60% 80%, var(--orb-b) 0%, color-mix(in srgb, var(--orb-b) 40%, transparent) 30%, transparent 60%)',
+          opacity: 0.35,
         }}
       />
 
-      {/* Animated orbs */}
+      {/* Animated orbs — radial-gradient inside so blur operates on a pre-soft shape */}
       {orbs.map((orb, i) => (
         <motion.div
           key={i}
-          className="absolute rounded-full transition-colors duration-500"
+          className="absolute rounded-full"
           style={{
             width: orb.size,
             height: orb.size,
-            background: `var(${orb.colorVar})`,
+            background: `radial-gradient(circle at 50% 50%, var(${orb.colorVar}) 0%, color-mix(in srgb, var(${orb.colorVar}) 50%, transparent) 40%, transparent 70%)`,
             opacity: orb.opacity,
-            filter: 'blur(100px)',
+            filter: `blur(${Math.round(orb.size * 0.22)}px)`,
             top: orb.top,
             right: orb.right,
             bottom: orb.bottom,
             left: orb.left,
           }}
-          animate={{ x: [0, 30, -20, 15, 0], y: [0, -40, 30, 15, 0], scale: [1, 1.06, 0.94, 1.03, 1] }}
-          transition={{ duration: orb.duration, delay: orb.delay, repeat: Infinity, ease: 'easeInOut' }}
+          animate={orb.motion}
+          transition={{ duration: orb.duration, delay: orb.delay, repeat: Infinity, ease: 'easeInOut', repeatType: 'loop' }}
         />
       ))}
 

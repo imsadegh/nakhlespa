@@ -32,9 +32,9 @@ export function Step4Review({ state, goBack, services }: Props) {
 
   return (
     <div>
-      <h2 className="text-xl font-light mb-1" style={{ color: 'var(--text-primary)' }}>مرور و پرداخت</h2>
-      <p className="text-xs mb-6 font-light" style={{ color: 'var(--text-muted)' }}>اطلاعات رزرو را بررسی کنید</p>
-      <GlassCard className="p-5 mb-6 space-y-3">
+      <h2 className="text-base font-light mb-0.5" style={{ color: 'var(--text-primary)' }}>مرور و پرداخت</h2>
+      <p className="text-xs mb-3 font-light" style={{ color: 'var(--text-muted)' }}>اطلاعات رزرو را بررسی کنید</p>
+      <GlassCard className="p-3 mb-4 space-y-2">
         {([
           ['خدمت', service?.nameFa ?? '—'],
           ['تاریخ', state.date ? new Date(state.date).toLocaleDateString('fa-IR') : '—'],
@@ -52,7 +52,7 @@ export function Step4Review({ state, goBack, services }: Props) {
       </GlassCard>
       <div className="flex gap-3">
         <GhostButton onClick={goBack} className="flex-1">→ برگشت</GhostButton>
-        <GoldButton onClick={handlePay} className="flex-1 py-4" disabled={loading}>
+        <GoldButton onClick={handlePay} className="flex-1" disabled={loading}>
           {loading ? 'در حال انتقال...' : '← پرداخت با زرین‌پال'}
         </GoldButton>
       </div>

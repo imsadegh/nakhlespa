@@ -15,9 +15,9 @@ export function HeroSection() {
         className="lg:grid lg:grid-cols-2 lg:gap-16 lg:items-center"
       >
         <div>
-          <motion.div variants={fadeUp} className="inline-flex items-center gap-2 mb-5 px-4 py-1.5 rounded-full text-[9px] tracking-[3.5px] text-[#C6A55B] bg-[rgba(198,165,91,0.08)] border border-[rgba(198,165,91,0.22)] shadow-[inset_0_1px_0_rgba(255,255,255,0.15)]">
+          <motion.div variants={fadeUp} className="inline-flex items-center gap-2 mb-5 px-4 py-1.5 rounded-full text-[13px] tracking-[2px] text-[#C6A55B] bg-[rgba(198,165,91,0.08)] border border-[rgba(198,165,91,0.22)] shadow-[inset_0_1px_0_rgba(255,255,255,0.15)]">
             <span className="w-1.5 h-1.5 rounded-full bg-[#C6A55B] animate-pulse" />
-            SPA &amp; WELLNESS
+            ماساژ و آرامش
           </motion.div>
 
           <motion.h1 variants={fadeUp}
@@ -46,7 +46,7 @@ export function HeroSection() {
           {[['۵۰۰+', 'مشتری راضی'], ['۱۰+', 'سال تجربه'], ['۲۴/۷', 'رزرو آنلاین']].map(([num, lbl]) => (
             <GlassCard key={lbl} className="flex-1 py-4 px-2 sm:px-4 text-center">
               <div className="text-xl sm:text-2xl font-bold text-[#C6A55B] mb-1">{num}</div>
-              <div className="text-[8px] sm:text-[10px] tracking-wide" style={{ color: 'var(--text-faint)' }}>{lbl}</div>
+              <div className="tracking-wide" style={{ fontSize: 'var(--text-xs)', color: 'var(--text-faint)' }}>{lbl}</div>
             </GlassCard>
           ))}
         </motion.div>
