@@ -10,7 +10,7 @@ Persian spa booking web app. Customers browse services and book appointments thr
 
 - [Bun](https://bun.sh) — `curl -fsSL https://bun.sh/install | bash`
 - [Supabase CLI](https://supabase.com/docs/guides/cli) — `brew install supabase/tap/supabase`
-- [Docker](https://www.docker.com/products/docker-desktop) or [OrbStack](https://orbstack.dev) (required by Supabase local)
+- [Docker](https://www.docker.com/products/docker-desktop) or [OrbStack](https://orbstack.dev) (macOS) / [Podman](https://podman.io) (Ubuntu VPS) — required by Supabase local
 
 ---
 
@@ -142,13 +142,16 @@ sudo npm install -g pm2
 # Nginx
 sudo apt-get install -y nginx
 
-# Docker (required by Supabase)
-sudo apt-get install -y ca-certificates curl gnupg
-sudo install -m 0755 -d /etc/apt/keyrings
-curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
-echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | sudo tee /etc/apt/sources.list.d/docker.list
-sudo apt-get update && sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-compose-plugin
-sudo usermod -aG docker $USER   # then log out and back in
+# Podman (rootless container runtime — replaces Docker for Supabase on Ubuntu)
+sudo apt-get install -y podman
+
+# Enable the Podman socket for your user (Supabase CLI uses it instead of Docker socket)
+systemctl --user enable --now podman.socket
+loginctl enable-linger $USER   # keep socket alive after logout
+
+# Point the Docker client env var to the Podman socket
+echo 'export DOCKER_HOST=unix:///run/user/$(id -u)/podman/podman.sock' >> ~/.bashrc
+source ~/.bashrc
 
 # Supabase CLI
 sudo curl -fsSL https://github.com/supabase/cli/releases/latest/download/supabase_linux_amd64.tar.gz | sudo tar -xz -C /usr/local/bin
@@ -266,10 +269,12 @@ pm2 reload nakhlespa
 
 ### Keep Supabase running across reboots
 
-Supabase runs in Docker containers that stop on reboot. Add a cron entry to restart it:
+Supabase runs in Podman containers that stop on reboot. The Podman socket is kept alive via `loginctl enable-linger` (set during install). Add a cron entry to restart Supabase itself:
 
 ```bash
 crontab -e
 # Add:
-@reboot cd /var/www/nakhlespa && supabase start >> /var/log/supabase-start.log 2>&1
+@reboot sleep 10 && cd /var/www/nakhlespa && supabase start >> /var/log/supabase-start.log 2>&1
 ```
+
+The `sleep 10` gives the Podman socket time to come up before Supabase tries to connect.
