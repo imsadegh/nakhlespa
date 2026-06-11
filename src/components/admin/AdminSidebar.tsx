@@ -40,7 +40,7 @@ export function AdminSidebar() {
   return (
     <Sidebar side="right" dir="rtl" collapsible="offcanvas">
       <SidebarHeader className="px-4 py-4">
-        <span className="text-sm font-bold" style={{ color: 'var(--text-primary)' }}>
+        <span className="text-lg font-bold tracking-wide" style={{ color: 'var(--text-primary)' }}>
           نخل<span className="text-[#C6A55B]">سپا</span>
         </span>
       </SidebarHeader>

@@ -1,6 +1,7 @@
 'use client'
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { BookingStatus } from '@prisma/client'
 
@@ -20,8 +21,10 @@ export function BookingActions({ bookingId, currentStatus }: { bookingId: string
       })
       if (!res.ok) {
         setError('بروزرسانی ناموفق بود')
+        toast.error('بروزرسانی ناموفق بود')
         return
       }
+      toast.success('وضعیت رزرو بروز شد')
       router.refresh()
     } catch {
       setError('خطا در اتصال به سرور')

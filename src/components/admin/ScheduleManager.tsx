@@ -1,9 +1,9 @@
 'use client'
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { toast } from 'sonner'
 import { GlassCard } from '@/components/ui/GlassCard'
 import { GoldButton } from '@/components/ui/GoldButton'
-import { Input } from '@/components/ui/input'
 import { DatePicker } from '@/components/ui/DatePicker'
 import { TimePicker } from '@/components/ui/TimePicker'
 
@@ -16,7 +16,6 @@ function toFaDate(date: Date) {
   return new Date(date.toISOString().split('T')[0] + 'T12:00:00').toLocaleDateString('fa-IR')
 }
 
-// Convert HH:mm to Persian digits
 function toFaTime(t: string) {
   return t.replace(/\d/g, d => '۰۱۲۳۴۵۶۷۸۹'[+d])
 }
@@ -27,30 +26,41 @@ export function ScheduleManager({ hours, blocks }: { hours: Hour[]; blocks: Bloc
   const router = useRouter()
 
   async function saveHours() {
-    await fetch('/api/admin/schedule/hours', {
+    const res = await fetch('/api/admin/schedule/hours', {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(localHours),
     })
+    if (res.ok) toast.success('ساعت کاری ذخیره شد')
+    else toast.error('خطا در ذخیره‌سازی')
     router.refresh()
   }
 
   async function addBlock() {
-    if (!newBlock.date || !newBlock.startTime || !newBlock.endTime) return
-    await fetch('/api/admin/schedule/block', {
+    if (!newBlock.date || !newBlock.startTime || !newBlock.endTime) {
+      toast.error('تاریخ و ساعت را تکمیل کنید')
+      return
+    }
+    const res = await fetch('/api/admin/schedule/block', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(newBlock),
     })
-    setNewBlock({ date: '', startTime: '', endTime: '', reason: '' })
+    if (res.ok) {
+      toast.success('بازه مسدود شد')
+      setNewBlock({ date: '', startTime: '', endTime: '', reason: '' })
+    } else {
+      toast.error('خطا در افزودن بلاک')
+    }
     router.refresh()
   }
 
   async function removeBlock(id: string) {
-    await fetch(`/api/admin/schedule/block/${id}`, { method: 'DELETE' })
+    const res = await fetch(`/api/admin/schedule/block/${id}`, { method: 'DELETE' })
+    if (res.ok) toast.success('بلاک حذف شد')
+    else toast.error('خطا در حذف')
     router.refresh()
   }
-
 
   return (
     <div>
@@ -59,7 +69,7 @@ export function ScheduleManager({ hours, blocks }: { hours: Hour[]; blocks: Bloc
       <h2 className="text-sm mb-2" style={{ color: 'var(--text-muted)' }}>ساعت کاری</h2>
       <GlassCard className="mb-4 overflow-hidden">
         {localHours.map((h, i) => (
-          <div key={h.id} className={`flex items-center gap-2 px-3 py-1.5 ${i < localHours.length - 1 ? 'border-b border-white/[0.06]' : ''}`}>
+          <div key={h.id} className={`flex items-center gap-2 px-3 py-1.5 ${i < localHours.length - 1 ? 'border-b' : ''}`} style={{ borderColor: 'var(--border-base)' }}>
             <span className="w-14 flex-shrink-0" style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>{DAY_NAMES[h.dayOfWeek]}</span>
             <TimePicker value={h.openTime} onChange={v => { const next = [...localHours]; next[i] = { ...h, openTime: v }; setLocalHours(next) }} className="min-w-[90px]" />
             <span className="text-[10px]" style={{ color: 'var(--text-faint)' }}>تا</span>
@@ -91,8 +101,20 @@ export function ScheduleManager({ hours, blocks }: { hours: Hour[]; blocks: Bloc
           <TimePicker value={newBlock.startTime} onChange={v => setNewBlock(b => ({ ...b, startTime: v }))} placeholder="از ساعت" className="flex-1" />
           <TimePicker value={newBlock.endTime} onChange={v => setNewBlock(b => ({ ...b, endTime: v }))} placeholder="تا ساعت" className="flex-1" />
         </div>
-        <Input value={newBlock.reason} onChange={e => setNewBlock(b => ({ ...b, reason: e.target.value }))}
-          placeholder="دلیل (اختیاری)" />
+        {/* Reason input styled to match DatePicker/TimePicker triggers */}
+        <input
+          value={newBlock.reason}
+          onChange={e => setNewBlock(b => ({ ...b, reason: e.target.value }))}
+          placeholder="دلیل (اختیاری)"
+          className="flex w-full rounded-xl px-3 py-2 text-xs transition-all duration-150 cursor-text outline-none"
+          style={{
+            background: 'var(--glass-bg)',
+            border: '1px solid var(--border-base)',
+            color: newBlock.reason ? 'var(--text-primary)' : undefined,
+          }}
+          onFocus={e => { e.currentTarget.style.borderColor = 'rgba(198,165,91,0.6)' }}
+          onBlur={e => { e.currentTarget.style.borderColor = 'var(--border-base)' }}
+        />
         <GoldButton onClick={addBlock} className="w-full">افزودن بلاک</GoldButton>
       </GlassCard>
 

@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
+import { toast } from "sonner"
 import { BookingStatus } from "@prisma/client"
 import {
   Dialog,
@@ -43,8 +44,9 @@ export function BookingDetailDialog({ booking }: { booking: BookingRow & { endTi
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status: next }),
       })
-      if (!res.ok) { setError("بروزرسانی ناموفق بود"); return }
+      if (!res.ok) { setError("بروزرسانی ناموفق بود"); toast.error("بروزرسانی ناموفق بود"); return }
       setStatus(next)
+      toast.success("وضعیت رزرو بروز شد")
       router.refresh()
     } catch {
       setError("خطا در اتصال به سرور")

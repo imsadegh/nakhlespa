@@ -3,6 +3,7 @@ import type { Metadata } from 'next'
 import { Vazirmatn } from 'next/font/google'
 import './globals.css'
 import { startCronJobs } from '@/lib/cron'
+import { Toaster } from '@/components/ui/sonner'
 
 // Only instance 0 runs the cron to prevent duplicate SMS sends in cluster mode
 if (process.env.NODE_ENV === 'production' && typeof window === 'undefined' && process.env.NODE_APP_INSTANCE === '0') {
@@ -28,6 +29,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body className="font-vazir antialiased" style={{ backgroundColor: 'var(--bg-base)', color: 'var(--text-primary)' }}>
         {children}
+        <Toaster position="bottom-center" dir="rtl" richColors />
       </body>
     </html>
   )
