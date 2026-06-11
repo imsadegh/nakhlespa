@@ -128,33 +128,70 @@ supabase status        # Show running services and credentials
 ### 1. Install system dependencies
 
 ```bash
+# Install Brew Package Manager:
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+
+# add Homebrew to your PATH:
+echo >> /home/nakhles/.bashrc
+echo 'eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv bash)"' >> /home/nakhles/.bashrc
+eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv bash)"
+
+# this will prevent analytics from ever being sent:
+brew analytics off
+
+# Install Homebrew's dependencies
+sudo apt-get install build-essential
+brew install gcc
+
+# ----
+# Homebrew's Linux sandbox requires rootless Bubblewrap and unprivileged
+# user namespaces. Check and update this system configuration:
+
+sudo sysctl -w kernel.unprivileged_userns_clone=1
+    # Allows unprivileged processes to create user namespaces. Rootless
+    # Bubblewrap needs this to isolate builds without elevated privileges.
+
+sudo sysctl -w user.max_user_namespaces=28633
+    # Allows each user to allocate enough user namespaces. A zero or low
+    # limit can prevent Bubblewrap from creating its sandbox.
+
+sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0 || true
+    # Allows unprivileged user namespaces on AppArmor-enabled systems
+    # that restrict them by default. Older kernels may not provide this
+    # setting.
+# ---
+
 # Bun
-curl -fsSL https://bun.sh/install | bash
+brew install oven-sh/bun/bun
 source ~/.bashrc
 
 # Node.js (needed for PM2)
-curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
-sudo apt-get install -y nodejs
+brew install node@24
+brew link node@24
 
 # PM2 process manager
-sudo npm install -g pm2
+npm install -g pm2
 
 # Nginx
 sudo apt-get install -y nginx
 
-# Podman (rootless container runtime — replaces Docker for Supabase on Ubuntu)
-sudo apt-get install -y podman
+# Podman
+brew install podman
 
 # Enable the Podman socket for your user (Supabase CLI uses it instead of Docker socket)
 systemctl --user enable --now podman.socket
 loginctl enable-linger $USER   # keep socket alive after logout
-
 # Point the Docker client env var to the Podman socket
 echo 'export DOCKER_HOST=unix:///run/user/$(id -u)/podman/podman.sock' >> ~/.bashrc
 source ~/.bashrc
 
-# Supabase CLI
-sudo curl -fsSL https://github.com/supabase/cli/releases/latest/download/supabase_linux_amd64.tar.gz | sudo tar -xz -C /usr/local/bin
+# Supabase CLI:
+ #brew - recommended:
+ brew install supabase/tap/supabase
+ # project local (for user-local only):
+ curl -fsSL https://raw.githubusercontent.com/supabase/cli/main/install | bash
+ # Global:
+ sudo curl -fsSL https://github.com/supabase/cli/releases/latest/download/supabase_linux_amd64.tar.gz | sudo tar -xz -C /usr/local/bin
 ```
 
 ### 2. Clone and install
@@ -169,6 +206,20 @@ bun install
 
 ```bash
 supabase start
+```
+
+on low ram vps:
+Disable Analytics Properly via supabase Config `supabase/config.toml`:
+
+```toml
+[analytics]
+enabled = false
+```
+
+then run it with
+
+```bash
+supabase start --exclude analytics,vector,storage,imgproxy,mailpit
 ```
 
 Copy the printed `API URL`, `anon key`, `service_role key`, and `DB URL`.
@@ -205,6 +256,7 @@ DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:54322/postgres
 ```bash
 cd /var/www/nakhlespa
 bunx prisma migrate deploy      # use deploy (not dev) in production
+bunx prisma generate
 bun prisma/seed.ts
 bun run build
 ```
