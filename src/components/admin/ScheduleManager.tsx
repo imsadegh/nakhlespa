@@ -67,12 +67,16 @@ export function ScheduleManager({ hours, blocks }: { hours: Hour[]; blocks: Bloc
             <div className="flex-1" />
             <button type="button"
               onClick={() => { const next = [...localHours]; next[i] = { ...h, isOpen: !h.isOpen }; setLocalHours(next) }}
-              className={`text-xs px-3 py-1 rounded-full font-medium transition-all duration-150 min-w-[52px] ${
-                h.isOpen
-                  ? 'bg-[rgba(31,94,70,0.35)] text-[#6abf8a] border border-[rgba(74,180,120,0.3)] hover:bg-[rgba(31,94,70,0.5)]'
-                  : 'bg-white/[0.08] border border-white/[0.14] hover:bg-white/[0.14]'
-              }`}
-              style={h.isOpen ? {} : { color: 'var(--text-muted)' }}>
+              className="inline-flex items-center justify-center text-xs px-3 py-1 rounded-full font-medium transition-all duration-150 min-w-[52px] border"
+              style={h.isOpen ? {
+                background: 'rgba(31,94,70,0.20)',
+                borderColor: 'rgba(74,180,120,0.35)',
+                color: 'var(--color-green-soft)',
+              } : {
+                background: 'var(--glass-bg)',
+                borderColor: 'var(--border-base)',
+                color: 'var(--text-muted)',
+              }}>
               {h.isOpen ? 'باز' : 'بسته'}
             </button>
           </div>

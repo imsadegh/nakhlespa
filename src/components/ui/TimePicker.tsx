@@ -54,31 +54,6 @@ export function TimePicker({ value, onChange, placeholder, className }: TimePick
         side="bottom"
       >
         <div className="flex gap-1">
-          {/* Hour column */}
-          <div className="flex-1 flex flex-col gap-0.5 max-h-48 overflow-y-auto scroll-smooth">
-            <p className="text-[9px] px-1 pb-1 sticky top-0" style={{ color: 'var(--text-faint)', background: 'var(--picker-bg)' }}>ساعت</p>
-            {HOURS.map(h => (
-              <button
-                key={h}
-                onClick={() => select(h, mm || '00')}
-                className={cn(
-                  'w-full rounded-lg px-2 py-1 text-xs text-center transition-colors',
-                  hh === h ? 'glass-gold text-[#C6A55B]' : ''
-                )}
-                style={hh === h ? undefined : {
-                  color: 'var(--text-muted)',
-                }}
-                onMouseEnter={e => { if (hh !== h) e.currentTarget.style.background = 'var(--bg-surface)' }}
-                onMouseLeave={e => { if (hh !== h) e.currentTarget.style.background = '' }}
-              >
-                {toFaTime(h)}
-              </button>
-            ))}
-          </div>
-
-          {/* Divider */}
-          <div className="w-px my-1 rounded-full" style={{ background: 'var(--border-base)' }} />
-
           {/* Minute column */}
           <div className="flex-1 flex flex-col gap-0.5">
             <p className="text-[9px] px-1 pb-1" style={{ color: 'var(--text-faint)' }}>دقیقه</p>
@@ -97,6 +72,31 @@ export function TimePicker({ value, onChange, placeholder, className }: TimePick
                 onMouseLeave={e => { if (mm !== m) e.currentTarget.style.background = '' }}
               >
                 {toFaTime(m)}
+              </button>
+            ))}
+          </div>
+
+          {/* Divider */}
+          <div className="w-px my-1 rounded-full" style={{ background: 'var(--border-base)' }} />
+
+          {/* Hour column */}
+          <div className="flex-1 flex flex-col gap-0.5 max-h-48 overflow-y-auto scroll-smooth">
+            <p className="text-[9px] px-1 pb-1 sticky top-0" style={{ color: 'var(--text-faint)', background: 'var(--picker-bg)' }}>ساعت</p>
+            {HOURS.map(h => (
+              <button
+                key={h}
+                onClick={() => select(h, mm || '00')}
+                className={cn(
+                  'w-full rounded-lg px-2 py-1 text-xs text-center transition-colors',
+                  hh === h ? 'glass-gold text-[#C6A55B]' : ''
+                )}
+                style={hh === h ? undefined : {
+                  color: 'var(--text-muted)',
+                }}
+                onMouseEnter={e => { if (hh !== h) e.currentTarget.style.background = 'var(--bg-surface)' }}
+                onMouseLeave={e => { if (hh !== h) e.currentTarget.style.background = '' }}
+              >
+                {toFaTime(h)}
               </button>
             ))}
           </div>

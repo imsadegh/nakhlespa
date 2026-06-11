@@ -74,6 +74,16 @@
   --ring: oklch(0.72 0.10 75);
   --radius: 0.75rem;
 
+  /* shadcn sidebar vars */
+  --sidebar: #061409;
+  --sidebar-foreground: oklch(0.90 0.01 80);
+  --sidebar-primary: oklch(0.72 0.10 75);
+  --sidebar-primary-foreground: oklch(0.22 0.05 160);
+  --sidebar-accent: rgba(255,255,255,0.06);
+  --sidebar-accent-foreground: oklch(0.90 0.01 80);
+  --sidebar-border: rgba(255,255,255,0.10);
+  --sidebar-ring: oklch(0.72 0.10 75);
+
   /* project-specific vars */
   --bg-base:      #04100b;
   --bg-surface:   rgba(255,255,255,0.07);
@@ -125,6 +135,16 @@
   --orb-a: #8eb89a;
   --orb-b: #d4b368;
   --orb-c: #b5d5c0;
+
+  /* shadcn sidebar vars — light */
+  --sidebar: #ede5d8;
+  --sidebar-foreground: oklch(0.25 0.04 40);
+  --sidebar-primary: oklch(0.52 0.10 65);
+  --sidebar-primary-foreground: oklch(0.96 0.01 75);
+  --sidebar-accent: rgba(139,110,60,0.08);
+  --sidebar-accent-foreground: oklch(0.25 0.04 40);
+  --sidebar-border: rgba(139,110,60,0.15);
+  --sidebar-ring: oklch(0.52 0.10 65);
 }
 
 @media (prefers-color-scheme: light) {
@@ -162,6 +182,15 @@
     --orb-a: #8eb89a;
     --orb-b: #d4b368;
     --orb-c: #b5d5c0;
+
+    --sidebar: #ede5d8;
+    --sidebar-foreground: oklch(0.25 0.04 40);
+    --sidebar-primary: oklch(0.52 0.10 65);
+    --sidebar-primary-foreground: oklch(0.96 0.01 75);
+    --sidebar-accent: rgba(139,110,60,0.08);
+    --sidebar-accent-foreground: oklch(0.25 0.04 40);
+    --sidebar-border: rgba(139,110,60,0.15);
+    --sidebar-ring: oklch(0.52 0.10 65);
   }
 }
 
