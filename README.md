@@ -198,6 +198,7 @@ source ~/.bashrc
 
 ```bash
 git clone <your-repo-url> /var/www/nakhlespa
+sudo chown -R $USER:$USER /var/www/nakhlespa
 cd /var/www/nakhlespa
 bun install
 ```
