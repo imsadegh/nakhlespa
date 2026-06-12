@@ -48,7 +48,7 @@ export function AdminSidebar() {
       <SidebarContent>
         <SidebarGroup>
           <SidebarGroupContent>
-            <SidebarMenu>
+            <SidebarMenu className="gap-1">
               {links.map(({ href, label, icon: Icon }) => {
                 const active = path === href || path.startsWith(href + '/')
                 return (

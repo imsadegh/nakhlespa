@@ -70,7 +70,7 @@ export function BookingDetailDialog({ booking }: { booking: BookingRow & { endTi
       <DialogTrigger
         render={
           <button
-            className="text-[11px] px-3 py-1 rounded-md transition-colors hover:bg-white/10 cursor-pointer"
+            className="text-xs px-3 py-1.5 rounded-md transition-colors hover:bg-white/10 cursor-pointer"
             style={{ color: "var(--text-muted)" }}
           />
         }

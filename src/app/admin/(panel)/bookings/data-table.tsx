@@ -97,7 +97,7 @@ export function BookingsDataTable<TData, TValue>({
               <TableRow>
                 <TableCell
                   colSpan={columns.length}
-                  className="h-24 text-center text-xs"
+                  className="h-24 text-xs"
                   style={{ color: "var(--text-faint)" }}
                 >
                   رزروی یافت نشد.

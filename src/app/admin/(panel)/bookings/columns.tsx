@@ -50,7 +50,7 @@ export const columns: ColumnDef<BookingRow>[] = [
     ),
     cell: ({ row }) => (
       <span className="tabular-nums text-[#C6A55B]">
-        {row.getValue("date")} {row.original.startTime}
+        {row.getValue("date")} {row.original.startTime.replace(/\d/g, d => '۰۱۲۳۴۵۶۷۸۹'[+d])}
       </span>
     ),
   },
@@ -94,7 +94,7 @@ export const columns: ColumnDef<BookingRow>[] = [
     cell: ({ row }) => {
       const status = row.getValue("status") as BookingStatus
       return (
-        <span className={`text-[10px] px-2 py-0.5 rounded-full ${statusStyle[status]}`}>
+        <span className={`text-xs px-2.5 py-1 rounded-full ${statusStyle[status]}`}>
           {statusLabel[status]}
         </span>
       )
