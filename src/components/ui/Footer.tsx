@@ -11,7 +11,7 @@ export function Footer() {
         </div>
         <div className="text-center sm:text-left">
           <p className="text-xs mb-1" style={{ color: 'var(--text-muted)' }}>تهران — تلفن: ۰۲۱-XXXXXXXX</p>
-          <p className="text-xs" style={{ color: 'var(--text-faint)' }}>© ۱۴۰۴ نخلسپا. تمام حقوق محفوظ است.</p>
+          <p className="text-xs" style={{ color: 'var(--text-faint)' }}>© ۱۴۰۵ نخلسپا. تمام حقوق محفوظ است.</p>
         </div>
       </div>
     </footer>

@@ -57,6 +57,8 @@ function ParticleCanvas() {
     let rafId: number
     let scrollBoost = 0   // 0–1, decays each frame
     let lastScrollY = window.scrollY
+    let mouseX = W / 2
+    let mouseY = H / 2
 
     canvas.width = W
     canvas.height = H
@@ -111,10 +113,12 @@ function ParticleCanvas() {
     }
 
     const onClick = (e: MouseEvent) => spawnBurst(e.clientX, e.clientY)
+    const onMouseMove = (e: MouseEvent) => { mouseX = e.clientX; mouseY = e.clientY }
 
     window.addEventListener('resize', onResize)
     window.addEventListener('scroll', onScroll, { passive: true })
     window.addEventListener('click', onClick)
+    window.addEventListener('mousemove', onMouseMove, { passive: true })
 
     function isLightTheme() {
       const attr = document.documentElement.getAttribute('data-theme')
@@ -143,7 +147,18 @@ function ParticleCanvas() {
           p.alpha -= 0.012
           if (p.alpha <= 0) { particles.splice(i, 1); continue }
         } else {
-          p.vy = p.baseVy * speedMul
+          // Gentle mouse attraction — only within 180px radius
+          const dx = mouseX - p.x
+          const dy = mouseY - p.y
+          const dist = Math.sqrt(dx * dx + dy * dy)
+          if (dist < 180 && dist > 0) {
+            const force = (1 - dist / 180) * 0.012
+            p.vx += (dx / dist) * force
+            p.vy += (dy / dist) * force
+          }
+          // Dampen so velocity doesn't accumulate
+          p.vx *= 0.97
+          p.vy = p.vy * 0.97 + p.baseVy * speedMul * 0.03
           p.x += p.vx
           p.y += p.vy
           p.alpha += p.alphaDir * 0.0015
@@ -170,6 +185,7 @@ function ParticleCanvas() {
       window.removeEventListener('resize', onResize)
       window.removeEventListener('scroll', onScroll)
       window.removeEventListener('click', onClick)
+      window.removeEventListener('mousemove', onMouseMove)
     }
   }, [])
 
