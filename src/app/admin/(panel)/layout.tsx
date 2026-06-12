@@ -2,6 +2,7 @@ import type { ReactNode } from 'react'
 import { AdminSidebar } from '@/components/admin/AdminSidebar'
 import { AmbientBackground } from '@/components/ui/AmbientBackground'
 import { SidebarProvider, SidebarInset, SidebarTrigger } from '@/components/ui/sidebar'
+import { PageTransition } from '@/components/admin/PageTransition'
 
 export default function PanelLayout({ children }: { children: ReactNode }) {
   return (
@@ -21,7 +22,7 @@ export default function PanelLayout({ children }: { children: ReactNode }) {
             <SidebarTrigger />
           </header>
           <main className="p-6 max-w-4xl mx-auto w-full">
-            {children}
+            <PageTransition>{children}</PageTransition>
           </main>
         </div>
       </SidebarInset>
