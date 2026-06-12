@@ -287,6 +287,8 @@ pm2 logs nakhlespa
 
 ### 8. Configure Nginx
 
+The VPS only needs to serve plain HTTP on port 80 — ArvanCloud CDN terminates HTTPS at the edge and forwards traffic to your server over HTTP.
+
 Copy the reference config and enable the site:
 
 ```bash
@@ -298,14 +300,37 @@ sudo ln -s /etc/nginx/sites-available/nakhlespa /etc/nginx/sites-enabled/
 sudo nginx -t && sudo systemctl reload nginx
 ```
 
-### 9. SSL with Certbot
+Nginx config should listen on port 80 and proxy to your Next.js app — no HTTPS block needed. If other sites are hosted on the same VPS, add `default_server` so Nginx routes ArvanCloud requests to nakhlespa instead of another site:
 
-```bash
-sudo apt-get install -y certbot python3-certbot-nginx
-sudo certbot --nginx -d yourdomain.com -d www.yourdomain.com
+```nginx
+server {
+    listen 80 default_server;
+    server_name nakhlespa.ir www.nakhlespa.ir;
+
+    location / {
+        proxy_pass http://localhost:3000;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_cache_bypass $http_upgrade;
+    }
+}
 ```
 
-Certbot auto-renews via a systemd timer. Verify: `sudo certbot renew --dry-run`
+> **Shared VPS note:** `default_server` only affects requests that don't match any other `server_name`. Other sites on the same server (e.g. `hakimyar.ir`) continue to work normally via their own configs.
+
+### 9. SSL via ArvanCloud CDN
+
+Since the domain is proxied through ArvanCloud, SSL is handled at the CDN edge — **do not install Certbot on the VPS**.
+
+1. Go to ArvanCloud dashboard → your domain → **SSL**
+2. Enable **ArvanCloud Certificate** (free, auto-renewed)
+3. Set SSL mode to **Full** (CDN↔origin over HTTP is fine since both ends are controlled)
+
+Traffic flow: `User → HTTPS → ArvanCloud → HTTP → VPS`
 
 ---
 
