@@ -214,6 +214,27 @@ body {
   100% { background-position: 200% }
 }
 
+/* GoldButton glow — animates opacity only (compositor layer, no repaint) */
+@keyframes gold-glow-pulse {
+  0%, 100% { opacity: 0.35 }
+  50%       { opacity: 0.65 }
+}
+
+.gold-button-glow {
+  isolation: isolate;
+}
+.gold-button-glow::after {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  border-radius: inherit;
+  background: radial-gradient(ellipse at 50% 50%, rgba(198,165,91,0.7) 0%, transparent 70%);
+  filter: blur(8px);
+  animation: gold-glow-pulse 2.8s ease-in-out infinite;
+  z-index: -1;
+  will-change: opacity;
+}
+
 /* ── Glass utilities ─────────────────────────────────────────── */
 @layer utilities {
   .glass {

@@ -17,21 +17,9 @@ export function GoldButton({ children, className, disabled, onClick, type = 'but
   const shimmerX = useTransform(smoothHover, [0, 1], ['-150%', '150%'])
 
   return (
-    <motion.button
-      onHoverStart={() => !disabled && hovered.set(1)}
-      onHoverEnd={() => hovered.set(0)}
-      whileTap={disabled ? undefined : { scale: 0.96 }}
-      animate={disabled ? undefined : {
-        boxShadow: [
-          '0 4px 20px rgba(198,165,91,0.35)',
-          '0 6px 28px rgba(198,165,91,0.58)',
-          '0 4px 20px rgba(198,165,91,0.35)',
-        ],
-      }}
-      transition={{
-        boxShadow: { duration: 2.8, repeat: Infinity, ease: 'easeInOut' },
-        scale: { type: 'spring', stiffness: 400, damping: 22 },
-      }}
+    <button
+      onMouseEnter={() => !disabled && hovered.set(1)}
+      onMouseLeave={() => hovered.set(0)}
       disabled={disabled}
       onClick={onClick}
       type={type}
@@ -44,10 +32,12 @@ export function GoldButton({ children, className, disabled, onClick, type = 'but
         'cursor-pointer select-none outline-none',
         'disabled:opacity-50 disabled:cursor-not-allowed',
         'focus-visible:ring-2 focus-visible:ring-[#d4b368] focus-visible:ring-offset-2 focus-visible:ring-offset-[#04100b]',
+        'active:scale-[0.96] transition-transform duration-100',
+        !disabled && 'gold-button-glow',
         className,
       )}
     >
-      {/* shimmer sweep */}
+      {/* shimmer sweep — only active on hover via framer-motion */}
       <motion.span
         aria-hidden
         style={{ translateX: shimmerX }}
@@ -55,6 +45,6 @@ export function GoldButton({ children, className, disabled, onClick, type = 'but
       />
 
       <span className="relative z-10">{children}</span>
-    </motion.button>
+    </button>
   )
 }
