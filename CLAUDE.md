@@ -35,7 +35,7 @@ Prisma CLI (`migrate`, `studio`) reads `.env`, not `.env.local`. Both must have 
 ### Stack
 - **Next.js 16** with App Router — `proxy.ts` (not `middleware.ts`) for auth guards
 - **Prisma v7** with `@prisma/adapter-pg` driver adapter — `PrismaClient` must receive `{ adapter }` everywhere, including `prisma/seed.ts`. The `datasource` block in `schema.prisma` has **no `url` field** (breaking change from v6).
-- **Supabase Auth** (`@supabase/ssr`) — admin authentication only; `createBrowserClient` in client components, `createServerClient` in `proxy.ts`
+- **Supabase Auth** (`@supabase/ssr`) — admin authentication only; all auth calls go through server-side API routes (`/api/auth/login`, `/api/auth/logout`) using `createServerClient` — the browser never calls Supabase directly (avoids loopback CORS block in production). `proxy.ts` also uses `createServerClient` for session validation.
 - **Tailwind v4** — config via `@theme {}` in `globals.css`; font variables must be registered there for utility classes to work
 
 ### Database Models

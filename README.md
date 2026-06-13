@@ -238,9 +238,16 @@ Create `/var/www/nakhlespa/.env.local`:
 
 ```bash
 DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:54322/postgres
+
+# Server-side only — loopback is fine, never sent to the browser
 SUPABASE_URL=http://127.0.0.1:54321
 SUPABASE_ANON_KEY=<anon key>
 SUPABASE_SERVICE_ROLE_KEY=<service_role key>
+
+# NEXT_PUBLIC_* vars are embedded in the browser bundle.
+# Auth is handled entirely via /api/auth/* server routes, so the browser
+# never calls Supabase directly — these values are never used at runtime,
+# but Next.js requires them to be defined to avoid build-time errors.
 NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:54321
 NEXT_PUBLIC_SUPABASE_ANON_KEY=<anon key>
 
@@ -298,18 +305,7 @@ pm2 logs nakhlespa
 
 ### 8. Configure Nginx
 
-The VPS only needs to serve plain HTTP on port 80 — ArvanCloud CDN terminates HTTPS at the edge and forwards traffic to your server over HTTP.
-
-Copy the reference config and enable the site:
-
-```bash
-sudo cp /var/www/nakhlespa/nginx.conf /etc/nginx/sites-available/nakhlespa
-# Edit the file to replace nakhlespa.ir with your actual domain
-sudo nano /etc/nginx/sites-available/nakhlespa
-
-sudo ln -s /etc/nginx/sites-available/nakhlespa /etc/nginx/sites-enabled/
-sudo nginx -t && sudo systemctl reload nginx
-```
+ArvanCloud CDN terminates HTTPS at the edge. The VPS listens on both port 80 (redirect) and 443 (self-signed cert for CDN↔origin encryption).
 
 Generate a self-signed certificate for ArvanCloud→VPS encryption (ArvanCloud accepts self-signed; users see ArvanCloud's valid cert):
 
@@ -323,36 +319,18 @@ sudo chmod 600 /etc/ssl/private/nakhlespa-selfsigned.key
 sudo chmod 644 /etc/ssl/certs/nakhlespa-selfsigned.crt
 ```
 
-Nginx config — listens on both port 80 and 443, both IPv4 and IPv6. If other sites are on the same VPS, `default_server` ensures nakhlespa catches unmatched requests instead of another site:
+Copy the reference config and enable the site:
 
-```nginx
-server {
-    listen 80 default_server;
-    listen [::]:80 default_server;
-    server_name nakhlespa.ir www.nakhlespa.ir;
-    return 301 https://$host$request_uri;
-}
+```bash
+sudo cp /var/www/nakhlespa/nginx.conf /etc/nginx/sites-available/nakhlespa
+# Edit the file to replace nakhlespa.ir with your actual domain if needed
+sudo nano /etc/nginx/sites-available/nakhlespa
 
-server {
-    listen 443 ssl default_server;
-    listen [::]:443 ssl default_server;
-    server_name nakhlespa.ir www.nakhlespa.ir;
-
-    ssl_certificate /etc/ssl/certs/nakhlespa-selfsigned.crt;
-    ssl_certificate_key /etc/ssl/private/nakhlespa-selfsigned.key;
-
-    location / {
-        proxy_pass http://localhost:3000;
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection 'upgrade';
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_cache_bypass $http_upgrade;
-    }
-}
+sudo ln -s /etc/nginx/sites-available/nakhlespa /etc/nginx/sites-enabled/
+sudo nginx -t && sudo systemctl reload nginx
 ```
+
+The reference `nginx.conf` listens on both port 80 and 443, both IPv4 and IPv6, and proxies all traffic to the Next.js app on port 3000. Auth calls from the browser go to Next.js API routes (`/api/auth/*`) which call Supabase server-side over loopback — the browser never reaches Supabase directly.
 
 > **Shared VPS note:** `default_server` only affects requests that don't match any other `server_name`. Other sites (e.g. `hakimyar.ir`) continue to work via their own configs. Both IPv4 and IPv6 `default_server` must be set — missing `[::]` causes IPv6 requests to fall through to another site.
 
