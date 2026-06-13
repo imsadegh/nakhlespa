@@ -37,8 +37,8 @@ export function HeroSection() {
           </motion.p>
 
           <motion.div variants={fadeUp} className="flex gap-3 mb-10 flex-wrap">
-            <BookButton>← رزرو آنلاین</BookButton>
-            <GhostButton>مشاهده خدمات</GhostButton>
+            <BookButton className="py-2.5">← رزرو آنلاین</BookButton>
+            <GhostButton className="py-2.5">مشاهده خدمات</GhostButton>
           </motion.div>
         </div>
 

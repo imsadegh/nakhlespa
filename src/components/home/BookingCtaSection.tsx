@@ -10,9 +10,11 @@ export function BookingCtaSection() {
       initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true }}
     >
-      <GlassCard className="p-7 sm:p-10 relative overflow-hidden">
-        <div className="absolute -top-16 -right-16 w-56 h-56 rounded-full bg-[rgba(198,165,91,0.18)] blur-3xl pointer-events-none" />
-        <div className="absolute -bottom-10 -left-10 w-40 h-40 rounded-full bg-[rgba(31,94,70,0.25)] blur-2xl pointer-events-none" />
+      <GlassCard className="p-7 sm:p-10 relative">
+        <div className="absolute inset-0 overflow-hidden rounded-2xl pointer-events-none">
+          <div className="absolute -top-16 -right-16 w-56 h-56 rounded-full bg-[rgba(198,165,91,0.18)] blur-3xl" />
+          <div className="absolute -bottom-10 -left-10 w-40 h-40 rounded-full bg-[rgba(31,94,70,0.25)] blur-2xl" />
+        </div>
         <div className="relative sm:flex sm:items-center sm:justify-between sm:gap-8">
           <div className="mb-6 sm:mb-0">
             <h2 className="text-xl sm:text-2xl font-semibold mb-2" style={{ color: 'var(--text-primary)' }}>آماده رزرو هستید؟</h2>

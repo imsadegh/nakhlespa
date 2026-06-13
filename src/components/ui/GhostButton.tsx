@@ -1,21 +1,33 @@
 'use client'
-import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { motion } from 'framer-motion'
-import type { ComponentPropsWithoutRef } from 'react'
 
-type Props = ComponentPropsWithoutRef<typeof Button>
+type Props = {
+  children: React.ReactNode
+  className?: string
+  disabled?: boolean
+  onClick?: React.MouseEventHandler<HTMLButtonElement>
+  type?: 'button' | 'submit' | 'reset'
+}
 
-export function GhostButton({ children, className, disabled, ...props }: Props) {
+export function GhostButton({ children, className, disabled, onClick, type = 'button' }: Props) {
   return (
-    <motion.div
+    <motion.button
       whileHover={disabled ? undefined : { y: -1 }}
       whileTap={disabled ? undefined : { scale: 0.97 }}
-      className="inline-flex"
+      disabled={disabled}
+      onClick={onClick}
+      type={type}
+      className={cn(
+        'glass inline-flex items-center justify-center rounded-xl px-5 py-3',
+        'text-sm font-light text-muted-foreground/70',
+        'cursor-pointer select-none outline-none',
+        'disabled:pointer-events-none disabled:opacity-50',
+        'focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
+        className,
+      )}
     >
-      <Button variant="ghost" disabled={disabled} className={cn('glass rounded-xl px-5 py-3 text-muted-foreground', className)} {...props}>
-        {children}
-      </Button>
-    </motion.div>
+      {children}
+    </motion.button>
   )
 }

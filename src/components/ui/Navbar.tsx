@@ -10,7 +10,7 @@ export function Navbar() {
     <div className="fixed top-0 inset-x-0 z-50 flex justify-center px-3 sm:px-6 pt-3 pointer-events-none">
     <nav className="w-full max-w-screen-xl flex items-center justify-between px-5 sm:px-7 py-3
       rounded-2xl pointer-events-auto
-      backdrop-blur-[56px] saturate-150
+      backdrop-blur-[40px] sm:backdrop-blur-[56px] saturate-150
       border shadow-[0_4px_24px_rgba(0,0,0,0.10),0_1px_4px_rgba(0,0,0,0.06),inset_0_1px_0_rgba(255,255,255,0.20)]"
       style={{
         backgroundColor: 'color-mix(in srgb, var(--bg-base) 65%, transparent)',

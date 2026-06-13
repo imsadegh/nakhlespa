@@ -1,5 +1,5 @@
 // src/app/layout.tsx
-import type { Metadata } from 'next'
+import type { Metadata, Viewport } from 'next'
 import { Vazirmatn } from 'next/font/google'
 import './globals.css'
 import { startCronJobs } from '@/lib/cron'
@@ -15,6 +15,11 @@ const vazir = Vazirmatn({ subsets: ['arabic'], variable: '--font-vazir', display
 export const metadata: Metadata = {
   title: 'نخلسپا — رزرو آنلاین ماساژ',
   description: 'رزرو آنلاین خدمات ماساژ درمانی و آرامش‌بخش نخلسپا',
+}
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
 }
 
 // This script is a hardcoded string with no user input — safe from XSS

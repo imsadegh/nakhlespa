@@ -1,6 +1,6 @@
 'use client'
 import { motion } from 'framer-motion'
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 
 type OrbMotion = { x: number[]; y: number[]; scale: number[] }
@@ -63,7 +63,10 @@ function ParticleCanvas() {
     canvas.width = W
     canvas.height = H
 
-    const COUNT = Math.min(Math.floor((W * H) / 14000), 80)
+    const isMobileDevice = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)
+    const COUNT = isMobileDevice
+      ? Math.min(Math.floor((W * H) / 20000), 30)
+      : Math.min(Math.floor((W * H) / 14000), 80)
     const particles: Particle[] = Array.from({ length: COUNT }, () => {
       const baseVy = -(Math.random() * 0.3 + 0.08)
       return {
@@ -147,18 +150,18 @@ function ParticleCanvas() {
           p.alpha -= 0.012
           if (p.alpha <= 0) { particles.splice(i, 1); continue }
         } else {
-          // Gentle mouse attraction — only within 180px radius
+          // Mouse repulsion — within 260px radius
           const dx = mouseX - p.x
           const dy = mouseY - p.y
           const dist = Math.sqrt(dx * dx + dy * dy)
           if (dist < 180 && dist > 0) {
-            const force = (1 - dist / 180) * 0.012
-            p.vx += (dx / dist) * force
-            p.vy += (dy / dist) * force
+            const force = (1 - dist / 180) * 0.045
+            p.vx -= (dx / dist) * force
+            p.vy -= (dy / dist) * force
           }
           // Dampen so velocity doesn't accumulate
-          p.vx *= 0.97
-          p.vy = p.vy * 0.97 + p.baseVy * speedMul * 0.03
+          p.vx *= 0.92
+          p.vy = p.vy * 0.92 + p.baseVy * speedMul * 0.08
           p.x += p.vx
           p.y += p.vy
           p.alpha += p.alphaDir * 0.0015
@@ -193,45 +196,54 @@ function ParticleCanvas() {
 }
 
 export function AmbientBackground() {
+  const [isMobile, setIsMobile] = useState(false)
+  useEffect(() => {
+    setIsMobile(/iPhone|iPad|iPod|Android/i.test(navigator.userAgent))
+  }, [])
+
   return (
     <div className="fixed inset-0 z-0 overflow-hidden" aria-hidden>
       {/* Solid base color */}
       <div className="absolute inset-0 transition-colors duration-500" style={{ backgroundColor: 'var(--bg-base)' }} />
 
-      {/* Gradient layer — soft multi-stop radials so no hard color edge */}
-      <div
-        className="absolute inset-0"
-        style={{
-          background:
-            'radial-gradient(ellipse 90% 70% at 15% 10%, var(--orb-a) 0%, color-mix(in srgb, var(--orb-a) 40%, transparent) 35%, transparent 65%), ' +
-            'radial-gradient(ellipse 70% 60% at 85% 30%, var(--orb-c) 0%, color-mix(in srgb, var(--orb-c) 40%, transparent) 30%, transparent 60%), ' +
-            'radial-gradient(ellipse 60% 50% at 60% 80%, var(--orb-b) 0%, color-mix(in srgb, var(--orb-b) 40%, transparent) 30%, transparent 60%)',
-          opacity: 0.35,
-        }}
-      />
+      {!isMobile && (
+        <>
+          {/* Gradient layer */}
+          <div
+            className="absolute inset-0"
+            style={{
+              background:
+                'radial-gradient(ellipse 90% 70% at 15% 10%, var(--orb-a) 0%, color-mix(in srgb, var(--orb-a) 40%, transparent) 35%, transparent 65%), ' +
+                'radial-gradient(ellipse 70% 60% at 85% 30%, var(--orb-c) 0%, color-mix(in srgb, var(--orb-c) 40%, transparent) 30%, transparent 60%), ' +
+                'radial-gradient(ellipse 60% 50% at 60% 80%, var(--orb-b) 0%, color-mix(in srgb, var(--orb-b) 40%, transparent) 30%, transparent 60%)',
+              opacity: 0.35,
+            }}
+          />
 
-      {/* Animated orbs — radial-gradient inside so blur operates on a pre-soft shape */}
-      {orbs.map((orb, i) => (
-        <motion.div
-          key={i}
-          className="absolute rounded-full"
-          style={{
-            width: orb.size,
-            height: orb.size,
-            background: `radial-gradient(circle at 50% 50%, var(${orb.colorVar}) 0%, color-mix(in srgb, var(${orb.colorVar}) 50%, transparent) 40%, transparent 70%)`,
-            opacity: orb.opacity,
-            filter: `blur(${Math.round(orb.size * 0.22)}px)`,
-            top: orb.top,
-            right: orb.right,
-            bottom: orb.bottom,
-            left: orb.left,
-          }}
-          animate={orb.motion}
-          transition={{ duration: orb.duration, delay: orb.delay, repeat: Infinity, ease: 'easeInOut', repeatType: 'loop' }}
-        />
-      ))}
+          {/* Animated orbs */}
+          {orbs.map((orb, i) => (
+            <motion.div
+              key={i}
+              className="absolute rounded-full"
+              style={{
+                width: orb.size,
+                height: orb.size,
+                background: `radial-gradient(circle at 50% 50%, var(${orb.colorVar}) 0%, color-mix(in srgb, var(${orb.colorVar}) 50%, transparent) 40%, transparent 70%)`,
+                opacity: orb.opacity,
+                filter: `blur(${Math.round(orb.size * 0.22)}px)`,
+                top: orb.top,
+                right: orb.right,
+                bottom: orb.bottom,
+                left: orb.left,
+              }}
+              animate={orb.motion}
+              transition={{ duration: orb.duration, delay: orb.delay, repeat: Infinity, ease: 'easeInOut', repeatType: 'loop' }}
+            />
+          ))}
+        </>
+      )}
 
-      {/* Floating particles — reactive to scroll and click */}
+      {/* Floating particles — always rendered */}
       <ParticleCanvas />
     </div>
   )
