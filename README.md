@@ -300,12 +300,35 @@ sudo ln -s /etc/nginx/sites-available/nakhlespa /etc/nginx/sites-enabled/
 sudo nginx -t && sudo systemctl reload nginx
 ```
 
-Nginx config should listen on port 80 and proxy to your Next.js app — no HTTPS block needed. If other sites are hosted on the same VPS, add `default_server` so Nginx routes ArvanCloud requests to nakhlespa instead of another site:
+Generate a self-signed certificate for ArvanCloud→VPS encryption (ArvanCloud accepts self-signed; users see ArvanCloud's valid cert):
+
+```bash
+sudo openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
+  -keyout /etc/ssl/private/nakhlespa-selfsigned.key \
+  -out /etc/ssl/certs/nakhlespa-selfsigned.crt \
+  -subj "/C=IR/ST=Tehran/L=Tehran/O=Nakhlespa/CN=nakhlespa.ir"
+
+sudo chmod 600 /etc/ssl/private/nakhlespa-selfsigned.key
+sudo chmod 644 /etc/ssl/certs/nakhlespa-selfsigned.crt
+```
+
+Nginx config — listens on both port 80 and 443, both IPv4 and IPv6. If other sites are on the same VPS, `default_server` ensures nakhlespa catches unmatched requests instead of another site:
 
 ```nginx
 server {
     listen 80 default_server;
+    listen [::]:80 default_server;
     server_name nakhlespa.ir www.nakhlespa.ir;
+    return 301 https://$host$request_uri;
+}
+
+server {
+    listen 443 ssl default_server;
+    listen [::]:443 ssl default_server;
+    server_name nakhlespa.ir www.nakhlespa.ir;
+
+    ssl_certificate /etc/ssl/certs/nakhlespa-selfsigned.crt;
+    ssl_certificate_key /etc/ssl/private/nakhlespa-selfsigned.key;
 
     location / {
         proxy_pass http://localhost:3000;
@@ -320,7 +343,7 @@ server {
 }
 ```
 
-> **Shared VPS note:** `default_server` only affects requests that don't match any other `server_name`. Other sites on the same server (e.g. `hakimyar.ir`) continue to work normally via their own configs.
+> **Shared VPS note:** `default_server` only affects requests that don't match any other `server_name`. Other sites (e.g. `hakimyar.ir`) continue to work via their own configs. Both IPv4 and IPv6 `default_server` must be set — missing `[::]` causes IPv6 requests to fall through to another site.
 
 ### 9. SSL via ArvanCloud CDN
 
