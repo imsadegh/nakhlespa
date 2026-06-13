@@ -1,6 +1,6 @@
 // src/app/layout.tsx
 import type { Metadata, Viewport } from 'next'
-import { Vazirmatn } from 'next/font/google'
+import localFont from 'next/font/local'
 import './globals.css'
 import { startCronJobs } from '@/lib/cron'
 import { Toaster } from '@/components/ui/sonner'
@@ -10,7 +10,11 @@ if (process.env.NODE_ENV === 'production' && typeof window === 'undefined' && pr
   startCronJobs()
 }
 
-const vazir = Vazirmatn({ subsets: ['arabic'], variable: '--font-vazir', display: 'swap' })
+const vazir = localFont({
+  src: '../../public/fonts/Vazirmatn[wght].woff2',
+  variable: '--font-vazir',
+  display: 'swap',
+})
 
 export const metadata: Metadata = {
   title: 'نخلسپا — رزرو آنلاین ماساژ',
