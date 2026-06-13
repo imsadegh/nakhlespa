@@ -282,7 +282,11 @@ The project includes `ecosystem.config.js` configured for 2 cluster instances.
 ```bash
 pm2 start ecosystem.config.js --env production
 pm2 save
-pm2 startup                     # follow the printed command to enable on boot
+pm2 startup
+# Copy and run the printed sudo command, e.g.:
+# sudo env PATH=$PATH:/home/linuxbrew/.linuxbrew/Cellar/node@24/24.16.0/bin \
+#   /home/linuxbrew/.linuxbrew/lib/node_modules/pm2/bin/pm2 startup systemd -u nakhles --hp /home/nakhles
+pm2 save                        # save again after running the startup command
 ```
 
 Check status:
@@ -382,7 +386,9 @@ Supabase runs in Podman containers that stop on reboot. The Podman socket is kep
 ```bash
 crontab -e
 # Add:
-@reboot sleep 10 && cd /var/www/nakhlespa && supabase start >> /var/log/supabase-start.log 2>&1
+@reboot sleep 10 && export DOCKER_HOST=unix:///run/user/$(id -u)/podman/podman.sock && cd /var/www/nakhlespa && supabase start --exclude logflare,vector,imgproxy,mailpit,storage-api >> /var/log/supabase-start.log 2>&1
 ```
 
-The `sleep 10` gives the Podman socket time to come up before Supabase tries to connect.
+Two things are required in the cron entry:
+- `sleep 10` — gives the Podman socket time to come up before Supabase tries to connect
+- `export DOCKER_HOST=...` — cron doesn't source `.bashrc`, so the env var must be set inline
