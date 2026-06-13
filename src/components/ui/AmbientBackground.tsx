@@ -59,6 +59,9 @@ function ParticleCanvas() {
     let lastScrollY = window.scrollY
     let mouseX = W / 2
     let mouseY = H / 2
+    let lastMouseMove = 0
+    let lastActivityAt = Date.now()
+    let lastFrameAt = 0
 
     canvas.width = W
     canvas.height = H
@@ -113,10 +116,18 @@ function ParticleCanvas() {
       const delta = Math.abs(window.scrollY - lastScrollY)
       scrollBoost = Math.min(1, scrollBoost + delta * 0.012)
       lastScrollY = window.scrollY
+      lastActivityAt = Date.now()
     }
 
-    const onClick = (e: MouseEvent) => spawnBurst(e.clientX, e.clientY)
-    const onMouseMove = (e: MouseEvent) => { mouseX = e.clientX; mouseY = e.clientY }
+    const onClick = (e: MouseEvent) => { spawnBurst(e.clientX, e.clientY); lastActivityAt = Date.now() }
+    const onMouseMove = (e: MouseEvent) => {
+      const now = Date.now()
+      if (now - lastMouseMove < 32) return  // throttle to ~30fps
+      lastMouseMove = now
+      lastActivityAt = now
+      mouseX = e.clientX
+      mouseY = e.clientY
+    }
 
     window.addEventListener('resize', onResize)
     window.addEventListener('scroll', onScroll, { passive: true })
@@ -131,6 +142,12 @@ function ParticleCanvas() {
     }
 
     function draw() {
+      const now = Date.now()
+      const idle = now - lastActivityAt > 2000
+      const minInterval = idle ? 1000 / 30 : 1000 / 60
+      if (now - lastFrameAt < minInterval) { rafId = requestAnimationFrame(draw); return }
+      lastFrameAt = now
+
       ctx!.clearRect(0, 0, W, H)
 
       // Decay scroll boost
@@ -230,7 +247,7 @@ export function AmbientBackground() {
                 height: orb.size,
                 background: `radial-gradient(circle at 50% 50%, var(${orb.colorVar}) 0%, color-mix(in srgb, var(${orb.colorVar}) 50%, transparent) 40%, transparent 70%)`,
                 opacity: orb.opacity,
-                filter: `blur(${Math.round(orb.size * 0.22)}px)`,
+                willChange: 'transform',
                 top: orb.top,
                 right: orb.right,
                 bottom: orb.bottom,
