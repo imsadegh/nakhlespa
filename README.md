@@ -175,14 +175,21 @@ npm install -g pm2
 # Nginx
 sudo apt-get install -y nginx
 
-# Podman
-brew install podman
+# Podman + required runtime dependencies
+brew install podman conmon crun passt
+
+# Podman looks for conmon, crun, and pasta in system paths — symlink from Homebrew
+sudo mkdir -p /usr/local/libexec/podman /usr/local/bin
+sudo ln -sf $(which conmon) /usr/local/libexec/podman/conmon
+sudo ln -sf $(which crun) /usr/local/bin/crun
+sudo ln -sf $(which pasta) /usr/local/bin/pasta
 
 # Enable the Podman socket for your user (Supabase CLI uses it instead of Docker socket)
 systemctl --user enable --now podman.socket
 loginctl enable-linger $USER   # keep socket alive after logout
 # Point the Docker client env var to the Podman socket
 echo 'export DOCKER_HOST=unix:///run/user/$(id -u)/podman/podman.sock' >> ~/.bashrc
+echo 'export DOCKER_HOST=unix:///run/user/$(id -u)/podman/podman.sock' >> ~/.profile
 source ~/.bashrc
 
 # Supabase CLI:
