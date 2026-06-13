@@ -39,12 +39,12 @@ export async function getAvailableSlots(date: string, durationMinutes: number): 
     end: timeToMinutes(b.endTime),
   }))
 
-  const slots: { startTime: string; endTime: string }[] = []
+  const slots: { startTime: string; endTime: string; taken: boolean }[] = []
   let cursor = open
   while (cursor + durationMinutes <= close) {
     const slotEnd = cursor + durationMinutes
     const conflict = busyRanges.some(r => cursor < r.end && slotEnd > r.start)
-    if (!conflict) slots.push({ startTime: minutesToTime(cursor), endTime: minutesToTime(slotEnd) })
+    slots.push({ startTime: minutesToTime(cursor), endTime: minutesToTime(slotEnd), taken: conflict })
     cursor += 30
   }
   return slots

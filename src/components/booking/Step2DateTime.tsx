@@ -73,11 +73,33 @@ export function Step2DateTime({ state, update, goNext, goBack }: Props) {
             <p className="text-xs text-center py-8" style={{ color: 'var(--text-muted)' }}>در حال بارگذاری...</p>
           ) : slots.length === 0 ? (
             <p className="text-xs text-center py-8" style={{ color: 'var(--text-muted)' }}>ظرفیتی برای این روز موجود نیست</p>
+          ) : slots.every(s => s.taken) ? (
+            <p className="text-xs text-center py-8" style={{ color: 'var(--text-muted)' }}>تمام ساعت‌های این روز رزرو شده‌اند</p>
           ) : (
             <motion.div className="flex flex-wrap gap-2 mb-4"
               variants={{ show: { transition: { staggerChildren: 0.05 } } }} initial="hidden" animate="show">
               {slots.map(slot => {
                 const selected = state.startTime === slot.startTime
+                if (slot.taken) {
+                  return (
+                    <motion.div key={slot.startTime} title="این ساعت رزرو شده است"
+                      variants={{ hidden: { opacity: 0, scale: 0.85 }, show: { opacity: 1, scale: 1 } }}
+                      className="relative px-4 py-2 rounded-xl text-xs select-none cursor-not-allowed overflow-hidden"
+                      style={{
+                        color: 'var(--text-faint)',
+                        background: 'var(--bg-surface)',
+                        border: '1px solid var(--border-base)',
+                        opacity: 0.5,
+                      }}>
+                      <span className="line-through">{toFaTime(slot.startTime)}</span>
+                      {/* diagonal stripe overlay */}
+                      <span className="pointer-events-none absolute inset-0 rounded-xl"
+                        style={{
+                          backgroundImage: 'repeating-linear-gradient(135deg, transparent, transparent 4px, rgba(255,255,255,0.06) 4px, rgba(255,255,255,0.06) 5px)',
+                        }} />
+                    </motion.div>
+                  )
+                }
                 return (
                   <motion.button key={slot.startTime} type="button"
                     variants={{ hidden: { opacity: 0, scale: 0.85 }, show: { opacity: 1, scale: 1 } }}

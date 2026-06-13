@@ -11,6 +11,7 @@ export type ServiceDTO = {
 export type SlotDTO = {
   startTime: string  // "HH:mm"
   endTime: string    // "HH:mm"
+  taken: boolean
 }
 
 export type BookingCreateInput = {
