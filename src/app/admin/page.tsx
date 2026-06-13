@@ -1,15 +1,9 @@
 'use client'
 import { useState } from 'react'
-import { createBrowserClient } from '@supabase/ssr'
 import { AmbientBackground } from '@/components/ui/AmbientBackground'
 import { GlassCard } from '@/components/ui/GlassCard'
 import { GoldButton } from '@/components/ui/GoldButton'
 import { useRouter } from 'next/navigation'
-
-const browserSupabase = createBrowserClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-)
 
 const inputClass = 'w-full glass rounded-xl px-4 py-3 text-sm bg-transparent outline-none focus:ring-1 focus:ring-[rgba(198,165,91,0.4)]'
 
@@ -23,8 +17,12 @@ export default function AdminLoginPage() {
   async function handleLogin() {
     setLoading(true)
     setError('')
-    const { error } = await browserSupabase.auth.signInWithPassword({ email, password })
-    if (error) {
+    const res = await fetch('/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password }),
+    })
+    if (!res.ok) {
       setError('ایمیل یا رمز اشتباه است')
       setLoading(false)
       return

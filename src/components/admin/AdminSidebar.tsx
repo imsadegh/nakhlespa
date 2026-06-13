@@ -2,7 +2,6 @@
 
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { createBrowserClient } from '@supabase/ssr'
 import { LayoutDashboard, CalendarDays, Clock, LogOut } from 'lucide-react'
 import {
   Sidebar,
@@ -17,11 +16,6 @@ import {
 } from '@/components/ui/sidebar'
 import { ThemeToggle } from '@/components/ui/ThemeToggle'
 
-const browserSupabase = createBrowserClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-)
-
 const links = [
   { href: '/admin/dashboard', label: 'داشبورد', icon: LayoutDashboard },
   { href: '/admin/bookings',  label: 'رزروها',   icon: CalendarDays },
@@ -33,7 +27,7 @@ export function AdminSidebar() {
   const router = useRouter()
 
   async function handleLogout() {
-    await browserSupabase.auth.signOut()
+    await fetch('/api/auth/logout', { method: 'POST' })
     router.push('/admin')
   }
 
