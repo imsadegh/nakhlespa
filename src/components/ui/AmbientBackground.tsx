@@ -38,7 +38,7 @@ function ParticleCanvas() {
     // Reduced counts: mobile 20, desktop 40 (was 30/80)
     const COUNT = isMobileDevice
       ? Math.min(Math.floor((W * H) / 20000), 20)
-      : Math.min(Math.floor((W * H) / 18000), 40)
+      : Math.min(Math.floor((W * H) / 18000), 80)
 
     const particles: Particle[] = Array.from({ length: COUNT }, () => {
       const baseVy = -(Math.random() * 0.3 + 0.08)
