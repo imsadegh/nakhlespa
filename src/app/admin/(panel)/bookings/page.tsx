@@ -2,6 +2,8 @@ import { prisma } from '@/lib/prisma'
 import { columns, type BookingRow } from './columns'
 import { BookingsDataTable } from './data-table'
 
+export const dynamic = 'force-dynamic'
+
 function toFaDate(date: Date) {
   return new Date(date.toISOString().split('T')[0] + 'T12:00:00').toLocaleDateString('fa-IR')
 }
