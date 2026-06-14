@@ -13,12 +13,39 @@ model Service {
   descriptionFa   String?
   durationMinutes Int
   price           Int
+  color           String?
+  symbol          String?
+  tier            Int?
   isActive        Boolean   @default(true)
   createdAt       DateTime  @default(now())
   bookings        Booking[]
 
   @@unique([nameFa])
   @@map("services")
+}
+
+model Addon {
+  id           String         @id @default(uuid())
+  nameFa       String
+  price        Int
+  isActive     Boolean        @default(true)
+  requiresTier Boolean        @default(false)
+  createdAt    DateTime       @default(now())
+  bookings     BookingAddon[]
+
+  @@unique([nameFa])
+  @@map("addons")
+}
+
+model BookingAddon {
+  id        String  @id @default(uuid())
+  booking   Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  bookingId String
+  addon     Addon   @relation(fields: [addonId], references: [id])
+  addonId   String
+  pricePaid Int
+
+  @@map("booking_addons")
 }
 
 model WorkingHours {
@@ -58,7 +85,9 @@ model Booking {
   status             BookingStatus @default(PENDING_PAYMENT)
   zarinpalAuthority  String?
   zarinpalRefId      String?
+  addonsPricePaid    Int           @default(0)
   createdAt          DateTime      @default(now())
+  addons             BookingAddon[]
   smsReminders       SmsReminder[]
 
   @@index([date])
