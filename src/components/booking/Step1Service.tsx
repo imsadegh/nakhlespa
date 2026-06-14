@@ -29,7 +29,7 @@ const TIER_COLORS: Record<string, string> = {
 
 function TierSymbol({ symbol, color }: { symbol: string; color: string }) {
   return (
-    <svg width="32" height="32" viewBox="0 0 32 32" fill={color} opacity={0.85}>
+    <svg aria-hidden="true" width="32" height="32" viewBox="0 0 32 32" fill={color} style={{ opacity: 0.85 }}>
       {SYMBOL_SVG[symbol] ?? <circle cx="16" cy="16" r="10" />}
     </svg>
   )
@@ -37,7 +37,7 @@ function TierSymbol({ symbol, color }: { symbol: string; color: string }) {
 
 export function Step1Service({ state, update, goNext, services, addons }: Props) {
   const selectedService = services.find(s => s.id === state.serviceId)
-  const availableAddons = addons.filter(a => !a.requiresTier || selectedService?.tier !== null)
+  const availableAddons = addons.filter(a => !a.requiresTier || (selectedService?.tier ?? null) !== null)
 
   const totalPrice = (selectedService?.price ?? 0) +
     state.addonIds
@@ -87,7 +87,7 @@ export function Step1Service({ state, update, goNext, services, addons }: Props)
                   <div className="flex-1">
                     <h3 className="text-sm font-semibold mb-0.5" style={{ color: 'var(--text-primary)' }}>
                       {svc.nameFa}
-                      {svc.tier === 3 && <span className="mr-1 text-[10px] text-[#9B59B6] font-medium">VIP</span>}
+                      {svc.tier === 3 && <span className="mr-1 text-[10px] font-medium" style={{ color: TIER_COLORS.purple }}>VIP</span>}
                     </h3>
                     <p className="text-[10px]" style={{ color: 'var(--text-muted)' }}>
                       {svc.descriptionFa} — {svc.durationMinutes} دقیقه
@@ -111,12 +111,13 @@ export function Step1Service({ state, update, goNext, services, addons }: Props)
                 <button
                   key={addon.id}
                   type="button"
+                  aria-pressed={checked}
                   className="w-full text-right"
                   onClick={() => toggleAddon(addon.id)}
                 >
                   <GlassCard className={`flex items-center gap-3 p-2.5 cursor-pointer transition-all ${checked ? 'shadow-[0_0_0_1.5px_#C6A55B]' : ''}`}>
                     <div className={`w-5 h-5 rounded-md border flex items-center justify-center flex-shrink-0 transition-colors ${checked ? 'bg-[#C6A55B] border-[#C6A55B]' : 'border-[rgba(198,165,91,0.4)]'}`}>
-                      {checked && <span className="text-black text-[10px] font-bold">✓</span>}
+                      {checked && <span aria-hidden="true" className="text-black text-[10px] font-bold">✓</span>}
                     </div>
                     <span className="flex-1 text-xs" style={{ color: 'var(--text-primary)' }}>{addon.nameFa}</span>
                     <span className="text-xs text-[#C6A55B]">+{addon.price.toLocaleString('fa-IR')} ت</span>

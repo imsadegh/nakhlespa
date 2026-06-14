@@ -56,7 +56,7 @@ export function Step4Review({ state, goBack, services, addons }: Props) {
             <div className="border-t border-[rgba(198,165,91,0.15)] pt-2 mt-1">
               <div className="flex justify-between text-xs mb-1.5">
                 <span style={{ color: 'var(--text-muted)' }}>خدمت اصلی</span>
-                <span style={{ color: 'var(--text-primary)' }}>{service?.price.toLocaleString('fa-IR')} ت</span>
+                <span style={{ color: 'var(--text-primary)' }}>{service?.price.toLocaleString('fa-IR') ?? '—'} ت</span>
               </div>
               {selectedAddons.map(a => (
                 <div key={a.id} className="flex justify-between text-xs mb-1">
@@ -75,7 +75,7 @@ export function Step4Review({ state, goBack, services, addons }: Props) {
         {selectedAddons.length === 0 && (
           <div className="flex justify-between text-xs">
             <span style={{ color: 'var(--text-muted)' }}>مبلغ</span>
-            <span className="font-medium" style={{ color: 'var(--text-primary)' }}>{service?.price.toLocaleString('fa-IR')} تومان</span>
+            <span className="font-medium" style={{ color: 'var(--text-primary)' }}>{service?.price.toLocaleString('fa-IR') ?? '—'} تومان</span>
           </div>
         )}
       </GlassCard>
