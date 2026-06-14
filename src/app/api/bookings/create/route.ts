@@ -18,13 +18,32 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 })
   }
 
-  const { serviceId, customerName, customerPhone, date, startTime } = body
+  const { serviceId, customerName, customerPhone, date, startTime, addonIds = [] } = body
   if (!serviceId || !customerName || !customerPhone || !date || !startTime) {
     return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
   }
 
   const service = await prisma.service.findUnique({ where: { id: serviceId } })
   if (!service) return NextResponse.json({ error: 'Service not found' }, { status: 404 })
+
+  // Validate and fetch add-ons
+  let selectedAddons: { id: string; price: number; requiresTier: boolean }[] = []
+  if (addonIds.length > 0) {
+    selectedAddons = await prisma.addon.findMany({
+      where: { id: { in: addonIds }, isActive: true },
+      select: { id: true, price: true, requiresTier: true },
+    })
+    if (selectedAddons.length !== addonIds.length) {
+      return NextResponse.json({ error: 'One or more add-ons are invalid' }, { status: 400 })
+    }
+    // Enforce tier restriction: حمام طهورا only for tier services
+    if (service.tier === null && selectedAddons.some(a => a.requiresTier)) {
+      return NextResponse.json({ error: 'This add-on is not available for the selected service' }, { status: 400 })
+    }
+  }
+
+  const addonsPricePaid = selectedAddons.reduce((sum, a) => sum + a.price, 0)
+  const totalPrice = service.price + addonsPricePaid
 
   const [year, month, day] = date.split('-').map(Number)
   const bookingDate = new Date(Date.UTC(year, month - 1, day))
@@ -40,12 +59,16 @@ export async function POST(req: NextRequest) {
       startTime,
       endTime,
       status: BookingStatus.PENDING_PAYMENT,
+      addonsPricePaid,
+      addons: {
+        create: selectedAddons.map(a => ({ addonId: a.id, pricePaid: a.price })),
+      },
     },
   })
 
   try {
     const { authority, paymentUrl } = await zarinpalRequest(
-      service.price,
+      totalPrice,
       `رزرو ${service.nameFa} — نخلسپا`,
       customerPhone
     )
