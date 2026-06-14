@@ -11,99 +11,50 @@ function daysFromNow(days: number): Date {
   return d
 }
 
-async function seedBookings() {
-  const services = await prisma.service.findMany()
-  if (services.length === 0) {
-    console.log('No services found — skipping booking seed')
-    return
-  }
-
-  const [svc1, svc2] = services
-
-  const bookings = [
-    {
-      customerName: 'علی رضایی',
-      customerPhone: '09121111111',
-      date: daysFromNow(1),
-      startTime: '10:00',
-      endTime: '11:00',
-      status: BookingStatus.PAID,
-      serviceId: svc1.id,
-      zarinpalRefId: '123456001',
-    },
-    {
-      customerName: 'مریم احمدی',
-      customerPhone: '09122222222',
-      date: daysFromNow(2),
-      startTime: '11:30',
-      endTime: '13:00',
-      status: BookingStatus.PAID,
-      serviceId: svc2.id,
-      zarinpalRefId: '123456002',
-    },
-    {
-      customerName: 'حسین کریمی',
-      customerPhone: '09123333333',
-      date: daysFromNow(3),
-      startTime: '14:00',
-      endTime: '15:00',
-      status: BookingStatus.CONFIRMED,
-      serviceId: svc1.id,
-      zarinpalRefId: '123456003',
-    },
-    {
-      customerName: 'زهرا محمدی',
-      customerPhone: '09124444444',
-      date: daysFromNow(-2),
-      startTime: '09:00',
-      endTime: '10:00',
-      status: BookingStatus.PAID,
-      serviceId: svc1.id,
-      zarinpalRefId: '123456004',
-    },
-    {
-      customerName: 'رضا نوری',
-      customerPhone: '09125555555',
-      date: daysFromNow(-1),
-      startTime: '16:00',
-      endTime: '17:30',
-      status: BookingStatus.CANCELLED,
-      serviceId: svc2.id,
-      zarinpalRefId: null,
-    },
-    {
-      customerName: 'فاطمه صادقی',
-      customerPhone: '09126666666',
-      date: daysFromNow(0),
-      startTime: '12:00',
-      endTime: '13:00',
-      status: BookingStatus.PENDING_PAYMENT,
-      serviceId: svc1.id,
-      zarinpalRefId: null,
-    },
+async function main() {
+  // 4 massage room tiers
+  const tiers = [
+    { nameFa: 'نسیم', descriptionFa: 'غرفه بهار', durationMinutes: 60, price: 700000, color: 'red', symbol: 'circle', tier: 1 },
+    { nameFa: 'آفتاب', descriptionFa: 'غرفه تابستان', durationMinutes: 60, price: 850000, color: 'yellow', symbol: 'triangle', tier: 2 },
+    { nameFa: 'ارغوان', descriptionFa: 'غرفه پاییز — VIP', durationMinutes: 60, price: 1000000, color: 'purple', symbol: 'quadrilateral', tier: 3 },
+    { nameFa: 'باران', descriptionFa: 'غرفه زمستان', durationMinutes: 60, price: 950000, color: 'blue', symbol: 'octagon', tier: 4 },
   ]
 
-  for (const b of bookings) {
-    await prisma.booking.create({ data: b })
+  for (const t of tiers) {
+    await prisma.service.upsert({
+      where: { nameFa: t.nameFa },
+      update: t,
+      create: t,
+    })
   }
 
-  console.log(`Seeded ${bookings.length} bookings`)
-}
-
-async function main() {
-  await prisma.service.upsert({
-    where: { nameFa: 'ماساژ درمانی' },
-    update: { descriptionFa: 'Swedish · Deep Tissue · Sports', durationMinutes: 90, price: 350000 },
-    create: { nameFa: 'ماساژ درمانی', descriptionFa: 'Swedish · Deep Tissue · Sports', durationMinutes: 90, price: 350000 },
-  })
-
+  // Standalone consultation service (no tier/color/symbol)
   await prisma.service.upsert({
     where: { nameFa: 'مشاوره' },
-    update: { descriptionFa: 'مشاوره تخصصی', durationMinutes: 30, price: 250000 },
-    create: { nameFa: 'مشاوره', descriptionFa: 'مشاوره تخصصی', durationMinutes: 30, price: 250000 },
+    update: { descriptionFa: 'مشاوره تخصصی', durationMinutes: 30, price: 500000, color: null, symbol: null, tier: null },
+    create: { nameFa: 'مشاوره', descriptionFa: 'مشاوره تخصصی', durationMinutes: 30, price: 500000, color: null, symbol: null, tier: null },
   })
 
-  // Saturday=0 to Friday=6, open 9am–9pm every day
+  // Deactivate old services if they still exist
+  await prisma.service.updateMany({
+    where: { nameFa: { in: ['ماساژ درمانی', 'ماساژ آرامش‌بخش'] } },
+    data: { isActive: false },
+  })
+
+  // Add-ons
+  await prisma.addon.upsert({
+    where: { nameFa: 'نوشیدنی ایوان گلاب' },
+    update: { price: 150000, requiresTier: false },
+    create: { nameFa: 'نوشیدنی ایوان گلاب', price: 150000, requiresTier: false },
+  })
+
+  await prisma.addon.upsert({
+    where: { nameFa: 'حمام طهورا' },
+    update: { price: 200000, requiresTier: true },
+    create: { nameFa: 'حمام طهورا', price: 200000, requiresTier: true },
+  })
+
+  // Working hours: Saturday=0 to Friday=6, 9am–9pm
   for (let i = 0; i < 7; i++) {
     await prisma.workingHours.upsert({
       where: { dayOfWeek: i },
@@ -112,7 +63,7 @@ async function main() {
     })
   }
 
-  await seedBookings()
+  console.log('Seeded 4 room tiers, مشاوره, 2 add-ons, working hours')
 }
 
 main().finally(() => prisma.$disconnect())
