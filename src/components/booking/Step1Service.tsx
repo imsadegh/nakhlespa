@@ -2,6 +2,7 @@
 import { motion } from 'framer-motion'
 import { GlassCard } from '@/components/ui/GlassCard'
 import { GoldButton } from '@/components/ui/GoldButton'
+import { TierIcon } from '@/components/ui/TierIcon'
 import type { ServiceDTO, AddonDTO } from '@/types'
 import type { WizardState } from './BookingWizard'
 
@@ -13,26 +14,11 @@ type Props = {
   addons: AddonDTO[]
 }
 
-const SYMBOL_SVG: Record<string, React.ReactNode> = {
-  circle: <circle cx="16" cy="16" r="10" />,
-  triangle: <polygon points="16,6 26,26 6,26" />,
-  quadrilateral: <rect x="6" y="6" width="20" height="20" />,
-  octagon: <polygon points="11,6 21,6 26,11 26,21 21,26 11,26 6,21 6,11" />,
-}
-
 const TIER_COLORS: Record<string, string> = {
   red: '#E05C5C',
   yellow: '#D4A929',
   purple: '#9B59B6',
   blue: '#4A90D9',
-}
-
-function TierSymbol({ symbol, color }: { symbol: string; color: string }) {
-  return (
-    <svg aria-hidden="true" width="32" height="32" viewBox="0 0 32 32" fill={color} style={{ opacity: 0.85 }}>
-      {SYMBOL_SVG[symbol] ?? <circle cx="16" cy="16" r="10" />}
-    </svg>
-  )
 }
 
 export function Step1Service({ state, update, goNext, services, addons }: Props) {
@@ -66,29 +52,51 @@ export function Step1Service({ state, update, goNext, services, addons }: Props)
       <h2 className="text-base font-light mb-0.5" style={{ color: 'var(--text-primary)' }}>انتخاب غرفه</h2>
       <p className="text-xs mb-3 font-light" style={{ color: 'var(--text-muted)' }}>یک غرفه انتخاب کنید</p>
 
-      <div className="flex flex-col gap-2 mb-4">
-        {[...tierServices, ...otherServices].map((svc, i) => {
+      {/* Tier services: 2-column grid */}
+      <div className="grid grid-cols-2 gap-2 mb-2">
+        {tierServices.map((svc, i) => {
           const selected = state.serviceId === svc.id
-          const color = svc.color ? TIER_COLORS[svc.color] ?? '#C6A55B' : '#C6A55B'
+          const tierColor = svc.color ? TIER_COLORS[svc.color] ?? '#C6A55B' : '#C6A55B'
           return (
             <motion.div key={svc.id} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.06 }}>
+              <button type="button" className="w-full text-right h-full" onClick={() => selectService(svc)}>
+                <GlassCard
+                  gold={selected}
+                  className={`flex flex-col items-center gap-2 p-3 cursor-pointer transition-all h-full ${selected ? 'shadow-[0_0_0_2px_#C6A55B,0_8px_32px_rgba(198,165,91,0.3)]' : ''}`}
+                >
+                  <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-[rgba(198,165,91,0.08)] border border-[rgba(198,165,91,0.2)]">
+                    <TierIcon symbol={svc.symbol} color={svc.color} size={20} />
+                  </div>
+                  <div className="text-center">
+                    <h3 className="text-xs font-semibold mb-0.5" style={{ color: 'var(--text-primary)' }}>
+                      {svc.descriptionFa}
+                      {svc.tier === 3 && <span className="mr-1 text-[9px] font-medium" style={{ color: tierColor }}>VIP</span>}
+                    </h3>
+                    <p className="text-[10px] text-[#C6A55B] font-semibold">{svc.price.toLocaleString('fa-IR')} ت</p>
+                  </div>
+                </GlassCard>
+              </button>
+            </motion.div>
+          )
+        })}
+      </div>
+
+      {/* Non-tier services: full-width rows */}
+      <div className="flex flex-col gap-2 mb-4">
+        {otherServices.map((svc, i) => {
+          const selected = state.serviceId === svc.id
+          return (
+            <motion.div key={svc.id} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: (tierServices.length + i) * 0.06 }}>
               <button type="button" className="w-full text-right" onClick={() => selectService(svc)}>
                 <GlassCard
                   gold={selected}
                   className={`flex items-center gap-3 p-3 cursor-pointer transition-all ${selected ? 'shadow-[0_0_0_2px_#C6A55B,0_8px_32px_rgba(198,165,91,0.3)]' : ''}`}
                 >
                   <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 bg-[rgba(198,165,91,0.08)] border border-[rgba(198,165,91,0.2)]">
-                    {svc.symbol ? (
-                      <TierSymbol symbol={svc.symbol} color={color} />
-                    ) : (
-                      <span className="text-lg">🗓</span>
-                    )}
+                    <TierIcon symbol={svc.symbol} color={svc.color} size={18} />
                   </div>
                   <div className="flex-1">
-                    <h3 className="text-sm font-semibold mb-0.5" style={{ color: 'var(--text-primary)' }}>
-                      {svc.nameFa}
-                      {svc.tier === 3 && <span className="mr-1 text-[10px] font-medium" style={{ color: TIER_COLORS.purple }}>VIP</span>}
-                    </h3>
+                    <h3 className="text-sm font-semibold mb-0.5" style={{ color: 'var(--text-primary)' }}>{svc.nameFa}</h3>
                     <p className="text-[10px]" style={{ color: 'var(--text-muted)' }}>
                       {svc.descriptionFa} — {svc.durationMinutes} دقیقه
                     </p>

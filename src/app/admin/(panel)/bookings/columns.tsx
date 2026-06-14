@@ -6,6 +6,11 @@ import { ArrowUpDown } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { BookingDetailDialog } from "./BookingDetailDialog"
 
+export type BookingAddonRow = {
+  nameFa: string
+  pricePaid: number
+}
+
 export type BookingRow = {
   id: string
   date: string        // fa-IR formatted
@@ -14,6 +19,9 @@ export type BookingRow = {
   customerName: string
   customerPhone: string
   serviceNameFa: string
+  servicePrice: number
+  addonsPricePaid: number
+  addons: BookingAddonRow[]
   status: BookingStatus
   notes: string | null
   refId: string | null

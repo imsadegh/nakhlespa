@@ -6,6 +6,7 @@ import { GlassCard } from '@/components/ui/GlassCard'
 import { GoldButton } from '@/components/ui/GoldButton'
 import { DatePicker } from '@/components/ui/DatePicker'
 import { TimePicker } from '@/components/ui/TimePicker'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 
 const DAY_NAMES = ['شنبه', 'یکشنبه', 'دوشنبه', 'سه‌شنبه', 'چهارشنبه', 'پنجشنبه', 'جمعه']
 
@@ -68,29 +69,47 @@ export function ScheduleManager({ hours, blocks }: { hours: Hour[]; blocks: Bloc
 
       <h2 className="text-sm mb-2" style={{ color: 'var(--text-muted)' }}>ساعت کاری</h2>
       <GlassCard className="mb-4 overflow-hidden">
-        {localHours.map((h, i) => (
-          <div key={h.id} className={`flex items-center gap-2 px-3 py-1.5 ${i < localHours.length - 1 ? 'border-b' : ''}`} style={{ borderColor: 'var(--border-base)' }}>
-            <span className="w-14 flex-shrink-0" style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>{DAY_NAMES[h.dayOfWeek]}</span>
-            <TimePicker value={h.openTime} onChange={v => { const next = [...localHours]; next[i] = { ...h, openTime: v }; setLocalHours(next) }} className="min-w-[90px]" />
-            <span className="text-[10px]" style={{ color: 'var(--text-faint)' }}>تا</span>
-            <TimePicker value={h.closeTime} onChange={v => { const next = [...localHours]; next[i] = { ...h, closeTime: v }; setLocalHours(next) }} className="min-w-[90px]" />
-            <div className="flex-1" />
-            <button type="button"
-              onClick={() => { const next = [...localHours]; next[i] = { ...h, isOpen: !h.isOpen }; setLocalHours(next) }}
-              className="inline-flex items-center justify-center text-xs px-3 py-1 rounded-full font-medium transition-all duration-150 min-w-[52px] border"
-              style={h.isOpen ? {
-                background: 'rgba(31,94,70,0.20)',
-                borderColor: 'rgba(74,180,120,0.35)',
-                color: 'var(--color-green-soft)',
-              } : {
-                background: 'var(--glass-bg)',
-                borderColor: 'var(--border-base)',
-                color: 'var(--text-muted)',
-              }}>
-              {h.isOpen ? 'باز' : 'بسته'}
-            </button>
-          </div>
-        ))}
+        <Table>
+          <TableHeader>
+            <TableRow className="border-b" style={{ borderColor: 'var(--border-base)' }}>
+              <TableHead className="text-xs font-medium py-2 px-3" style={{ color: 'var(--text-faint)' }}>روز</TableHead>
+              <TableHead className="text-xs font-medium py-2 px-3" style={{ color: 'var(--text-faint)' }}>از</TableHead>
+              <TableHead className="text-xs font-medium py-2 px-3" style={{ color: 'var(--text-faint)' }}>تا</TableHead>
+              <TableHead className="text-xs font-medium py-2 px-3 text-left" style={{ color: 'var(--text-faint)' }}>وضعیت</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {localHours.map((h, i) => (
+              <TableRow key={h.id} className="border-b last:border-0" style={{ borderColor: 'var(--border-base)' }}>
+                <TableCell className="py-1.5 px-3 text-xs" style={{ color: 'var(--text-muted)' }}>
+                  {DAY_NAMES[h.dayOfWeek]}
+                </TableCell>
+                <TableCell className="py-1.5 px-3">
+                  <TimePicker value={h.openTime} onChange={v => { const next = [...localHours]; next[i] = { ...h, openTime: v }; setLocalHours(next) }} className="min-w-[90px]" />
+                </TableCell>
+                <TableCell className="py-1.5 px-3">
+                  <TimePicker value={h.closeTime} onChange={v => { const next = [...localHours]; next[i] = { ...h, closeTime: v }; setLocalHours(next) }} className="min-w-[90px]" />
+                </TableCell>
+                <TableCell className="py-1.5 px-3 text-left">
+                  <button type="button"
+                    onClick={() => { const next = [...localHours]; next[i] = { ...h, isOpen: !h.isOpen }; setLocalHours(next) }}
+                    className="inline-flex items-center justify-center text-xs px-3 py-1 rounded-full font-medium transition-all duration-150 min-w-[52px] border"
+                    style={h.isOpen ? {
+                      background: 'rgba(31,94,70,0.20)',
+                      borderColor: 'rgba(74,180,120,0.35)',
+                      color: 'var(--color-green-soft)',
+                    } : {
+                      background: 'var(--glass-bg)',
+                      borderColor: 'var(--border-base)',
+                      color: 'var(--text-muted)',
+                    }}>
+                    {h.isOpen ? 'باز' : 'بسته'}
+                  </button>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
       </GlassCard>
       <GoldButton onClick={saveHours} className="w-full mb-6">ذخیره ساعت‌ها</GoldButton>
 

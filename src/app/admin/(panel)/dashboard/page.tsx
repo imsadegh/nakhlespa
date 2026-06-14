@@ -41,8 +41,22 @@ export default async function DashboardPage() {
     take: 10,
   })
 
+  const past = await prisma.booking.findMany({
+    where: { date: { lt: today }, status: { not: BookingStatus.CANCELLED } },
+    include: { service: true },
+    orderBy: [{ date: 'desc' }, { startTime: 'desc' }],
+    take: 10,
+  })
+
   // Group by date string
   const grouped = upcoming.reduce<Record<string, typeof upcoming>>((acc, b) => {
+    const key = b.date.toISOString().split('T')[0]
+    if (!acc[key]) acc[key] = []
+    acc[key].push(b)
+    return acc
+  }, {})
+
+  const groupedPast = past.reduce<Record<string, typeof past>>((acc, b) => {
     const key = b.date.toISOString().split('T')[0]
     if (!acc[key]) acc[key] = []
     acc[key].push(b)
@@ -65,26 +79,62 @@ export default async function DashboardPage() {
       <h2 className="text-sm mb-4" style={{ color: 'var(--text-muted)' }}>رزروهای پیش رو</h2>
 
       {Object.keys(grouped).length === 0 && (
-        <p className="text-xs" style={{ color: 'var(--text-faint)' }}>رزروی ثبت نشده است.</p>
+        <p className="text-xs mb-6" style={{ color: 'var(--text-faint)' }}>رزروی ثبت نشده است.</p>
       )}
 
-      <div className="flex flex-col gap-6">
+      <div className="flex flex-col gap-6 mb-10">
         {Object.entries(grouped).map(([dateKey, bookings]) => (
           <div key={dateKey}>
-            {/* Date header */}
             <div className="flex items-center gap-3 mb-2">
               <span className="text-xs font-medium text-[#C6A55B]">
                 {toFaDate(new Date(dateKey + 'T12:00:00'))}
               </span>
               <div className="flex-1 h-px" style={{ background: 'var(--border-base)' }} />
             </div>
-
-            {/* Rows for this date */}
             <div className="flex flex-col gap-1.5">
               {bookings.map(b => (
                 <Link key={b.id} href={`/admin/bookings/${b.id}`}>
                   <div className="flex items-center gap-4 px-4 py-2.5 rounded-lg transition-colors hover:bg-white/5 cursor-pointer">
                     <span className="text-xs tabular-nums w-12 flex-shrink-0 text-[#C6A55B]">
+                      {b.startTime}
+                    </span>
+                    <span className="text-xs font-medium flex-shrink-0" style={{ color: 'var(--text-primary)' }}>
+                      {b.customerName}
+                    </span>
+                    <span className="text-[11px]" style={{ color: 'var(--text-faint)' }}>
+                      · {b.service.nameFa}
+                    </span>
+                    <span className={`mr-auto text-[10px] px-2 py-0.5 rounded-full ${statusStyle[b.status]}`}>
+                      {statusLabel[b.status]}
+                    </span>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <h2 className="text-sm mb-4" style={{ color: 'var(--text-muted)' }}>رزروهای گذشته</h2>
+
+      {Object.keys(groupedPast).length === 0 && (
+        <p className="text-xs" style={{ color: 'var(--text-faint)' }}>رزروی در گذشته یافت نشد.</p>
+      )}
+
+      <div className="flex flex-col gap-6">
+        {Object.entries(groupedPast).map(([dateKey, bookings]) => (
+          <div key={dateKey}>
+            <div className="flex items-center gap-3 mb-2">
+              <span className="text-xs font-medium" style={{ color: 'var(--text-faint)' }}>
+                {toFaDate(new Date(dateKey + 'T12:00:00'))}
+              </span>
+              <div className="flex-1 h-px" style={{ background: 'var(--border-base)' }} />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              {bookings.map(b => (
+                <Link key={b.id} href={`/admin/bookings/${b.id}`}>
+                  <div className="flex items-center gap-4 px-4 py-2.5 rounded-lg transition-colors hover:bg-white/5 cursor-pointer opacity-60">
+                    <span className="text-xs tabular-nums w-12 flex-shrink-0" style={{ color: 'var(--text-faint)' }}>
                       {b.startTime}
                     </span>
                     <span className="text-xs font-medium flex-shrink-0" style={{ color: 'var(--text-primary)' }}>

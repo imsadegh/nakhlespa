@@ -7,7 +7,28 @@ import type { WizardState } from './BookingWizard'
 
 type Props = { state: WizardState; update: (p: Partial<WizardState>) => void; goNext: () => void; goBack: () => void }
 
+function toEnDigits(s: string) {
+  return s
+    .replace(/[۰-۹]/g, d => String('۰۱۲۳۴۵۶۷۸۹'.indexOf(d)))
+    .replace(/[٠-٩]/g, d => String('٠١٢٣٤٥٦٧٨٩'.indexOf(d)))
+}
+
+function isValidIranPhone(phone: string) {
+  return /^09[0-9]{9}$/.test(phone)
+}
+
 export function Step3Details({ state, update, goNext, goBack }: Props) {
+  const phone = state.customerPhone ?? ''
+  const phoneValid = isValidIranPhone(phone)
+  const phoneTouched = phone.length > 0
+  const canProceed = !!(state.customerName?.trim()) && phoneValid
+
+  function handlePhoneChange(raw: string) {
+    // strip everything that isn't a digit after converting Persian/Arabic digits
+    const normalized = toEnDigits(raw).replace(/[^0-9]/g, '')
+    update({ customerPhone: normalized })
+  }
+
   return (
     <div>
       <h2 className="text-base font-light mb-0.5 text-foreground">اطلاعات شما</h2>
@@ -18,12 +39,21 @@ export function Step3Details({ state, update, goNext, goBack }: Props) {
           value={state.customerName ?? ''}
           onChange={e => update({ customerName: e.target.value })}
         />
-        <Input
-          placeholder="شماره موبایل *"
-          type="tel"
-          value={state.customerPhone ?? ''}
-          onChange={e => update({ customerPhone: e.target.value })}
-        />
+        <div>
+          <Input
+            placeholder="شماره موبایل * (مثال: 09123456789)"
+            type="tel"
+            inputMode="numeric"
+            value={phone}
+            onChange={e => handlePhoneChange(e.target.value)}
+            className={phoneTouched && !phoneValid ? 'border-destructive focus-visible:ring-destructive/30' : ''}
+          />
+          {phoneTouched && !phoneValid && (
+            <p className="text-[11px] mt-1 pr-1" style={{ color: 'var(--color-destructive, #f87171)' }}>
+              شماره موبایل باید ۱۱ رقم و با ۰۹ شروع شود
+            </p>
+          )}
+        </div>
         <Textarea
           placeholder="توضیحات (اختیاری)"
           value={state.customerNotes ?? ''}
@@ -33,7 +63,7 @@ export function Step3Details({ state, update, goNext, goBack }: Props) {
       </div>
       <div className="flex gap-3">
         <GhostButton onClick={goBack} className="flex-1">→ برگشت</GhostButton>
-        <GoldButton onClick={goNext} className="flex-1" disabled={!state.customerName || !state.customerPhone}>ادامه ←</GoldButton>
+        <GoldButton onClick={goNext} className="flex-1" disabled={!canProceed}>ادامه ←</GoldButton>
       </div>
     </div>
   )

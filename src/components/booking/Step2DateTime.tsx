@@ -19,10 +19,29 @@ function getDates(count = 14) {
   })
 }
 
+// Iranian week: Saturday=0…Friday=6. JS UTC day: Sunday=0…Saturday=6
+const JS_TO_IR: Record<number, number> = { 6: 0, 0: 1, 1: 2, 2: 3, 3: 4, 4: 5, 5: 6 }
+
+function iranianDayOfWeek(dateStr: string): number {
+  const [y, mo, d] = dateStr.split('-').map(Number)
+  return JS_TO_IR[new Date(Date.UTC(y, mo - 1, d)).getUTCDay()]
+}
+
 export function Step2DateTime({ state, update, goNext, goBack }: Props) {
   const [slots, setSlots] = useState<SlotDTO[]>([])
   const [loading, setLoading] = useState(false)
+  // dayOfWeek → isOpen; null means not yet loaded
+  const [closedDays, setClosedDays] = useState<Set<number> | null>(null)
   const dates = getDates()
+
+  useEffect(() => {
+    fetch('/api/working-hours')
+      .then(r => r.json())
+      .then((data: { dayOfWeek: number; isOpen: boolean }[]) => {
+        setClosedDays(new Set(data.filter(h => !h.isOpen).map(h => h.dayOfWeek)))
+      })
+      .catch(() => setClosedDays(new Set()))
+  }, [])
 
   useEffect(() => {
     if (!state.date || !state.serviceId) return
@@ -50,6 +69,25 @@ export function Step2DateTime({ state, update, goNext, goBack }: Props) {
             const [y, mo, day] = d.split('-').map(Number)
             const label = new Date(y, mo - 1, day).toLocaleDateString('fa-IR', { month: 'short', day: 'numeric' })
             const selected = state.date === d
+            const closed = closedDays !== null && closedDays.has(iranianDayOfWeek(d))
+            if (closed) {
+              return (
+                <div key={d} title="این روز تعطیل است"
+                  className="relative flex-shrink-0 px-4 py-2.5 rounded-xl text-xs select-none cursor-not-allowed overflow-hidden"
+                  style={{
+                    color: 'var(--text-faint)',
+                    background: 'var(--bg-surface)',
+                    border: '1px solid var(--border-base)',
+                    opacity: 0.5,
+                  }}>
+                  <span className="line-through">{label}</span>
+                  <span className="pointer-events-none absolute inset-0 rounded-xl"
+                    style={{
+                      backgroundImage: 'repeating-linear-gradient(135deg, transparent, transparent 4px, rgba(255,255,255,0.06) 4px, rgba(255,255,255,0.06) 5px)',
+                    }} />
+                </div>
+              )
+            }
             return (
               <button key={d} type="button" onClick={() => update({ date: d })}
                 className={`flex-shrink-0 px-4 py-2.5 rounded-xl text-xs transition-all ${selected ? 'bg-[#C6A55B] text-[#0F3D2E] font-bold shadow-[0_4px_16px_rgba(198,165,91,0.4)]' : ''}`}

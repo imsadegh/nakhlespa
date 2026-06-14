@@ -1,7 +1,7 @@
 'use client'
 
 import * as React from 'react'
-import { format } from 'date-fns-jalali'
+import { format, getDate } from 'date-fns-jalali'
 import { faIR } from 'date-fns-jalali/locale'
 import { defaultLocale } from 'react-day-picker'
 import { Calendar } from '@/components/ui/calendar'
@@ -69,6 +69,7 @@ export function DatePicker({ value, onChange, placeholder = 'انتخاب تار
             formatCaption: (date) => format(date, 'LLLL yyyy', { locale: faIR }),
             formatWeekdayName: (date) => format(date, 'EEEEE', { locale: faIR }),
             formatMonthDropdown: (date) => format(date, 'LLLL', { locale: faIR }),
+            formatDay: (date) => getDate(date).toLocaleString('fa-IR'),
           }}
           className="[--cell-size:--spacing(8)] bg-transparent p-3"
           classNames={{
