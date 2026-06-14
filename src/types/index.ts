@@ -6,6 +6,16 @@ export type ServiceDTO = {
   descriptionFa: string | null
   durationMinutes: number
   price: number
+  color: string | null
+  symbol: string | null
+  tier: number | null
+}
+
+export type AddonDTO = {
+  id: string
+  nameFa: string
+  price: number
+  requiresTier: boolean
 }
 
 export type SlotDTO = {
@@ -21,6 +31,7 @@ export type BookingCreateInput = {
   customerNotes?: string
   date: string        // "YYYY-MM-DD"
   startTime: string   // "HH:mm"
+  addonIds: string[]
 }
 
 export type BookingSummary = {
