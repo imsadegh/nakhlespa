@@ -11,6 +11,9 @@ export default async function BookPage() {
     descriptionFa: s.descriptionFa,
     durationMinutes: s.durationMinutes,
     price: s.price,
+    color: s.color,
+    symbol: s.symbol,
+    tier: s.tier,
   }))
   return (
     <>

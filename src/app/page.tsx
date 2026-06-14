@@ -16,6 +16,9 @@ export default async function HomePage() {
     descriptionFa: s.descriptionFa,
     durationMinutes: s.durationMinutes,
     price: s.price,
+    color: s.color,
+    symbol: s.symbol,
+    tier: s.tier,
   }))
   return (
     <BookingDialogProvider services={serviceDTOs}>
