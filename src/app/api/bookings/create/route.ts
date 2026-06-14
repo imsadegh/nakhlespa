@@ -18,10 +18,15 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 })
   }
 
-  const { serviceId, customerName, customerPhone, date, startTime, addonIds = [] } = body
+  const { serviceId, customerName, customerPhone, date, startTime } = body
+  const rawAddonIds = body.addonIds ?? []
   if (!serviceId || !customerName || !customerPhone || !date || !startTime) {
     return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
   }
+  if (!Array.isArray(rawAddonIds)) {
+    return NextResponse.json({ error: 'addonIds must be an array' }, { status: 400 })
+  }
+  const addonIds = [...new Set(rawAddonIds)]
 
   const service = await prisma.service.findUnique({ where: { id: serviceId } })
   if (!service) return NextResponse.json({ error: 'Service not found' }, { status: 404 })
@@ -36,7 +41,7 @@ export async function POST(req: NextRequest) {
     if (selectedAddons.length !== addonIds.length) {
       return NextResponse.json({ error: 'One or more add-ons are invalid' }, { status: 400 })
     }
-    // Enforce tier restriction: حمام طهورا only for tier services
+    // Enforce tier restriction: حمام طهورا only for tier services; non-tier add-ons are available to all services
     if (service.tier === null && selectedAddons.some(a => a.requiresTier)) {
       return NextResponse.json({ error: 'This add-on is not available for the selected service' }, { status: 400 })
     }
@@ -75,8 +80,12 @@ export async function POST(req: NextRequest) {
     await prisma.booking.update({ where: { id: booking.id }, data: { zarinpalAuthority: authority } })
     return NextResponse.json({ paymentUrl })
   } catch (err) {
-    await prisma.booking.delete({ where: { id: booking.id } })
-    console.error('Zarinpal request failed, booking rolled back', err)
+    console.error('Zarinpal request failed, rolling back booking', err)
+    try {
+      await prisma.booking.delete({ where: { id: booking.id } })
+    } catch (deleteErr) {
+      console.error('CRITICAL: failed to delete orphaned booking', booking.id, deleteErr)
+    }
     return NextResponse.json({ error: 'Payment gateway error' }, { status: 502 })
   }
 }

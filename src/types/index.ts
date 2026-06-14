@@ -31,7 +31,7 @@ export type BookingCreateInput = {
   customerNotes?: string
   date: string        // "YYYY-MM-DD"
   startTime: string   // "HH:mm"
-  addonIds: string[]
+  addonIds?: string[]
 }
 
 export type BookingSummary = {
