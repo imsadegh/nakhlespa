@@ -1,14 +1,17 @@
 'use client'
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { StepProgress } from './StepProgress'
 import { Step1Service } from './Step1Service'
 import { Step2DateTime } from './Step2DateTime'
 import { Step3Details } from './Step3Details'
 import { Step4Review } from './Step4Review'
-import type { ServiceDTO, BookingCreateInput } from '@/types'
+import type { ServiceDTO, AddonDTO, BookingCreateInput } from '@/types'
 
-export type WizardState = Partial<BookingCreateInput> & { endTime?: string }
+export type WizardState = Partial<BookingCreateInput> & {
+  endTime?: string
+  addonIds: string[]
+}
 
 const variants = {
   enter: (dir: number) => ({ x: dir > 0 ? 60 : -60, opacity: 0 }),
@@ -19,13 +22,21 @@ const variants = {
 export function BookingWizard({ services }: { services: ServiceDTO[] }) {
   const [step, setStep] = useState(1)
   const [dir, setDir] = useState(1)
-  const [state, setState] = useState<WizardState>({})
+  const [state, setState] = useState<WizardState>({ addonIds: [] })
+  const [addons, setAddons] = useState<AddonDTO[]>([])
+
+  useEffect(() => {
+    fetch('/api/addons')
+      .then(r => r.json())
+      .then(setAddons)
+      .catch(() => {})
+  }, [])
 
   function goNext() { setDir(1); setStep(s => s + 1) }
   function goBack() { setDir(-1); setStep(s => s - 1) }
   const update = useCallback((patch: Partial<WizardState>) => setState(s => ({ ...s, ...patch })), [])
 
-  const stepProps = { state, update, goNext, goBack, services }
+  const stepProps = { state, update, goNext, goBack, services, addons }
 
   return (
     <div className="px-4 sm:px-5 pt-4 pb-5">
