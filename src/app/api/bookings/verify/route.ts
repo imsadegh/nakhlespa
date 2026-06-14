@@ -39,7 +39,7 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    const { refId } = await zarinpalVerify(authority, booking.service.price)
+    const { refId } = await zarinpalVerify(authority, booking.service.price + booking.addonsPricePaid)
 
     await prisma.booking.update({
       where: { id: booking.id },

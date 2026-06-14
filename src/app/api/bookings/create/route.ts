@@ -19,17 +19,17 @@ export async function POST(req: NextRequest) {
   }
 
   const { serviceId, customerName, customerPhone, date, startTime } = body
-  const rawAddonIds = body.addonIds ?? []
+  const rawAddonIds: unknown = body.addonIds
   if (!serviceId || !customerName || !customerPhone || !date || !startTime) {
     return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
   }
-  if (!Array.isArray(rawAddonIds)) {
+  if (rawAddonIds !== undefined && !Array.isArray(rawAddonIds)) {
     return NextResponse.json({ error: 'addonIds must be an array' }, { status: 400 })
   }
-  const addonIds = [...new Set(rawAddonIds)]
+  const addonIds = [...new Set((rawAddonIds as string[] | undefined) ?? [])]
 
   const service = await prisma.service.findUnique({ where: { id: serviceId } })
-  if (!service) return NextResponse.json({ error: 'Service not found' }, { status: 404 })
+  if (!service || !service.isActive) return NextResponse.json({ error: 'Service not found' }, { status: 404 })
 
   // Validate and fetch add-ons
   let selectedAddons: { id: string; price: number; requiresTier: boolean }[] = []
