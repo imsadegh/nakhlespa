@@ -31,7 +31,7 @@ model Addon {
   isActive     Boolean        @default(true)
   requiresTier Boolean        @default(false)
   createdAt    DateTime       @default(now())
-  bookings     BookingAddon[]
+  bookingAddons BookingAddon[]
 
   @@unique([nameFa])
   @@map("addons")
@@ -45,6 +45,8 @@ model BookingAddon {
   addonId   String
   pricePaid Int
 
+  @@index([bookingId])
+  @@index([addonId])
   @@map("booking_addons")
 }
 
