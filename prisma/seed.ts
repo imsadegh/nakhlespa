@@ -64,22 +64,18 @@ async function main() {
     })
   }
 
-  // Admin user — idempotent, skips if already exists
+  // Admin user — idempotent pre-check avoids relying on error message parsing
   const adminEmail = process.env.ADMIN_EMAIL
   const adminPassword = process.env.ADMIN_PASSWORD
   if (adminEmail && adminPassword) {
-    try {
+    const existing = await prisma.user.findUnique({ where: { email: adminEmail } })
+    if (existing) {
+      console.log('Admin user already exists, skipping')
+    } else {
       await auth.api.signUpEmail({
         body: { email: adminEmail, password: adminPassword, name: 'Admin' },
       })
       console.log('Admin user created:', adminEmail)
-    } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : String(e)
-      if (msg.includes('already exists') || msg.includes('unique')) {
-        console.log('Admin user already exists, skipping')
-      } else {
-        throw e
-      }
     }
   } else {
     console.log('ADMIN_EMAIL / ADMIN_PASSWORD not set — skipping admin user creation')
