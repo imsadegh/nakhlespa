@@ -2,13 +2,7 @@
 import type { Metadata, Viewport } from 'next'
 import localFont from 'next/font/local'
 import './globals.css'
-import { startCronJobs } from '@/lib/cron'
 import { Toaster } from '@/components/ui/sonner'
-
-// Only instance 0 runs the cron to prevent duplicate SMS sends in cluster mode
-if (process.env.NODE_ENV === 'production' && typeof window === 'undefined' && process.env.NODE_APP_INSTANCE === '0') {
-  startCronJobs()
-}
 
 const vazir = localFont({
   src: '../../public/fonts/Vazirmatn[wght].woff2',
