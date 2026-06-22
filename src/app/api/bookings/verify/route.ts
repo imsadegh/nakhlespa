@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { zarinpalVerify } from '@/lib/zarinpal'
+import { smsQueue } from '@/lib/queue'
 import { sendSms } from '@/lib/smsir'
 import { BookingStatus } from '@prisma/client'
 
@@ -49,21 +50,22 @@ export async function GET(req: NextRequest) {
     // Compute appointment datetime in UTC for reminder scheduling
     const [h, m] = booking.startTime.split(':').map(Number)
     const appointmentMs = booking.date.getTime() + (h * 60 + m) * 60 * 1000
-    await prisma.smsReminder.createMany({
-      data: [
-        { bookingId: booking.id, sendAt: new Date(appointmentMs - 24 * 60 * 60 * 1000) },
-        { bookingId: booking.id, sendAt: new Date(appointmentMs - 2 * 60 * 60 * 1000) },
-      ],
-    })
+    const delay24h = Math.max(0, appointmentMs - 24 * 60 * 60 * 1000 - Date.now())
+    const delay2h = Math.max(0, appointmentMs - 2 * 60 * 60 * 1000 - Date.now())
 
-    await sendSms(
-      booking.customerPhone,
-      `${booking.customerName} عزیز، رزرو شما برای ${booking.service.nameFa} در تاریخ ${booking.date.toLocaleDateString('fa-IR')} ساعت ${booking.startTime} تأیید شد. کد پیگیری: ${refId} — نخلسپا`
-    )
-    await sendSms(
-      process.env.ADMIN_PHONE!,
-      `رزرو جدید: ${booking.customerName} — ${booking.service.nameFa} — ${booking.date.toLocaleDateString('fa-IR')} ${booking.startTime} — تلفن: ${booking.customerPhone}`
-    )
+    const [reminder24, reminder2] = await prisma.$transaction([
+      prisma.smsReminder.create({ data: { bookingId: booking.id, sendAt: new Date(appointmentMs - 24 * 60 * 60 * 1000) } }),
+      prisma.smsReminder.create({ data: { bookingId: booking.id, sendAt: new Date(appointmentMs - 2 * 60 * 60 * 1000) } }),
+    ])
+
+    const reminderMsg = `${booking.customerName} عزیز، یادآوری: نوبت ${booking.service.nameFa} شما فردا ساعت ${booking.startTime} است — نخلسپا`
+
+    await Promise.all([
+      smsQueue.add('reminder-24h', { reminderId: reminder24.id, phone: booking.customerPhone, message: reminderMsg }, { delay: delay24h }),
+      smsQueue.add('reminder-2h',  { reminderId: reminder2.id,  phone: booking.customerPhone, message: reminderMsg }, { delay: delay2h }),
+      sendSms(booking.customerPhone, `${booking.customerName} عزیز، رزرو شما برای ${booking.service.nameFa} در تاریخ ${booking.date.toLocaleDateString('fa-IR')} ساعت ${booking.startTime} تأیید شد. کد پیگیری: ${refId} — نخلسپا`),
+      sendSms(process.env.ADMIN_PHONE!, `رزرو جدید: ${booking.customerName} — ${booking.service.nameFa} — ${booking.date.toLocaleDateString('fa-IR')} ${booking.startTime} — تلفن: ${booking.customerPhone}`),
+    ])
 
     return NextResponse.redirect(`${siteUrl}/booking/confirm/${booking.token}`)
   } catch (err) {

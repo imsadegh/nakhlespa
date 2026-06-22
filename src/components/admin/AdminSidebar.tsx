@@ -15,6 +15,7 @@ import {
   SidebarMenuItem,
 } from '@/components/ui/sidebar'
 import { ThemeToggle } from '@/components/ui/ThemeToggle'
+import { authClient } from '@/lib/auth-client'
 
 const links = [
   { href: '/admin/dashboard', label: 'داشبورد', icon: LayoutDashboard },
@@ -27,7 +28,7 @@ export function AdminSidebar() {
   const router = useRouter()
 
   async function handleLogout() {
-    await fetch('/api/auth/logout', { method: 'POST' })
+    await authClient.signOut()
     router.push('/admin')
   }
 

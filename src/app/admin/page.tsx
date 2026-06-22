@@ -4,6 +4,7 @@ import { AmbientBackground } from '@/components/ui/AmbientBackground'
 import { GlassCard } from '@/components/ui/GlassCard'
 import { GoldButton } from '@/components/ui/GoldButton'
 import { useRouter } from 'next/navigation'
+import { authClient } from '@/lib/auth-client'
 
 const inputClass = 'w-full glass rounded-xl px-4 py-3 text-sm bg-transparent outline-none focus:ring-1 focus:ring-[rgba(198,165,91,0.4)]'
 
@@ -17,12 +18,12 @@ export default function AdminLoginPage() {
   async function handleLogin() {
     setLoading(true)
     setError('')
-    const res = await fetch('/api/auth/login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password }),
+    const { error: authError } = await authClient.signIn.email({
+      email,
+      password,
+      callbackURL: '/admin/dashboard',
     })
-    if (!res.ok) {
+    if (authError) {
       setError('ایمیل یا رمز اشتباه است')
       setLoading(false)
       return

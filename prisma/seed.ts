@@ -1,5 +1,6 @@
 import { PrismaClient } from '@prisma/client'
 import { PrismaPg } from '@prisma/adapter-pg'
+import { auth } from '../src/lib/auth'
 
 const adapter = new PrismaPg(process.env.DATABASE_URL!)
 const prisma = new PrismaClient({ adapter })
@@ -63,7 +64,24 @@ async function main() {
     })
   }
 
-  console.log('Seeded 4 room tiers, مشاوره, 2 add-ons, working hours')
+  // Admin user — idempotent pre-check avoids relying on error message parsing
+  const adminEmail = process.env.ADMIN_EMAIL
+  const adminPassword = process.env.ADMIN_PASSWORD
+  if (adminEmail && adminPassword) {
+    const existing = await prisma.user.findUnique({ where: { email: adminEmail } })
+    if (existing) {
+      console.log('Admin user already exists, skipping')
+    } else {
+      await auth.api.signUpEmail({
+        body: { email: adminEmail, password: adminPassword, name: 'Admin' },
+      })
+      console.log('Admin user created:', adminEmail)
+    }
+  } else {
+    console.log('ADMIN_EMAIL / ADMIN_PASSWORD not set — skipping admin user creation')
+  }
+
+  console.log('Seeded 4 room tiers, مشاوره, 2 add-ons, working hours, admin user')
 }
 
 main().finally(() => prisma.$disconnect())
