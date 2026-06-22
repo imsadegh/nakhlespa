@@ -2,15 +2,15 @@
 
 Persian spa booking web app. Customers browse services and book appointments through a guided wizard with Zarinpal payment integration. Admins manage bookings, working hours, and blocked slots through a protected dashboard.
 
-**Stack:** Next.js 16 · Prisma v7 · Supabase Auth · Tailwind v4 · Bun
+**Stack:** Next.js 16 · Prisma v7 · Better Auth · BullMQ · Redis · Tailwind v4 · Bun
 
 ---
 
 ## Prerequisites
 
 - [Bun](https://bun.sh) — `curl -fsSL https://bun.sh/install | bash`
-- [Supabase CLI](https://supabase.com/docs/guides/cli) — `brew install supabase/tap/supabase`
-- [Docker](https://www.docker.com/products/docker-desktop) or [OrbStack](https://orbstack.dev) (macOS) / [Podman](https://podman.io) (Ubuntu VPS) — required by Supabase local
+- [Docker](https://www.docker.com/products/docker-desktop) or [OrbStack](https://orbstack.dev) (macOS) / [Podman](https://podman.io) (Ubuntu VPS) — for Postgres and Redis containers
+- [Homebrew](https://brew.sh) (macOS) or native package manager (Linux) — for native Postgres/Redis install
 
 ---
 
@@ -22,20 +22,20 @@ Persian spa booking web app. Customers browse services and book appointments thr
 bun install
 ```
 
-### 2. Start Supabase
+### 2. Start Postgres and Redis locally
 
+**Option A — Docker/Podman (easiest):**
 ```bash
-supabase start
+podman run -d --name postgres-nakhlespa -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=nakhlespa -p 5432:5432 postgres:16-alpine
+podman run -d --name redis-nakhlespa -p 6379:6379 redis:7-alpine
 ```
 
-This prints the local credentials — copy them for the next step:
-
-```
-API URL:         http://127.0.0.1:54321
-DB URL:          postgresql://postgres:postgres@127.0.0.1:54322/postgres
-anon key:        eyJ...
-service_role key: eyJ...
-Studio URL:      http://127.0.0.1:54323
+**Option B — Native install (macOS):**
+```bash
+brew install postgresql redis
+brew services start postgresql
+brew services start redis
+createdb nakhlespa
 ```
 
 ### 3. Configure environment
@@ -43,48 +43,35 @@ Studio URL:      http://127.0.0.1:54323
 Create `.env.local` (Next.js runtime):
 
 ```bash
-DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:54322/postgres
-SUPABASE_URL=http://127.0.0.1:54321
-SUPABASE_ANON_KEY=<anon key from above>
-SUPABASE_SERVICE_ROLE_KEY=<service_role key from above>
-NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:54321
-NEXT_PUBLIC_SUPABASE_ANON_KEY=<anon key from above>
-
-# Payment (Zarinpal) — leave as placeholder for local dev
+DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:5432/nakhlespa
+BETTER_AUTH_SECRET=dev-secret-not-for-production
+REDIS_URL=redis://127.0.0.1:6379
 ZARINPAL_MERCHANT_ID=your_merchant_id
 ZARINPAL_CALLBACK_URL=http://localhost:3000/api/bookings/verify
-
-# SMS (SMS.ir) — optional for local dev
 SMSIR_API_KEY=your_api_key
 SMSIR_LINE_NUMBER=your_line_number
+NEXT_PUBLIC_SITE_URL=http://localhost:3000
+ADMIN_PHONE=+989XXXXXXXXX
+ADMIN_EMAIL=admin@example.com
+ADMIN_PASSWORD=DevPassword123
 ```
 
 Create `.env` (Prisma CLI — must match `DATABASE_URL` above):
 
 ```bash
-DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:54322/postgres
+DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:5432/nakhlespa
 ```
 
 ### 4. Migrate and seed the database
 
 ```bash
 bunx prisma migrate dev --name init
-bun prisma/seed.ts
+ADMIN_EMAIL=admin@example.com ADMIN_PASSWORD=DevPassword123 bun prisma/seed.ts
 ```
 
-The seed creates two services (ماساژ درمانی, ماساژ آرامش‌بخش) and working hours (Saturday–Friday, 09:00–21:00).
+The seed creates services, working hours, add-ons, and the admin user. It is idempotent (safe to run multiple times).
 
-### 5. Create an admin user
-
-Open Supabase Studio at `http://127.0.0.1:54323` → **Authentication** → **Users** → **Add user**, then enter your email and password.
-
-Or via CLI:
-
-```bash
-supabase auth add-user --email admin@example.com --password YourPassword123
-```
-
-### 6. Run the dev server
+### 5. Run the dev server
 
 ```bash
 bun run dev
@@ -117,8 +104,7 @@ Admin routes (`/admin/dashboard`, `/admin/bookings`, `/admin/schedule`) are prot
 ```bash
 bun run build          # Production build
 bunx prisma studio     # Visual DB browser at http://localhost:5555
-supabase stop          # Stop local Supabase containers
-supabase status        # Show running services and credentials
+podman ps              # Show running containers (Postgres, Redis)
 ```
 
 ---
@@ -184,21 +170,13 @@ sudo ln -sf $(which conmon) /usr/local/libexec/podman/conmon
 sudo ln -sf $(which crun) /usr/local/bin/crun
 sudo ln -sf $(which pasta) /usr/local/bin/pasta
 
-# Enable the Podman socket for your user (Supabase CLI uses it instead of Docker socket)
+# Enable the Podman socket for your user (used for running Redis container)
 systemctl --user enable --now podman.socket
 loginctl enable-linger $USER   # keep socket alive after logout
 # Point the Docker client env var to the Podman socket
 echo 'export DOCKER_HOST=unix:///run/user/$(id -u)/podman/podman.sock' >> ~/.bashrc
 echo 'export DOCKER_HOST=unix:///run/user/$(id -u)/podman/podman.sock' >> ~/.profile
 source ~/.bashrc
-
-# Supabase CLI:
- #brew - recommended:
- brew install supabase/tap/supabase
- # project local (for user-local only):
- curl -fsSL https://raw.githubusercontent.com/supabase/cli/main/install | bash
- # Global:
- sudo curl -fsSL https://github.com/supabase/cli/releases/latest/download/supabase_linux_amd64.tar.gz | sudo tar -xz -C /usr/local/bin
 ```
 
 ### 2. Clone and install
@@ -210,79 +188,55 @@ cd /var/www/nakhlespa
 bun install
 ```
 
-### 3. Start Supabase
+### 3. Start Postgres and Redis
 
+Postgres is installed natively:
 ```bash
-supabase start
+sudo systemctl status postgresql   # should show active (running)
 ```
 
-on low ram vps:
-Disable Analytics Properly via supabase Config `supabase/config.toml`:
-
-```toml
-[analytics]
-enabled = false
-```
-
-then run it with
-
+Redis runs as a Podman container (or via Coolify):
 ```bash
-supabase start --exclude analytics,vector,storage,imgproxy,mailpit
+podman ps | grep redis             # should show redis:7-alpine running
 ```
-
-Copy the printed `API URL`, `anon key`, `service_role key`, and `DB URL`.
 
 ### 4. Configure environment
 
 Create `/var/www/nakhlespa/.env.local`:
 
 ```bash
-DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:54322/postgres
-
-# Server-side only — loopback is fine, never sent to the browser
-SUPABASE_URL=http://127.0.0.1:54321
-SUPABASE_ANON_KEY=<anon key>
-SUPABASE_SERVICE_ROLE_KEY=<service_role key>
-
-# NEXT_PUBLIC_* vars are embedded in the browser bundle.
-# Auth is handled entirely via /api/auth/* server routes, so the browser
-# never calls Supabase directly — these values are never used at runtime,
-# but Next.js requires them to be defined to avoid build-time errors.
-NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:54321
-NEXT_PUBLIC_SUPABASE_ANON_KEY=<anon key>
-
+DATABASE_URL=postgresql://nakhlespa:your_password@127.0.0.1:5432/nakhlespa
+BETTER_AUTH_SECRET=<generate with: openssl rand -base64 32>
+REDIS_URL=redis://:your_redis_password@127.0.0.1:6379
 ZARINPAL_MERCHANT_ID=your_merchant_id
 ZARINPAL_CALLBACK_URL=https://yourdomain.com/api/bookings/verify
-
 SMSIR_API_KEY=your_api_key
 SMSIR_LINE_NUMBER=your_line_number
-
 NEXT_PUBLIC_SITE_URL=https://yourdomain.com
+ADMIN_PHONE=+989XXXXXXXXX
+ADMIN_EMAIL=admin@yourdomain.com
+ADMIN_PASSWORD=YourStrongPassword
 ```
 
 Create `/var/www/nakhlespa/.env` (Prisma CLI):
 
 ```bash
-DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:54322/postgres
+DATABASE_URL=postgresql://nakhlespa:your_password@127.0.0.1:5432/nakhlespa
 ```
 
 ### 5. Migrate, seed, and build
 
 ```bash
 cd /var/www/nakhlespa
-bunx prisma migrate deploy      # use deploy (not dev) in production
+bunx prisma migrate deploy      # applies all pending migrations including Better Auth tables
 bunx prisma generate
-bun prisma/seed.ts
+ADMIN_EMAIL=admin@yourdomain.com ADMIN_PASSWORD=YourStrongPassword bun prisma/seed.ts
 bun run build
 ```
 
-### 6. Create admin user
+The seed reads `ADMIN_EMAIL` and `ADMIN_PASSWORD` from `.env.local` to create the admin user. Run it once — it is idempotent.
 
-```bash
-supabase auth add-user --email admin@yourdomain.com --password YourStrongPassword
-```
-
-### 7. Start with PM2
+### 6. Start with PM2
 
 The project includes `ecosystem.config.js` configured for 2 cluster instances.
 
@@ -303,7 +257,7 @@ pm2 status
 pm2 logs nakhlespa
 ```
 
-### 8. Configure Nginx
+### 7. Configure Nginx
 
 ArvanCloud CDN terminates HTTPS at the edge. The VPS listens on both port 80 (redirect) and 443 (self-signed cert for CDN↔origin encryption).
 
@@ -330,11 +284,11 @@ sudo ln -s /etc/nginx/sites-available/nakhlespa /etc/nginx/sites-enabled/
 sudo nginx -t && sudo systemctl reload nginx
 ```
 
-The reference `nginx.conf` listens on both port 80 and 443, both IPv4 and IPv6, and proxies all traffic to the Next.js app on port 3000. Auth calls from the browser go to Next.js API routes (`/api/auth/*`) which call Supabase server-side over loopback — the browser never reaches Supabase directly.
+The reference `nginx.conf` listens on both port 80 and 443, both IPv4 and IPv6, and proxies all traffic to the Next.js app on port 3000. Auth calls from the browser go to Next.js API routes (`/api/auth/*`) which validate sessions using Better Auth.
 
 > **Shared VPS note:** `default_server` only affects requests that don't match any other `server_name`. Other sites (e.g. `hakimyar.ir`) continue to work via their own configs. Both IPv4 and IPv6 `default_server` must be set — missing `[::]` causes IPv6 requests to fall through to another site.
 
-### 9. SSL via ArvanCloud CDN
+### 8. SSL via ArvanCloud CDN
 
 Since the domain is proxied through ArvanCloud, SSL is handled at the CDN edge — **do not install Certbot on the VPS**.
 
@@ -357,16 +311,3 @@ bun run build
 pm2 reload nakhlespa
 ```
 
-### Keep Supabase running across reboots
-
-Supabase runs in Podman containers that stop on reboot. The Podman socket is kept alive via `loginctl enable-linger` (set during install). Add a cron entry to restart Supabase itself:
-
-```bash
-crontab -e
-# Add:
-@reboot sleep 10 && export DOCKER_HOST=unix:///run/user/$(id -u)/podman/podman.sock && cd /var/www/nakhlespa && supabase start --exclude logflare,vector,imgproxy,mailpit,storage-api >> /var/log/supabase-start.log 2>&1
-```
-
-Two things are required in the cron entry:
-- `sleep 10` — gives the Podman socket time to come up before Supabase tries to connect
-- `export DOCKER_HOST=...` — cron doesn't source `.bashrc`, so the env var must be set inline

@@ -12,12 +12,8 @@ bun run build        # Production build
 bun run start        # Start production server
 
 bunx prisma migrate dev --name <name>   # Run DB migrations (reads .env, not .env.local)
-bun prisma/seed.ts                       # Seed services and working hours
+bun prisma/seed.ts                       # Seed services, working hours, add-ons, and admin user
 bunx prisma studio                       # Open Prisma Studio GUI
-
-supabase start       # Start local Supabase (Docker/OrbStack required)
-supabase stop
-supabase status      # Get local API URL, anon key, service_role key
 ```
 
 No lint or test commands are configured.
@@ -25,7 +21,7 @@ No lint or test commands are configured.
 ## Environment Files
 
 Two env files are required:
-- **`.env.local`** — read by Next.js at runtime: `DATABASE_URL`, `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `ZARINPAL_MERCHANT_ID`, `ZARINPAL_CALLBACK_URL`, `SMSIR_API_KEY`, `SMSIR_TEMPLATE_ID`
+- **`.env.local`** — read by Next.js at runtime: `DATABASE_URL`, `BETTER_AUTH_SECRET`, `REDIS_URL`, `NEXT_PUBLIC_SITE_URL`, `ZARINPAL_MERCHANT_ID`, `ZARINPAL_CALLBACK_URL`, `SMSIR_API_KEY`, `SMSIR_TEMPLATE_ID`, `ADMIN_PHONE`, `ADMIN_EMAIL`, `ADMIN_PASSWORD`
 - **`.env`** — read by Prisma CLI tools only: `DATABASE_URL`
 
 Prisma CLI (`migrate`, `studio`) reads `.env`, not `.env.local`. Both must have matching `DATABASE_URL`.
@@ -35,7 +31,8 @@ Prisma CLI (`migrate`, `studio`) reads `.env`, not `.env.local`. Both must have 
 ### Stack
 - **Next.js 16** with App Router — `proxy.ts` (not `middleware.ts`) for auth guards
 - **Prisma v7** with `@prisma/adapter-pg` driver adapter — `PrismaClient` must receive `{ adapter }` everywhere, including `prisma/seed.ts`. The `datasource` block in `schema.prisma` has **no `url` field** (breaking change from v6).
-- **Supabase Auth** (`@supabase/ssr`) — admin authentication only; all auth calls go through server-side API routes (`/api/auth/login`, `/api/auth/logout`) using `createServerClient` — the browser never calls Supabase directly (avoids loopback CORS block in production). `proxy.ts` also uses `createServerClient` for session validation.
+- **Better Auth** — admin authentication using Postgres-backed sessions; all auth calls go through server-side API routes (`/api/auth/login`, `/api/auth/logout`). `proxy.ts` validates sessions server-side.
+- **BullMQ** — Redis-backed job queue for SMS reminder scheduling (replaces node-cron)
 - **Tailwind v4** — config via `@theme {}` in `globals.css`; font variables must be registered there for utility classes to work
 
 ### Database Models
@@ -53,7 +50,7 @@ Generates 30-minute-interval slots within working hours, subtracting existing bo
 4. Zarinpal callback → `GET /api/bookings/verify` → sets status `PAID`, schedules SMS reminder, redirects to `/booking/confirm/[token]`
 
 ### Admin Area (`/admin/*`)
-Protected by `proxy.ts` matcher. Login at `/admin` (Supabase email/password). Routes: `/admin/dashboard`, `/admin/bookings`, `/admin/bookings/[id]`, `/admin/schedule`.
+Protected by `proxy.ts` matcher. Login at `/admin` (Better Auth email/password). Routes: `/admin/dashboard`, `/admin/bookings`, `/admin/bookings/[id]`, `/admin/schedule`.
 
 ### Theming
 CSS custom properties in `globals.css` — three layers: `:root` (dark default), `[data-theme="light"]`, `@media (prefers-color-scheme: light)`. Anti-flash inline script in `layout.tsx` reads `localStorage.getItem('theme')` before hydration. **Always use CSS vars** (`var(--text-primary)`, `var(--text-muted)`, `var(--text-faint)`) not hardcoded colors like `text-[#F3EFE8]` — hardcoded values break light mode.
@@ -67,7 +64,7 @@ CSS custom properties in `globals.css` — three layers: `:root` (dark default),
 ### Payments & SMS
 - `src/lib/zarinpal.ts` — `zarinpalRequest` / `zarinpalVerify`
 - `src/lib/smsir.ts` — SMS.ir integration for booking reminders
-- `src/lib/cron.ts` — node-cron job that fires SMS reminders
+- `src/lib/queue.ts` — BullMQ job queue for SMS reminder scheduling; worker starts in `src/instrumentation.ts`
 
 ### Path Alias
 `@/` maps to `src/` (configured in `tsconfig.json`).
