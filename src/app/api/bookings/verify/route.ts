@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { zarinpalVerify } from '@/lib/zarinpal'
 import { smsQueue } from '@/lib/queue'
-import { sendSms } from '@/lib/smsir'
+import { sendConfirmSms, sendAdminSms } from '@/lib/smsir'
 import { BookingStatus } from '@prisma/client'
 
 export async function GET(req: NextRequest) {
@@ -58,13 +58,14 @@ export async function GET(req: NextRequest) {
       prisma.smsReminder.create({ data: { bookingId: booking.id, sendAt: new Date(appointmentMs - 2 * 60 * 60 * 1000) } }),
     ])
 
-    const reminderMsg = `${booking.customerName} عزیز، یادآوری: نوبت ${booking.service.nameFa} شما فردا ساعت ${booking.startTime} است — نخلسپا`
+    const dateFa = booking.date.toLocaleDateString('fa-IR')
+    const reminderParams = { name: booking.customerName, service: booking.service.nameFa, time: booking.startTime }
 
     await Promise.all([
-      smsQueue.add('reminder-24h', { reminderId: reminder24.id, phone: booking.customerPhone, message: reminderMsg }, { delay: delay24h }),
-      smsQueue.add('reminder-2h',  { reminderId: reminder2.id,  phone: booking.customerPhone, message: reminderMsg }, { delay: delay2h }),
-      sendSms(booking.customerPhone, `${booking.customerName} عزیز، رزرو شما برای ${booking.service.nameFa} در تاریخ ${booking.date.toLocaleDateString('fa-IR')} ساعت ${booking.startTime} تأیید شد. کد پیگیری: ${refId} — نخلسپا`),
-      sendSms(process.env.ADMIN_PHONE!, `رزرو جدید: ${booking.customerName} — ${booking.service.nameFa} — ${booking.date.toLocaleDateString('fa-IR')} ${booking.startTime} — تلفن: ${booking.customerPhone}`),
+      smsQueue.add('reminder-24h', { reminderId: reminder24.id, phone: booking.customerPhone, template: 'reminder24h', params: reminderParams }, { delay: delay24h }),
+      smsQueue.add('reminder-2h',  { reminderId: reminder2.id,  phone: booking.customerPhone, template: 'reminder2h',  params: reminderParams }, { delay: delay2h }),
+      sendConfirmSms(booking.customerPhone, { name: booking.customerName, service: booking.service.nameFa, date: dateFa, time: booking.startTime, refId: String(refId) }),
+      sendAdminSms(process.env.ADMIN_PHONE!, { name: booking.customerName, service: booking.service.nameFa, date: dateFa, time: booking.startTime, phone: booking.customerPhone }),
     ])
 
     return NextResponse.redirect(`${siteUrl}/booking/confirm/${booking.token}`)

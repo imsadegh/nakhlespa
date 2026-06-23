@@ -1,6 +1,6 @@
 import { Queue, Worker, type Job } from 'bullmq'
 import { prisma } from '@/lib/prisma'
-import { sendSms } from '@/lib/smsir'
+import { sendReminderSms } from '@/lib/smsir'
 import { SmsReminderStatus } from '@prisma/client'
 
 const connectionOpts = { url: process.env.REDIS_URL!, maxRetriesPerRequest: null as null }
@@ -10,14 +10,15 @@ export const smsQueue = new Queue('sms-reminders', { connection: connectionOpts 
 export interface SmsJobData {
   reminderId: string
   phone: string
-  message: string
+  template: 'reminder24h' | 'reminder2h'
+  params: { name: string; service: string; time: string }
 }
 
 export function startSmsWorker() {
   const worker = new Worker<SmsJobData>(
     'sms-reminders',
     async (job: Job<SmsJobData>) => {
-      const { reminderId, phone, message } = job.data
+      const { reminderId, phone, template, params } = job.data
 
       await prisma.smsReminder.update({
         where: { id: reminderId },
@@ -25,7 +26,7 @@ export function startSmsWorker() {
       })
 
       try {
-        await sendSms(phone, message)
+        await sendReminderSms(phone, template, params)
         await prisma.smsReminder.update({
           where: { id: reminderId },
           data: { status: SmsReminderStatus.SENT, sentAt: new Date() },
@@ -41,7 +42,7 @@ export function startSmsWorker() {
     { connection: connectionOpts }
   )
 
-  worker.on('failed', (job, err) => {
+  worker.on('failed', (job: Job<SmsJobData> | undefined, err: Error) => {
     console.error(`SMS job ${job?.id} failed:`, err)
   })
 
