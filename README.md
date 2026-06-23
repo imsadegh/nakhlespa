@@ -49,7 +49,10 @@ REDIS_URL=redis://127.0.0.1:6379
 ZARINPAL_MERCHANT_ID=your_merchant_id
 ZARINPAL_CALLBACK_URL=http://localhost:3000/api/bookings/verify
 SMSIR_API_KEY=your_api_key
-SMSIR_TEMPLATE_ID=your_template_id
+SMSIR_TEMPLATE_CONFIRM=<template id for customer confirmation>
+SMSIR_TEMPLATE_ADMIN=<template id for admin notification>
+SMSIR_TEMPLATE_REMINDER_24H=<template id for 24h reminder>
+SMSIR_TEMPLATE_REMINDER_2H=<template id for 2h reminder>
 NEXT_PUBLIC_SITE_URL=http://localhost:3000
 ADMIN_PHONE=+989XXXXXXXXX
 ADMIN_EMAIL=admin@example.com
@@ -217,7 +220,10 @@ REDIS_URL=redis://:your_redis_password@127.0.0.1:6379
 ZARINPAL_MERCHANT_ID=your_merchant_id
 ZARINPAL_CALLBACK_URL=https://yourdomain.com/api/bookings/verify
 SMSIR_API_KEY=your_api_key
-SMSIR_TEMPLATE_ID=your_template_id
+SMSIR_TEMPLATE_CONFIRM=<template id for customer confirmation>
+SMSIR_TEMPLATE_ADMIN=<template id for admin notification>
+SMSIR_TEMPLATE_REMINDER_24H=<template id for 24h reminder>
+SMSIR_TEMPLATE_REMINDER_2H=<template id for 2h reminder>
 NEXT_PUBLIC_SITE_URL=https://yourdomain.com
 ADMIN_PHONE=+989XXXXXXXXX
 ADMIN_EMAIL=admin@yourdomain.com
@@ -308,32 +314,38 @@ Traffic flow: `User → HTTPS → ArvanCloud → HTTP → VPS`
 
 ### SMS.ir Template Setup
 
-This app uses SMS.ir's **Verify** API (`POST /v1/send/verify`) with a single reusable template. The template receives one parameter named `CODE` which carries the full message text.
+This app uses SMS.ir's **Verify** API (`POST /v1/send/verify`) with 4 separate templates — one per message type. Each template uses named parameters (`{name}`, `{service}`, etc.).
 
-**Step 1 — Create the template in the SMS.ir panel:**
+**Step 1 — Create 4 templates in the SMS.ir panel:**
 
 1. Log in to [app.sms.ir](https://app.sms.ir)
 2. Go to **پنل** → **الگوهای پیامک** (SMS Templates)
-3. Create a new template with this body:
+3. Create each template below, wait for approval, then copy the numeric Template ID
+
+| # | Env var | Template body |
+|---|---------|---------------|
+| 1 | `SMSIR_TEMPLATE_CONFIRM` | `{name} عزیز، رزرو شما برای {service} در تاریخ {date} ساعت {time} تأیید شد. کد پیگیری: {refId} — نخلسپا` |
+| 2 | `SMSIR_TEMPLATE_ADMIN` | `رزرو جدید: {name} — {service} — {date} {time} — تلفن: {phone}` |
+| 3 | `SMSIR_TEMPLATE_REMINDER_24H` | `{name} عزیز، یادآوری: نوبت {service} شما فردا ساعت {time} است — نخلسپا` |
+| 4 | `SMSIR_TEMPLATE_REMINDER_2H` | `{name} عزیز، یادآوری: نوبت {service} شما ۲ ساعت دیگر ساعت {time} است — نخلسپا` |
+
+**Step 2 — Add the Template IDs to `.env.local`:**
 
 ```
-{CODE}
+SMSIR_TEMPLATE_CONFIRM=123456
+SMSIR_TEMPLATE_ADMIN=123457
+SMSIR_TEMPLATE_REMINDER_24H=123458
+SMSIR_TEMPLATE_REMINDER_2H=123459
 ```
 
-That's the entire template — a single `{CODE}` placeholder. The app passes the full Persian message as the value, so the template itself needs no other text.
+**When each message is sent:**
 
-4. After approval, copy the **Template ID** (a numeric ID) and set it as `SMSIR_TEMPLATE_ID` in `.env.local`.
-
-**Messages sent through this template:**
-
-| Trigger | Recipient | Message |
-|---------|-----------|---------|
-| Payment confirmed | Customer | `{نام} عزیز، رزرو شما برای {خدمت} در تاریخ {تاریخ} ساعت {ساعت} تأیید شد. کد پیگیری: {refId} — نخلسپا` |
-| Payment confirmed | Admin (`ADMIN_PHONE`) | `رزرو جدید: {نام} — {خدمت} — {تاریخ} {ساعت} — تلفن: {موبایل}` |
-| 24h before appointment | Customer | `{نام} عزیز، یادآوری: نوبت {خدمت} شما فردا ساعت {ساعت} است — نخلسپا` |
-| 2h before appointment | Customer | `{نام} عزیز، یادآوری: نوبت {خدمت} شما فردا ساعت {ساعت} است — نخلسپا` |
-
-> The 24h and 2h reminder jobs are scheduled via BullMQ at the time of payment and delivered by the background worker.
+| Template | Trigger | Recipient |
+|----------|---------|-----------|
+| `CONFIRM` | Payment verified | Customer |
+| `ADMIN` | Payment verified | `ADMIN_PHONE` |
+| `REMINDER_24H` | 24h before appointment (BullMQ delayed job) | Customer |
+| `REMINDER_2H` | 2h before appointment (BullMQ delayed job) | Customer |
 
 ---
 

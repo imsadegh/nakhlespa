@@ -21,7 +21,7 @@ No lint or test commands are configured.
 ## Environment Files
 
 Two env files are required:
-- **`.env.local`** — read by Next.js at runtime: `DATABASE_URL`, `BETTER_AUTH_SECRET`, `REDIS_URL`, `NEXT_PUBLIC_SITE_URL`, `ZARINPAL_MERCHANT_ID`, `ZARINPAL_CALLBACK_URL`, `SMSIR_API_KEY`, `SMSIR_TEMPLATE_ID`, `ADMIN_PHONE`, `ADMIN_EMAIL`, `ADMIN_PASSWORD`
+- **`.env.local`** — read by Next.js at runtime: `DATABASE_URL`, `BETTER_AUTH_SECRET`, `REDIS_URL`, `NEXT_PUBLIC_SITE_URL`, `ZARINPAL_MERCHANT_ID`, `ZARINPAL_CALLBACK_URL`, `SMSIR_API_KEY`, `SMSIR_TEMPLATE_CONFIRM`, `SMSIR_TEMPLATE_ADMIN`, `SMSIR_TEMPLATE_REMINDER_24H`, `SMSIR_TEMPLATE_REMINDER_2H`, `ADMIN_PHONE`, `ADMIN_EMAIL`, `ADMIN_PASSWORD`
 - **`.env`** — read by Prisma CLI tools only: `DATABASE_URL`
 
 Prisma CLI (`migrate`, `studio`) reads `.env`, not `.env.local`. Both must have matching `DATABASE_URL`.
