@@ -217,6 +217,9 @@ podman run -d \
 # Verify it's running
 redis-cli -p 6380 -a your_strong_redis_password ping
 # Expected: PONG
+
+# To confirm Redis on 6380 is actually being used:
+redis-cli -p 6380 -a your_strong_redis_password client list
 ```
 
 **Enable auto-restart on reboot:**
