@@ -204,9 +204,32 @@ Postgres is installed natively:
 sudo systemctl status postgresql   # should show active (running)
 ```
 
-Redis runs as a Podman container (or via Coolify):
+Redis runs as a dedicated Podman container on port **6380** (port 6379 is reserved for other services on the VPS):
+
 ```bash
-podman ps | grep redis             # should show redis:7-alpine running
+podman run -d \
+  --name redis-nakhlespa \
+  --restart=always \
+  -p 127.0.0.1:6380:6379 \
+  redis:7-alpine \
+  redis-server --requirepass your_strong_redis_password
+
+# Verify it's running
+redis-cli -p 6380 -a your_strong_redis_password ping
+# Expected: PONG
+```
+
+**Enable auto-restart on reboot:**
+```bash
+podman generate systemd --name redis-nakhlespa --files --new
+mkdir -p ~/.config/systemd/user
+mv container-redis-nakhlespa.service ~/.config/systemd/user/
+systemctl --user enable --now container-redis-nakhlespa.service
+```
+
+Check it's running:
+```bash
+podman ps | grep redis-nakhlespa   # should show redis:7-alpine on 127.0.0.1:6380->6379/tcp
 ```
 
 ### 4. Configure environment
@@ -216,7 +239,7 @@ Create `/var/www/nakhlespa/.env.local`:
 ```bash
 DATABASE_URL=postgresql://nakhlespa:your_password@127.0.0.1:5432/nakhlespa
 BETTER_AUTH_SECRET=<generate with: openssl rand -base64 32>
-REDIS_URL=redis://:your_redis_password@127.0.0.1:6379
+REDIS_URL=redis://:your_strong_redis_password@127.0.0.1:6380
 ZARINPAL_MERCHANT_ID=your_merchant_id
 ZARINPAL_CALLBACK_URL=https://yourdomain.com/api/bookings/verify
 SMSIR_API_KEY=your_api_key
