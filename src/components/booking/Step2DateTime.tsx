@@ -3,13 +3,16 @@ import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { GoldButton } from '@/components/ui/GoldButton'
 import { GhostButton } from '@/components/ui/GhostButton'
-import type { WizardState } from './BookingWizard'
-import type { SlotDTO } from '@/types'
+import type { WizardState, SlotDTO } from '@/types'
 
 type Props = { state: WizardState; update: (p: Partial<WizardState>) => void; goNext: () => void; goBack: () => void }
 
 function toFaTime(t: string) {
   return t.replace(/\d/g, d => '۰۱۲۳۴۵۶۷۸۹'[+d])
+}
+
+function toFaNum(n: number) {
+  return String(n).replace(/\d/g, d => '۰۱۲۳۴۵۶۷۸۹'[+d])
 }
 
 function getDates(count = 14) {
@@ -19,7 +22,6 @@ function getDates(count = 14) {
   })
 }
 
-// Iranian week: Saturday=0…Friday=6. JS UTC day: Sunday=0…Saturday=6
 const JS_TO_IR: Record<number, number> = { 6: 0, 0: 1, 1: 2, 2: 3, 3: 4, 4: 5, 5: 6 }
 
 function iranianDayOfWeek(dateStr: string): number {
@@ -30,9 +32,12 @@ function iranianDayOfWeek(dateStr: string): number {
 export function Step2DateTime({ state, update, goNext, goBack }: Props) {
   const [slots, setSlots] = useState<SlotDTO[]>([])
   const [loading, setLoading] = useState(false)
-  // dayOfWeek → isOpen; null means not yet loaded
   const [closedDays, setClosedDays] = useState<Set<number> | null>(null)
   const dates = getDates()
+
+  // Use first person's serviceId for duration lookup; count = total persons
+  const firstServiceId = state.persons[0]?.serviceId
+  const personCount = state.persons.length
 
   useEffect(() => {
     fetch('/api/working-hours')
@@ -44,14 +49,14 @@ export function Step2DateTime({ state, update, goNext, goBack }: Props) {
   }, [])
 
   useEffect(() => {
-    if (!state.date || !state.serviceId) return
+    if (!state.date || !firstServiceId) return
     setSlots([]); update({ startTime: undefined, endTime: undefined })
     setLoading(true)
-    fetch(`/api/slots?date=${state.date}&serviceId=${state.serviceId}`)
+    fetch(`/api/slots?date=${state.date}&serviceId=${firstServiceId}&count=${personCount}`)
       .then(r => r.json())
-      .then((data: SlotDTO[]) => { setSlots(data) })
+      .then((data: SlotDTO[]) => setSlots(data))
       .finally(() => setLoading(false))
-  }, [state.date, state.serviceId, update])
+  }, [state.date, firstServiceId, personCount, update])
 
   return (
     <div>
@@ -123,18 +128,10 @@ export function Step2DateTime({ state, update, goNext, goBack }: Props) {
                     <motion.div key={slot.startTime} title="این ساعت رزرو شده است"
                       variants={{ hidden: { opacity: 0, scale: 0.85 }, show: { opacity: 1, scale: 1 } }}
                       className="relative px-4 py-2 rounded-xl text-xs select-none cursor-not-allowed overflow-hidden"
-                      style={{
-                        color: 'var(--text-faint)',
-                        background: 'var(--bg-surface)',
-                        border: '1px solid var(--border-base)',
-                        opacity: 0.5,
-                      }}>
+                      style={{ color: 'var(--text-faint)', background: 'var(--bg-surface)', border: '1px solid var(--border-base)', opacity: 0.5 }}>
                       <span className="line-through">{toFaTime(slot.startTime)}</span>
-                      {/* diagonal stripe overlay */}
                       <span className="pointer-events-none absolute inset-0 rounded-xl"
-                        style={{
-                          backgroundImage: 'repeating-linear-gradient(135deg, transparent, transparent 4px, rgba(255,255,255,0.06) 4px, rgba(255,255,255,0.06) 5px)',
-                        }} />
+                        style={{ backgroundImage: 'repeating-linear-gradient(135deg, transparent, transparent 4px, rgba(255,255,255,0.06) 4px, rgba(255,255,255,0.06) 5px)' }} />
                     </motion.div>
                   )
                 }
@@ -142,14 +139,13 @@ export function Step2DateTime({ state, update, goNext, goBack }: Props) {
                   <motion.button key={slot.startTime} type="button"
                     variants={{ hidden: { opacity: 0, scale: 0.85 }, show: { opacity: 1, scale: 1 } }}
                     onClick={() => update({ startTime: slot.startTime, endTime: slot.endTime })}
-                    className={`px-4 py-2 rounded-xl text-xs transition-all ${selected ? 'bg-[#C6A55B] text-[#0F3D2E] font-bold shadow-[0_4px_16px_rgba(198,165,91,0.35)]' : ''}`}
-                    style={selected ? {} : {
-                      color: 'var(--text-muted)',
-                      background: 'var(--bg-surface)',
-                      border: '1px solid var(--border-base)',
-                      boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.18)',
-                    }}>
-                    {toFaTime(slot.startTime)}
+                    className={`flex flex-col items-center px-4 py-2 rounded-xl text-xs transition-all ${selected ? 'bg-[#C6A55B] text-[#0F3D2E] font-bold shadow-[0_4px_16px_rgba(198,165,91,0.35)]' : ''}`}
+                    style={selected ? {} : { color: 'var(--text-muted)', background: 'var(--bg-surface)', border: '1px solid var(--border-base)', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.18)' }}>
+                    <span>{toFaTime(slot.startTime)}</span>
+                    <span className={`text-[9px] mt-0.5 ${slot.availableCount === 1 ? 'text-amber-400' : selected ? 'text-[#0F3D2E]/70' : ''}`}
+                      style={slot.availableCount > 1 && !selected ? { color: 'var(--text-faint)' } : {}}>
+                      {toFaNum(slot.availableCount)} غرفه خالی
+                    </span>
                   </motion.button>
                 )
               })}
