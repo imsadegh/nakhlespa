@@ -61,6 +61,12 @@ export async function POST(req: NextRequest) {
     }
   }
 
+  // Prevent booking the same room twice in one group
+  const bookedServiceIds = bookings.map(b => b.serviceId)
+  if (new Set(bookedServiceIds).size !== bookedServiceIds.length) {
+    return NextResponse.json({ error: 'Each room can only be booked once per group' }, { status: 400 })
+  }
+
   // Compute totals
   const groupToken = randomUUID()
   const [year, month, day] = bookings[0].date.split('-').map(Number)
@@ -74,6 +80,18 @@ export async function POST(req: NextRequest) {
     const endTime = addMinutesToTime(b.startTime, svc.durationMinutes)
     return { b, svc, selectedAddons, addonsPricePaid, endTime }
   })
+
+  // Verify slot availability server-side before creating bookings
+  const { getAvailableSlots } = await import('@/lib/slots')
+  const slotsForDate = await getAvailableSlots(
+    bookings[0].date,
+    Math.max(...bookingData.map(({ svc }) => svc.durationMinutes)),
+    bookings.length,
+  )
+  const requestedSlot = slotsForDate.find(s => s.startTime === bookings[0].startTime)
+  if (!requestedSlot || requestedSlot.taken) {
+    return NextResponse.json({ error: 'Requested time slot is no longer available' }, { status: 409 })
+  }
 
   const totalPrice = bookingData.reduce((s, { svc, addonsPricePaid }) => s + svc.price + addonsPricePaid, 0)
   const payerPhone = bookings[0].customerPhone
