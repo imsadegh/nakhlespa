@@ -35,9 +35,12 @@ export function Step2DateTime({ state, update, goNext, goBack }: Props) {
   const [closedDays, setClosedDays] = useState<Set<number> | null>(null)
   const dates = getDates()
 
-  // Use first person's serviceId for duration lookup; count = total persons
   const firstServiceId = state.persons[0]?.serviceId
   const personCount = state.persons.length
+  // All serviceIds chosen — use per-room conflict detection; falls back to count-based
+  const allServiceIds = state.persons.map(p => p.serviceId).filter(Boolean)
+  const allRoomsChosen = allServiceIds.length === personCount && personCount > 0
+  const serviceIdsKey = allServiceIds.join(',')
 
   useEffect(() => {
     fetch('/api/working-hours')
@@ -52,11 +55,14 @@ export function Step2DateTime({ state, update, goNext, goBack }: Props) {
     if (!state.date || !firstServiceId) return
     setSlots([]); update({ startTime: undefined, endTime: undefined })
     setLoading(true)
-    fetch(`/api/slots?date=${state.date}&serviceId=${firstServiceId}&count=${personCount}`)
+    const url = allRoomsChosen
+      ? `/api/slots?date=${state.date}&serviceId=${firstServiceId}&serviceIds=${serviceIdsKey}`
+      : `/api/slots?date=${state.date}&serviceId=${firstServiceId}&count=${personCount}`
+    fetch(url)
       .then(r => r.json())
       .then((data: SlotDTO[]) => setSlots(data))
       .finally(() => setLoading(false))
-  }, [state.date, firstServiceId, personCount, update])
+  }, [state.date, firstServiceId, allRoomsChosen, serviceIdsKey, personCount, update])
 
   return (
     <div>
@@ -125,7 +131,7 @@ export function Step2DateTime({ state, update, goNext, goBack }: Props) {
                 const selected = state.startTime === slot.startTime
                 if (slot.taken) {
                   return (
-                    <motion.div key={slot.startTime} title="این ساعت رزرو شده است"
+                    <motion.div key={slot.startTime} title={allRoomsChosen ? 'یکی از غرفه‌های انتخابی در این ساعت رزرو است' : 'این ساعت رزرو شده است'}
                       variants={{ hidden: { opacity: 0, scale: 0.85 }, show: { opacity: 1, scale: 1 } }}
                       className="relative px-4 py-2 rounded-xl text-xs select-none cursor-not-allowed overflow-hidden"
                       style={{ color: 'var(--text-faint)', background: 'var(--bg-surface)', border: '1px solid var(--border-base)', opacity: 0.5 }}>
