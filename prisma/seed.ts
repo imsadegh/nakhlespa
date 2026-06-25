@@ -64,6 +64,41 @@ async function main() {
     })
   }
 
+  // Sample bookings
+  const services = await prisma.service.findMany({ where: { isActive: true } })
+  const serviceMap = Object.fromEntries(services.map(s => [s.nameFa, s.id]))
+
+  const sampleBookings = [
+    { nameFa: 'نسیم',    customerName: 'علی رضایی',      customerPhone: '09121234567', daysOffset: -5,  startTime: '10:00', endTime: '11:00', status: 'PAID'            as const, refId: '123456781' },
+    { nameFa: 'آفتاب',   customerName: 'مریم کریمی',     customerPhone: '09351234568', daysOffset: -3,  startTime: '14:00', endTime: '15:00', status: 'PAID'            as const, refId: '123456782' },
+    { nameFa: 'ارغوان',  customerName: 'سارا محمدی',     customerPhone: '09901234569', daysOffset: -1,  startTime: '11:00', endTime: '12:00', status: 'CANCELLED'       as const, refId: null },
+    { nameFa: 'باران',   customerName: 'رضا احمدی',      customerPhone: '09151234570', daysOffset:  1,  startTime: '09:00', endTime: '10:00', status: 'PAID'            as const, refId: '123456784' },
+    { nameFa: 'نسیم',   customerName: 'فاطمه حسینی',    customerPhone: '09361234571', daysOffset:  2,  startTime: '15:00', endTime: '16:00', status: 'PENDING_PAYMENT' as const, refId: null },
+    { nameFa: 'مشاوره', customerName: 'حسین قاسمی',     customerPhone: '09021234572', daysOffset:  3,  startTime: '10:30', endTime: '11:00', status: 'PAID'            as const, refId: '123456786' },
+    { nameFa: 'آفتاب',  customerName: 'زهرا موسوی',     customerPhone: '09191234573', daysOffset:  5,  startTime: '13:00', endTime: '14:00', status: 'CONFIRMED'       as const, refId: '123456787' },
+    { nameFa: 'ارغوان', customerName: 'محمد صادقی',     customerPhone: '09301234574', daysOffset:  7,  startTime: '16:00', endTime: '17:00', status: 'PAID'            as const, refId: '123456788' },
+  ]
+
+  for (const b of sampleBookings) {
+    const serviceId = serviceMap[b.nameFa]
+    if (!serviceId) continue
+    await prisma.booking.upsert({
+      where: { token: `seed-token-${b.customerPhone}` },
+      update: {},
+      create: {
+        token:              `seed-token-${b.customerPhone}`,
+        serviceId,
+        customerName:       b.customerName,
+        customerPhone:      b.customerPhone,
+        date:               daysFromNow(b.daysOffset),
+        startTime:          b.startTime,
+        endTime:            b.endTime,
+        status:             b.status,
+        zarinpalRefId:      b.refId,
+      },
+    })
+  }
+
   // Admin user — idempotent pre-check avoids relying on error message parsing
   const adminEmail = process.env.ADMIN_EMAIL
   const adminPassword = process.env.ADMIN_PASSWORD
@@ -81,7 +116,7 @@ async function main() {
     console.log('ADMIN_EMAIL / ADMIN_PASSWORD not set — skipping admin user creation')
   }
 
-  console.log('Seeded 4 room tiers, مشاوره, 2 add-ons, working hours, admin user')
+  console.log('Seeded 4 room tiers, مشاوره, 2 add-ons, working hours, admin user, 8 sample bookings')
 }
 
 main().finally(() => prisma.$disconnect())
