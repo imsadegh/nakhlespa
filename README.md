@@ -24,18 +24,11 @@ bun install
 
 ### 2. Start Postgres and Redis locally
 
-**Option A — Docker/Podman (easiest):**
-```bash
-podman run -d --name postgres-nakhlespa -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=nakhlespa -p 5432:5432 postgres:16-alpine
-podman run -d --name redis-nakhlespa -p 6379:6379 redis:7-alpine
-```
+Use [OrbStack](https://orbstack.dev) to run containers:
 
-**Option B — Native install (macOS):**
 ```bash
-brew install postgresql redis
-brew services start postgresql
-brew services start redis
-createdb nakhlespa
+docker run -d --name postgres-nakhlespa -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=nakhlespa -p 5432:5432 postgres:16-alpine
+docker run -d --name redis-nakhlespa -p 6379:6379 redis:7-alpine
 ```
 
 ### 3. Configure environment
