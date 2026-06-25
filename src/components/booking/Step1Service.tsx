@@ -33,6 +33,10 @@ export function Step1Service({ state, update, goNext, services, addons }: Props)
   const tierServices = services.filter(s => s.tier !== null).sort((a, b) => (a.tier ?? 0) - (b.tier ?? 0))
   const otherServices = services.filter(s => s.tier === null)
 
+  // Services already claimed by other persons — each room has capacity 1
+  const takenServiceIds = (personIndex: number) =>
+    new Set(persons.filter((_, i) => i !== personIndex && persons[i].serviceId !== '').map(p => p.serviceId))
+
   const totalPrice = persons.reduce((sum, person) => {
     const svc = services.find(s => s.id === person.serviceId)
     const addonSum = person.addonIds.reduce((a, id) => a + (addons.find(ad => ad.id === id)?.price ?? 0), 0)
@@ -78,6 +82,7 @@ export function Step1Service({ state, update, goNext, services, addons }: Props)
         {persons.map((person, personIndex) => {
           const selectedService = services.find(s => s.id === person.serviceId)
           const availableAddons = addons.filter(a => !a.requiresTier || (selectedService?.tier ?? null) !== null)
+          const taken = takenServiceIds(personIndex)
 
           return (
             <div key={personIndex} className="rounded-2xl border p-3" style={{ borderColor: 'var(--border-base)', background: 'var(--bg-surface)' }}>
@@ -99,12 +104,22 @@ export function Step1Service({ state, update, goNext, services, addons }: Props)
               <div className="grid grid-cols-2 gap-2 mb-2">
                 {tierServices.map((svc, i) => {
                   const selected = person.serviceId === svc.id
+                  const isTaken = taken.has(svc.id)
                   const tierColor = svc.color ? TIER_COLORS[svc.color] ?? '#C6A55B' : '#C6A55B'
                   return (
                     <motion.div key={svc.id} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.04 }}>
-                      <button type="button" className="w-full text-right h-full" onClick={() => selectService(personIndex, svc)}>
+                      <button
+                        type="button"
+                        className={`w-full text-right h-full ${isTaken ? 'cursor-not-allowed' : ''}`}
+                        onClick={() => !isTaken && selectService(personIndex, svc)}
+                        title={isTaken ? 'این غرفه توسط نفر دیگری انتخاب شده' : undefined}
+                      >
                         <GlassCard gold={selected}
-                          className={`flex flex-col items-center gap-1.5 p-2.5 cursor-pointer transition-all h-full ${selected ? 'shadow-[0_0_0_2px_#C6A55B,0_8px_32px_rgba(198,165,91,0.3)]' : ''}`}>
+                          className={`relative flex flex-col items-center gap-1.5 p-2.5 transition-all h-full overflow-hidden ${selected ? 'shadow-[0_0_0_2px_#C6A55B,0_8px_32px_rgba(198,165,91,0.3)]' : ''} ${isTaken ? 'opacity-40' : 'cursor-pointer'}`}>
+                          {isTaken && (
+                            <span className="pointer-events-none absolute inset-0 rounded-xl"
+                              style={{ backgroundImage: 'repeating-linear-gradient(135deg, transparent, transparent 4px, rgba(255,255,255,0.06) 4px, rgba(255,255,255,0.06) 5px)' }} />
+                          )}
                           <div className="w-8 h-8 rounded-xl flex items-center justify-center bg-[rgba(198,165,91,0.08)] border border-[rgba(198,165,91,0.2)]">
                             <TierIcon symbol={svc.symbol} color={svc.color} size={18} />
                           </div>
@@ -126,10 +141,21 @@ export function Step1Service({ state, update, goNext, services, addons }: Props)
               <div className="flex flex-col gap-1.5 mb-2">
                 {otherServices.map(svc => {
                   const selected = person.serviceId === svc.id
+                  const isTaken = taken.has(svc.id)
                   return (
-                    <button key={svc.id} type="button" className="w-full text-right" onClick={() => selectService(personIndex, svc)}>
+                    <button
+                      key={svc.id}
+                      type="button"
+                      className={`w-full text-right ${isTaken ? 'cursor-not-allowed' : ''}`}
+                      onClick={() => !isTaken && selectService(personIndex, svc)}
+                      title={isTaken ? 'این غرفه توسط نفر دیگری انتخاب شده' : undefined}
+                    >
                       <GlassCard gold={selected}
-                        className={`flex items-center gap-2 p-2.5 cursor-pointer transition-all ${selected ? 'shadow-[0_0_0_2px_#C6A55B,0_8px_32px_rgba(198,165,91,0.3)]' : ''}`}>
+                        className={`relative flex items-center gap-2 p-2.5 transition-all overflow-hidden ${selected ? 'shadow-[0_0_0_2px_#C6A55B,0_8px_32px_rgba(198,165,91,0.3)]' : ''} ${isTaken ? 'opacity-40' : 'cursor-pointer'}`}>
+                        {isTaken && (
+                          <span className="pointer-events-none absolute inset-0 rounded-xl"
+                            style={{ backgroundImage: 'repeating-linear-gradient(135deg, transparent, transparent 4px, rgba(255,255,255,0.06) 4px, rgba(255,255,255,0.06) 5px)' }} />
+                        )}
                         <div className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 bg-[rgba(198,165,91,0.08)] border border-[rgba(198,165,91,0.2)]">
                           <TierIcon symbol={svc.symbol} color={svc.color} size={16} />
                         </div>
