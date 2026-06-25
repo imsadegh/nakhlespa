@@ -20,9 +20,13 @@ export default async function ConfirmPage({ params }: { params: Promise<{ token:
   if (!booking || (booking.status !== BookingStatus.PAID && booking.status !== BookingStatus.CONFIRMED)) notFound()
 
   // Fetch all bookings in the group (or just this one if solo / legacy)
+  // Filter to only PAID/CONFIRMED to exclude cancelled members from display
   const groupBookings = booking.groupToken
     ? await prisma.booking.findMany({
-        where: { groupToken: booking.groupToken },
+        where: {
+          groupToken: booking.groupToken,
+          status: { in: [BookingStatus.PAID, BookingStatus.CONFIRMED] },
+        },
         include: { service: true },
         orderBy: { createdAt: 'asc' },
       })

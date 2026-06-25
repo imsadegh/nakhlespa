@@ -52,7 +52,11 @@ export async function GET(req: NextRequest) {
       const svcIds = [...new Set(allGroupBookings.map(b => b.serviceId))]
       const svcs = await prisma.service.findMany({ where: { id: { in: svcIds } }, select: { id: true, price: true } })
       const svcMap = new Map(svcs.map(s => [s.id, s.price]))
-      return allGroupBookings.reduce((s, b) => s + (svcMap.get(b.serviceId) ?? 0), 0)
+      return allGroupBookings.reduce((s, b) => {
+        const price = svcMap.get(b.serviceId)
+        if (price === undefined) throw new Error(`Service ${b.serviceId} not found during verify`)
+        return s + price
+      }, 0)
     })()
 
     const { refId } = await zarinpalVerify(authority, totalPrice)
