@@ -15,10 +15,10 @@ function daysFromNow(days: number): Date {
 async function main() {
   // 4 massage room tiers
   const tiers = [
-    { nameFa: 'نسیم', descriptionFa: 'غرفه بهار', durationMinutes: 60, price: 700000, color: 'red', symbol: 'circle', tier: 1 },
+    { nameFa: 'نسیم', descriptionFa: 'غرفه بهار', durationMinutes: 45, price: 700000, color: 'red', symbol: 'circle', tier: 1 },
     { nameFa: 'آفتاب', descriptionFa: 'غرفه تابستان', durationMinutes: 60, price: 850000, color: 'yellow', symbol: 'triangle', tier: 2 },
-    { nameFa: 'ارغوان', descriptionFa: 'غرفه پاییز — VIP', durationMinutes: 60, price: 1000000, color: 'purple', symbol: 'quadrilateral', tier: 3 },
-    { nameFa: 'باران', descriptionFa: 'غرفه زمستان', durationMinutes: 60, price: 950000, color: 'blue', symbol: 'octagon', tier: 4 },
+    { nameFa: 'ارغوان', descriptionFa: 'غرفه پاییز — VIP', durationMinutes: 120, price: 1000000, color: 'purple', symbol: 'quadrilateral', tier: 3 },
+    { nameFa: 'باران', descriptionFa: 'غرفه زمستان', durationMinutes: 90, price: 950000, color: 'blue', symbol: 'octagon', tier: 4 },
   ]
 
   for (const t of tiers) {
@@ -42,17 +42,24 @@ async function main() {
     data: { isActive: false },
   })
 
+  // Remove حمام طهورا from addons if it was previously seeded there
+  await prisma.addon.updateMany({
+    where: { nameFa: 'حمام طهورا' },
+    data: { isActive: false },
+  })
+
+  // Standalone bath service
+  await prisma.service.upsert({
+    where: { nameFa: 'حمام طهورا' },
+    update: { descriptionFa: 'حمام طهورا', durationMinutes: 180, price: 200000, color: null, symbol: null, tier: null },
+    create: { nameFa: 'حمام طهورا', descriptionFa: 'حمام طهورا', durationMinutes: 180, price: 200000, color: null, symbol: null, tier: null },
+  })
+
   // Add-ons
   await prisma.addon.upsert({
     where: { nameFa: 'نوشیدنی ایوان گلاب' },
     update: { price: 150000, requiresTier: false },
     create: { nameFa: 'نوشیدنی ایوان گلاب', price: 150000, requiresTier: false },
-  })
-
-  await prisma.addon.upsert({
-    where: { nameFa: 'حمام طهورا' },
-    update: { price: 200000, requiresTier: true },
-    create: { nameFa: 'حمام طهورا', price: 200000, requiresTier: true },
   })
 
   // Working hours: Saturday=0 to Friday=6, 9am–9pm
@@ -116,7 +123,7 @@ async function main() {
     console.log('ADMIN_EMAIL / ADMIN_PASSWORD not set — skipping admin user creation')
   }
 
-  console.log('Seeded 4 room tiers, مشاوره, 2 add-ons, working hours, admin user, 8 sample bookings')
+  console.log('Seeded 4 room tiers, مشاوره, حمام طهورا, 1 add-on, working hours, admin user, 8 sample bookings')
 }
 
 main().finally(() => prisma.$disconnect())
