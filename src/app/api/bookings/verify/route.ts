@@ -60,7 +60,7 @@ export async function GET(req: NextRequest) {
     // Mark all group bookings PAID and store refId on payer
     await prisma.$transaction([
       prisma.booking.updateMany({
-        where: { groupToken: groupToken ?? payerBooking.id },
+        where: groupToken ? { groupToken } : { id: payerBooking.id },
         data: { status: BookingStatus.PAID },
       }),
       prisma.booking.update({
