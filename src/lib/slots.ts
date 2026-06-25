@@ -32,17 +32,22 @@ export async function getAvailableSlots(
   // Total number of independent rooms (tier services only — each has its own masseuse)
   const totalRooms = await prisma.service.count({ where: { isActive: true, tier: { not: null } } })
 
-  // All non-cancelled bookings on this date, grouped by startTime
+  // All non-cancelled bookings on this date
   const existingBookings = await prisma.booking.findMany({
     where: { date: jsDate, status: { not: BookingStatus.CANCELLED } },
     select: { startTime: true, endTime: true },
   })
 
-  // Count bookings per startTime slot
-  const bookingsPerSlot = new Map<string, number>()
-  for (const b of existingBookings) {
-    bookingsPerSlot.set(b.startTime, (bookingsPerSlot.get(b.startTime) ?? 0) + 1)
-  }
+  // Build time ranges for overlap detection
+  const existingBookingRanges = existingBookings.map(b => ({
+    start: timeToMinutes(b.startTime),
+    end: timeToMinutes(b.endTime),
+  }))
+
+  // Count bookings overlapping a candidate slot using time-range overlap
+  // An existing booking overlaps [slotStart, slotEnd) if booking.start < slotEnd && booking.end > slotStart
+  const bookingsForSlot = (slotStart: number, slotEnd: number): number =>
+    existingBookingRanges.filter(r => r.start < slotEnd && r.end > slotStart).length
 
   const blocked = await prisma.blockedSlot.findMany({
     where: { date: jsDate },
@@ -67,7 +72,7 @@ export async function getAvailableSlots(
       continue
     }
 
-    const booked = bookingsPerSlot.get(slotStartStr) ?? 0
+    const booked = bookingsForSlot(cursor, slotEnd)
     const availableCount = Math.max(0, totalRooms - booked)
     slots.push({
       startTime: slotStartStr,
