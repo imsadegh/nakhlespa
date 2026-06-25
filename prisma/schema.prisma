@@ -88,6 +88,7 @@ model Booking {
   zarinpalAuthority  String?
   zarinpalRefId      String?
   addonsPricePaid    Int           @default(0)
+  groupToken         String?
   createdAt          DateTime      @default(now())
   addons             BookingAddon[]
   smsReminders       SmsReminder[]
@@ -95,6 +96,7 @@ model Booking {
   @@index([date])
   @@index([status])
   @@index([serviceId])
+  @@index([groupToken])
   @@map("bookings")
 }
 
