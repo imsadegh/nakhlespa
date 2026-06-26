@@ -10,7 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 
 const DAY_NAMES = ['شنبه', 'یکشنبه', 'دوشنبه', 'سه‌شنبه', 'چهارشنبه', 'پنجشنبه', 'جمعه']
 
-type Hour = { id: string; dayOfWeek: number; openTime: string; closeTime: string; isOpen: boolean }
+type Hour = { id: string; dayOfWeek: number; gender: 'FEMALE' | 'MALE'; openTime: string; closeTime: string; isOpen: boolean }
 type Block = { id: string; date: Date; startTime: string; endTime: string; reason: string | null }
 
 function toFaDate(date: Date) {
@@ -24,7 +24,14 @@ function toFaTime(t: string) {
 export function ScheduleManager({ hours, blocks }: { hours: Hour[]; blocks: Block[] }) {
   const [localHours, setLocalHours] = useState(hours)
   const [newBlock, setNewBlock] = useState({ date: '', startTime: '', endTime: '', reason: '' })
+  const [activeTab, setActiveTab] = useState<'FEMALE' | 'MALE'>('FEMALE')
   const router = useRouter()
+
+  const tabHours = localHours.filter(h => h.gender === activeTab)
+
+  function updateHour(id: string, patch: Partial<Hour>) {
+    setLocalHours(prev => prev.map(h => h.id === id ? { ...h, ...patch } : h))
+  }
 
   async function saveHours() {
     const res = await fetch('/api/admin/schedule/hours', {
@@ -68,6 +75,29 @@ export function ScheduleManager({ hours, blocks }: { hours: Hour[]; blocks: Bloc
       <h1 className="text-xl font-light mb-6" style={{ color: 'var(--text-primary)' }}>زمان‌بندی</h1>
 
       <h2 className="text-sm mb-2" style={{ color: 'var(--text-muted)' }}>ساعت کاری</h2>
+
+      <div className="flex gap-2 mb-3">
+        {([{ value: 'FEMALE', label: 'خانم' }, { value: 'MALE', label: 'آقا' }] as const).map(tab => (
+          <button
+            key={tab.value}
+            type="button"
+            onClick={() => setActiveTab(tab.value)}
+            className="px-4 py-1.5 rounded-full text-xs font-medium transition-all"
+            style={activeTab === tab.value ? (
+              tab.value === 'FEMALE'
+                ? { background: 'rgba(244,114,182,0.15)', color: '#f472b6', border: '1px solid rgba(244,114,182,0.4)' }
+                : { background: 'rgba(147,197,253,0.15)', color: '#93c5fd', border: '1px solid rgba(147,197,253,0.4)' }
+            ) : {
+              background: 'var(--glass-bg)',
+              color: 'var(--text-muted)',
+              border: '1px solid var(--border-base)',
+            }}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
       <GlassCard className="mb-4 overflow-hidden">
         <Table>
           <TableHeader>
@@ -79,20 +109,20 @@ export function ScheduleManager({ hours, blocks }: { hours: Hour[]; blocks: Bloc
             </TableRow>
           </TableHeader>
           <TableBody>
-            {localHours.map((h, i) => (
+            {tabHours.map(h => (
               <TableRow key={h.id} className="border-b last:border-0" style={{ borderColor: 'var(--border-base)' }}>
                 <TableCell className="py-1.5 px-3 text-xs" style={{ color: 'var(--text-muted)' }}>
                   {DAY_NAMES[h.dayOfWeek]}
                 </TableCell>
                 <TableCell className="py-1.5 px-3">
-                  <TimePicker value={h.openTime} onChange={v => { const next = [...localHours]; next[i] = { ...h, openTime: v }; setLocalHours(next) }} className="min-w-[90px]" />
+                  <TimePicker value={h.openTime} onChange={v => updateHour(h.id, { openTime: v })} className="min-w-[90px]" />
                 </TableCell>
                 <TableCell className="py-1.5 px-3">
-                  <TimePicker value={h.closeTime} onChange={v => { const next = [...localHours]; next[i] = { ...h, closeTime: v }; setLocalHours(next) }} className="min-w-[90px]" />
+                  <TimePicker value={h.closeTime} onChange={v => updateHour(h.id, { closeTime: v })} className="min-w-[90px]" />
                 </TableCell>
                 <TableCell className="py-1.5 px-3 text-left">
                   <button type="button"
-                    onClick={() => { const next = [...localHours]; next[i] = { ...h, isOpen: !h.isOpen }; setLocalHours(next) }}
+                    onClick={() => updateHour(h.id, { isOpen: !h.isOpen })}
                     className="inline-flex items-center justify-center text-xs px-3 py-1 rounded-full font-medium transition-all duration-150 min-w-[52px] border"
                     style={h.isOpen ? {
                       background: 'rgba(31,94,70,0.20)',
