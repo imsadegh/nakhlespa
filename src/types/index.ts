@@ -1,5 +1,7 @@
 import { BookingStatus } from '@prisma/client'
 
+export type Gender = 'FEMALE' | 'MALE'
+
 export type ServiceDTO = {
   id: string
   nameFa: string
@@ -22,7 +24,7 @@ export type SlotDTO = {
   startTime: string      // "HH:mm"
   endTime: string        // "HH:mm"
   taken: boolean
-  availableCount: number // how many rooms are free at this slot
+  availableCount: number
 }
 
 // One person in a group booking
@@ -30,19 +32,19 @@ export type Person = {
   serviceId: string
   addonIds: string[]
   customerName: string
-  customerPhone: string   // required for person[0] (payer), optional (can be '') for others
+  customerPhone: string
   customerNotes: string
 }
 
 // Wizard UI state
 export type WizardState = {
+  gender?: Gender         // set in Step 0, applies to whole group
   persons: Person[]
   date?: string           // "YYYY-MM-DD"
   startTime?: string      // "HH:mm"
   endTime?: string        // "HH:mm"
 }
 
-// What Step4 POSTs to /api/bookings/create
 export type MultiBookingCreateInput = {
   bookings: {
     serviceId: string
@@ -52,6 +54,7 @@ export type MultiBookingCreateInput = {
     date: string
     startTime: string
     addonIds?: string[]
+    gender: Gender
   }[]
 }
 
@@ -63,6 +66,7 @@ export type BookingCreateInput = {
   date: string            // "YYYY-MM-DD"
   startTime: string       // "HH:mm"
   addonIds?: string[]
+  gender: Gender
 }
 
 export type BookingSummary = {
