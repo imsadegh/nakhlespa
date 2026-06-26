@@ -17,10 +17,10 @@ function parseDateUTC(date: string) {
   return new Date(Date.UTC(year, month - 1, day))
 }
 
-async function getWorkingDay(jsDate: Date) {
+async function getWorkingDay(jsDate: Date, gender: 'FEMALE' | 'MALE') {
   const jsDayMap: Record<number, number> = { 6: 0, 0: 1, 1: 2, 2: 3, 3: 4, 4: 5, 5: 6 }
   const dayOfWeek = jsDayMap[jsDate.getUTCDay()]
-  return prisma.workingHours.findFirst({ where: { dayOfWeek, isOpen: true } })
+  return prisma.workingHours.findFirst({ where: { dayOfWeek, gender, isOpen: true } })
 }
 
 async function getBlockedRanges(jsDate: Date) {
@@ -31,25 +31,23 @@ async function getBlockedRanges(jsDate: Date) {
   return blocked.map(b => ({ start: timeToMinutes(b.startTime), end: timeToMinutes(b.endTime) }))
 }
 
-// Generic slot availability: counts total overlapping bookings vs totalRooms.
-// Used when specific rooms haven't been chosen yet (Step 1 not complete).
 export async function getAvailableSlots(
   date: string,
   durationMinutes: number,
   count = 1,
+  gender: 'FEMALE' | 'MALE',
 ): Promise<SlotDTO[]> {
   const jsDate = parseDateUTC(date)
-  const workingDay = await getWorkingDay(jsDate)
+  const workingDay = await getWorkingDay(jsDate, gender)
   if (!workingDay) return []
 
   const open = timeToMinutes(workingDay.openTime)
   const close = timeToMinutes(workingDay.closeTime)
 
-  // Total number of independent rooms (tier services only — each has its own masseuse)
   const totalRooms = await prisma.service.count({ where: { isActive: true, tier: { not: null } } })
 
   const existingBookings = await prisma.booking.findMany({
-    where: { date: jsDate, status: { not: BookingStatus.CANCELLED } },
+    where: { date: jsDate, status: { not: BookingStatus.CANCELLED }, gender },
     select: { startTime: true, endTime: true },
   })
 
@@ -58,7 +56,6 @@ export async function getAvailableSlots(
     end: timeToMinutes(b.endTime),
   }))
 
-  // Count bookings overlapping [slotStart, slotEnd) — booking overlaps if start < slotEnd && end > slotStart
   const bookingsForSlot = (slotStart: number, slotEnd: number): number =>
     existingBookingRanges.filter(r => r.start < slotEnd && r.end > slotStart).length
 
@@ -90,22 +87,20 @@ export async function getAvailableSlots(
   return slots
 }
 
-// Per-room slot availability: a slot is taken if ANY of the requested specific rooms
-// already has a booking at that time. Used when the customer has already chosen their rooms.
 export async function getSlotsForRooms(
   date: string,
   serviceIds: string[],
+  gender: 'FEMALE' | 'MALE',
 ): Promise<SlotDTO[]> {
   if (serviceIds.length === 0) return []
 
   const jsDate = parseDateUTC(date)
-  const workingDay = await getWorkingDay(jsDate)
+  const workingDay = await getWorkingDay(jsDate, gender)
   if (!workingDay) return []
 
   const open = timeToMinutes(workingDay.openTime)
   const close = timeToMinutes(workingDay.closeTime)
 
-  // Fetch the longest duration among selected services to drive the slot window
   const services = await prisma.service.findMany({
     where: { id: { in: serviceIds }, isActive: true },
     select: { id: true, durationMinutes: true },
@@ -113,7 +108,6 @@ export async function getSlotsForRooms(
   if (services.length === 0) return []
   const durationMinutes = Math.max(...services.map(s => s.durationMinutes))
 
-  // For each selected room, get its existing bookings on this date
   const bookingsByRoom = await prisma.booking.findMany({
     where: {
       serviceId: { in: serviceIds },
@@ -123,7 +117,6 @@ export async function getSlotsForRooms(
     select: { serviceId: true, startTime: true, endTime: true },
   })
 
-  // Map serviceId → list of time ranges already booked
   const roomRanges = new Map<string, { start: number; end: number }[]>()
   for (const id of serviceIds) roomRanges.set(id, [])
   for (const b of bookingsByRoom) {
@@ -135,12 +128,10 @@ export async function getSlotsForRooms(
 
   const blockedRanges = await getBlockedRanges(jsDate)
 
-  // Total rooms for availableCount display (informational only in this mode)
   const totalRooms = await prisma.service.count({ where: { isActive: true, tier: { not: null } } })
 
-  // All bookings on date for the availableCount badge
   const allBookings = await prisma.booking.findMany({
-    where: { date: jsDate, status: { not: BookingStatus.CANCELLED } },
+    where: { date: jsDate, status: { not: BookingStatus.CANCELLED }, gender },
     select: { startTime: true, endTime: true },
   })
   const allRanges = allBookings.map(b => ({
@@ -161,7 +152,6 @@ export async function getSlotsForRooms(
       continue
     }
 
-    // A slot is taken if ANY chosen room has a conflicting booking
     const hasConflict = serviceIds.some(id =>
       roomRanges.get(id)!.some(r => r.start < slotEnd && r.end > cursor)
     )
