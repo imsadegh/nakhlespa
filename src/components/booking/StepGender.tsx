@@ -58,7 +58,7 @@ export function StepGender({ state, update, goNext }: Props) {
               onClick={() => select(gender)}
               className="rounded-2xl border p-5 text-right transition-all duration-200 flex items-center gap-4"
               style={selected ? {
-                background: 'rgba(198,165,91,0.12)',
+                background: 'var(--glass-gold-bg)',
                 borderColor: 'rgba(198,165,91,0.6)',
                 boxShadow: '0 0 0 1px rgba(198,165,91,0.3)',
               } : {
@@ -66,7 +66,7 @@ export function StepGender({ state, update, goNext }: Props) {
                 borderColor: 'var(--border-base)',
               }}
             >
-              <span className="text-3xl" style={{ color: gender === 'FEMALE' ? '#f9a8d4' : '#93c5fd' }}>
+              <span className={`text-3xl ${gender === 'FEMALE' ? 'text-pink-400' : 'text-blue-400'}`}>
                 {icon}
               </span>
               <div className="flex-1">
