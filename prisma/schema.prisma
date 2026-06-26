@@ -7,6 +7,11 @@ datasource db {
   provider = "postgresql"
 }
 
+enum Gender {
+  FEMALE
+  MALE
+}
+
 model Service {
   id              String    @id @default(uuid())
   nameFa          String
@@ -53,12 +58,13 @@ model BookingAddon {
 model WorkingHours {
   id          String   @id @default(uuid())
   dayOfWeek   Int
+  gender      Gender
   openTime    String
   closeTime   String
   isOpen      Boolean  @default(true)
   createdAt   DateTime @default(now())
 
-  @@unique([dayOfWeek])
+  @@unique([dayOfWeek, gender])
   @@map("working_hours")
 }
 
@@ -84,6 +90,7 @@ model Booking {
   date               DateTime      @db.Date
   startTime          String
   endTime            String
+  gender             Gender
   status             BookingStatus @default(PENDING_PAYMENT)
   zarinpalAuthority  String?
   zarinpalRefId      String?
