@@ -2,6 +2,7 @@
 import { useState, useCallback, useEffect } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { StepProgress } from './StepProgress'
+import { StepGender } from './StepGender'
 import { Step1Service } from './Step1Service'
 import { Step2DateTime } from './Step2DateTime'
 import { Step3Details } from './Step3Details'
@@ -19,7 +20,7 @@ function emptyPerson() {
 }
 
 export function BookingWizard({ services }: { services: ServiceDTO[] }) {
-  const [step, setStep] = useState(1)
+  const [step, setStep] = useState(0)
   const [dir, setDir] = useState(1)
   const [state, setState] = useState<WizardState>({ persons: [emptyPerson()] })
   const [addons, setAddons] = useState<AddonDTO[]>([])
@@ -36,7 +37,7 @@ export function BookingWizard({ services }: { services: ServiceDTO[] }) {
 
   return (
     <div className="px-4 sm:px-5 pt-4 pb-5">
-      <StepProgress current={step} total={4} />
+      <StepProgress current={step} total={5} />
       <AnimatePresence mode="wait" custom={dir}>
         <motion.div
           key={step}
@@ -47,6 +48,7 @@ export function BookingWizard({ services }: { services: ServiceDTO[] }) {
           exit="exit"
           transition={{ duration: 0.25, ease: 'easeInOut' }}
         >
+          {step === 0 && <StepGender {...stepProps} />}
           {step === 1 && <Step1Service {...stepProps} />}
           {step === 2 && <Step2DateTime {...stepProps} />}
           {step === 3 && <Step3Details {...stepProps} />}
