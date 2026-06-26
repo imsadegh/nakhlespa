@@ -28,6 +28,7 @@ export default async function BookingsPage() {
     status: b.status,
     notes: b.customerNotes,
     refId: b.zarinpalRefId,
+    gender: b.gender,
   }))
 
   return (

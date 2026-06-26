@@ -12,7 +12,7 @@ export async function GET(req: NextRequest) {
   }
   const bookings = await prisma.booking.findMany({
     where: statusParam ? { status: statusParam as BookingStatus } : undefined,
-    include: { service: true },
+    include: { service: true, addons: { include: { addon: true } } },
     orderBy: { date: 'desc' },
   })
   return NextResponse.json(bookings)

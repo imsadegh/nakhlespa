@@ -63,8 +63,11 @@ export function BookingDetailDialog({ booking }: { booking: BookingRow }) {
 
   const totalPrice = booking.servicePrice + booking.addonsPricePaid
 
+  const genderLabel = booking.gender === 'FEMALE' ? 'خانم' : 'آقا'
+
   const fields: [string, string][] = [
     ["نام", booking.customerName],
+    ["جنسیت", genderLabel],
     ["موبایل", booking.customerPhone],
     ["خدمت", booking.serviceNameFa],
     ["تاریخ", booking.date],
@@ -94,7 +97,15 @@ export function BookingDetailDialog({ booking }: { booking: BookingRow }) {
           {fields.map(([label, value]) => (
             <div key={label} className="flex justify-between items-start gap-4">
               <span className="text-xs flex-shrink-0" style={{ color: "var(--text-faint)" }}>{label}</span>
-              <span className="text-xs text-end" style={{ color: "var(--text-primary)" }}>{value}</span>
+              {label === 'جنسیت' ? (
+                <span className={`text-[10px] px-2 py-0.5 rounded-full ${
+                  booking.gender === 'FEMALE' ? 'bg-pink-400/10 text-pink-400' : 'bg-blue-400/10 text-blue-400'
+                }`}>
+                  {value}
+                </span>
+              ) : (
+                <span className="text-xs text-end" style={{ color: "var(--text-primary)" }}>{value}</span>
+              )}
             </div>
           ))}
           <div className="flex justify-between items-center gap-4">

@@ -25,6 +25,7 @@ export type BookingRow = {
   status: BookingStatus
   notes: string | null
   refId: string | null
+  gender: 'FEMALE' | 'MALE'
 }
 
 const statusLabel: Record<BookingStatus, string> = {
@@ -67,8 +68,17 @@ export const columns: ColumnDef<BookingRow>[] = [
     header: () => <span style={{ color: "var(--text-muted)" }}>مشتری</span>,
     cell: ({ row }) => (
       <div>
-        <div className="text-xs font-medium" style={{ color: "var(--text-primary)" }}>
-          {row.getValue("customerName")}
+        <div className="flex items-center gap-1.5 mb-0.5">
+          <span className="text-xs font-medium" style={{ color: "var(--text-primary)" }}>
+            {row.getValue("customerName")}
+          </span>
+          <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${
+            row.original.gender === 'FEMALE'
+              ? 'bg-pink-400/10 text-pink-400'
+              : 'bg-blue-400/10 text-blue-400'
+          }`}>
+            {row.original.gender === 'FEMALE' ? 'خانم' : 'آقا'}
+          </span>
         </div>
         <div className="text-[11px]" style={{ color: "var(--text-faint)" }}>
           {row.original.customerPhone}
