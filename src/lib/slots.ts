@@ -113,6 +113,7 @@ export async function getSlotsForRooms(
       serviceId: { in: serviceIds },
       date: jsDate,
       status: { not: BookingStatus.CANCELLED },
+      gender,
     },
     select: { serviceId: true, startTime: true, endTime: true },
   })
