@@ -62,13 +62,22 @@ async function main() {
     create: { nameFa: 'نوشیدنی ایوان گلاب', price: 150000, requiresTier: false },
   })
 
-  // Working hours: Saturday=0 to Friday=6, 9am–9pm
-  for (let i = 0; i < 7; i++) {
-    await prisma.workingHours.upsert({
-      where: { dayOfWeek: i },
-      update: { openTime: '09:00', closeTime: '21:00', isOpen: true },
-      create: { dayOfWeek: i, openTime: '09:00', closeTime: '21:00', isOpen: true },
-    })
+  // Gender-separated working hours
+  // FEMALE: morning session 08:00–14:30 all days
+  // MALE:   afternoon/evening session 15:00–22:00 all days
+  const genderHours = [
+    { gender: 'FEMALE' as const, openTime: '08:00', closeTime: '14:30' },
+    { gender: 'MALE'   as const, openTime: '15:00', closeTime: '22:00' },
+  ]
+
+  for (const { gender, openTime, closeTime } of genderHours) {
+    for (let i = 0; i < 7; i++) {
+      await prisma.workingHours.upsert({
+        where: { dayOfWeek_gender: { dayOfWeek: i, gender } },
+        update: { openTime, closeTime, isOpen: true },
+        create: { dayOfWeek: i, gender, openTime, closeTime, isOpen: true },
+      })
+    }
   }
 
   // Sample bookings
@@ -100,6 +109,7 @@ async function main() {
         date:               daysFromNow(b.daysOffset),
         startTime:          b.startTime,
         endTime:            b.endTime,
+        gender:             'MALE',
         status:             b.status,
         zarinpalRefId:      b.refId,
       },
@@ -123,7 +133,7 @@ async function main() {
     console.log('ADMIN_EMAIL / ADMIN_PASSWORD not set — skipping admin user creation')
   }
 
-  console.log('Seeded 4 room tiers, مشاوره, حمام طهورا, 1 add-on, working hours, admin user, 8 sample bookings')
+  console.log('Seeded 4 room tiers, مشاوره, حمام طهورا, 1 add-on, 14 gender-separated working hours, admin user, 8 sample bookings')
 }
 
 main().finally(() => prisma.$disconnect())
