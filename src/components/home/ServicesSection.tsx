@@ -3,7 +3,6 @@ import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
 import { useBookingDialog } from '@/components/booking/BookingDialogProvider'
 import { GlassCard } from '@/components/ui/GlassCard'
-import BorderGlow from '@/components/ui/BorderGlow'
 import { TierIcon } from '@/components/ui/TierIcon'
 import type { ServiceDTO } from '@/types'
 
@@ -51,18 +50,6 @@ export function ServicesSection({ services }: { services: ServiceDTO[] }) {
               whileHover={{ y: -4, transition: { duration: 0.2 } }}
             >
               <button onClick={handleBook} className="w-full text-right h-full">
-                <BorderGlow
-                  borderRadius={16}
-                  glowColor="42 65 72"
-                  colors={isGold ? ['#C6A55B', '#E8C97A', '#A8873A'] : ['#C6A55B', '#9B8B6E', '#D4B87A']}
-                  glowRadius={36}
-                  glowIntensity={0.9}
-                  edgeSensitivity={25}
-                  coneSpread={20}
-                  fillOpacity={0.2}
-                  backgroundColor="transparent"
-                  className="h-full w-full"
-                >
                 <GlassCard gold={isGold} className="relative overflow-hidden h-full flex flex-col p-5 gap-4 cursor-pointer group">
 
                   {/* header row */}
@@ -119,7 +106,6 @@ export function ServicesSection({ services }: { services: ServiceDTO[] }) {
                   </div>
 
                 </GlassCard>
-                </BorderGlow>
               </button>
             </motion.div>
           )
