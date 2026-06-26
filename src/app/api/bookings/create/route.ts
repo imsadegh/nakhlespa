@@ -3,12 +3,17 @@ import { prisma } from '@/lib/prisma'
 import { zarinpalRequest } from '@/lib/zarinpal'
 import { BookingStatus } from '@prisma/client'
 import { randomUUID } from 'crypto'
-import type { BookingCreateInput } from '@/types'
+import type { BookingCreateInput, Gender } from '@/types'
 
 function addMinutesToTime(time: string, minutes: number): string {
   const [h, m] = time.split(':').map(Number)
   const total = h * 60 + m + minutes
   return `${String(Math.floor(total / 60)).padStart(2, '0')}:${String(total % 60).padStart(2, '0')}`
+}
+
+function timeToMinutes(t: string): number {
+  const [h, m] = t.split(':').map(Number)
+  return h * 60 + m
 }
 
 export async function POST(req: NextRequest) {
@@ -24,17 +29,25 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'bookings must be a non-empty array' }, { status: 400 })
   }
 
-  // Validate each booking entry
   for (const b of bookings) {
     if (!b.serviceId || !b.customerName || !b.customerPhone || !b.date || !b.startTime) {
       return NextResponse.json({ error: 'Missing required fields in one or more bookings' }, { status: 400 })
+    }
+    if (b.gender !== 'FEMALE' && b.gender !== 'MALE') {
+      return NextResponse.json({ error: 'gender must be FEMALE or MALE' }, { status: 400 })
     }
     if (b.addonIds !== undefined && !Array.isArray(b.addonIds)) {
       return NextResponse.json({ error: 'addonIds must be an array' }, { status: 400 })
     }
   }
 
-  // Fetch all services referenced
+  // All bookings in a group must share the same gender
+  const genders = [...new Set(bookings.map(b => b.gender))]
+  if (genders.length !== 1) {
+    return NextResponse.json({ error: 'All bookings in a group must have the same gender' }, { status: 400 })
+  }
+  const gender = genders[0] as Gender
+
   const serviceIds = [...new Set(bookings.map(b => b.serviceId))]
   const services = await prisma.service.findMany({ where: { id: { in: serviceIds }, isActive: true } })
   if (services.length !== serviceIds.length) {
@@ -42,7 +55,6 @@ export async function POST(req: NextRequest) {
   }
   const serviceMap = new Map(services.map(s => [s.id, s]))
 
-  // Fetch and validate all add-ons across all bookings
   const allAddonIds = [...new Set(bookings.flatMap(b => b.addonIds ?? []))]
   const fetchedAddons = allAddonIds.length > 0
     ? await prisma.addon.findMany({ where: { id: { in: allAddonIds }, isActive: true }, select: { id: true, price: true, requiresTier: true } })
@@ -52,7 +64,6 @@ export async function POST(req: NextRequest) {
   }
   const addonMap = new Map(fetchedAddons.map(a => [a.id, a]))
 
-  // Validate tier restriction per booking
   for (const b of bookings) {
     const svc = serviceMap.get(b.serviceId)!
     const addonIds = [...new Set(b.addonIds ?? [])]
@@ -67,10 +78,24 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Each room can only be booked once per group' }, { status: 400 })
   }
 
-  // Compute totals
-  const groupToken = randomUUID()
+  // Server-side gender window enforcement
   const [year, month, day] = bookings[0].date.split('-').map(Number)
-  const bookingDate = new Date(Date.UTC(year, month - 1, day))
+  const jsDate = new Date(Date.UTC(year, month - 1, day))
+  const jsDayMap: Record<number, number> = { 6: 0, 0: 1, 1: 2, 2: 3, 3: 4, 4: 5, 5: 6 }
+  const dayOfWeek = jsDayMap[jsDate.getUTCDay()]
+  const workingDay = await prisma.workingHours.findFirst({ where: { dayOfWeek, gender, isOpen: true } })
+  if (!workingDay) {
+    return NextResponse.json({ error: 'No working hours configured for this gender and day' }, { status: 400 })
+  }
+  const openMin = timeToMinutes(workingDay.openTime)
+  const closeMin = timeToMinutes(workingDay.closeTime)
+  const startMin = timeToMinutes(bookings[0].startTime)
+  if (startMin < openMin || startMin >= closeMin) {
+    return NextResponse.json({ error: 'Selected time is outside the allowed session window for this gender' }, { status: 400 })
+  }
+
+  const groupToken = randomUUID()
+  const bookingDate = jsDate
 
   const bookingData = bookings.map(b => {
     const svc = serviceMap.get(b.serviceId)!
@@ -81,12 +106,12 @@ export async function POST(req: NextRequest) {
     return { b, svc, selectedAddons, addonsPricePaid, endTime }
   })
 
-  // Verify slot availability server-side before creating bookings
   const { getAvailableSlots } = await import('@/lib/slots')
   const slotsForDate = await getAvailableSlots(
     bookings[0].date,
     Math.max(...bookingData.map(({ svc }) => svc.durationMinutes)),
     bookings.length,
+    gender,
   )
   const requestedSlot = slotsForDate.find(s => s.startTime === bookings[0].startTime)
   if (!requestedSlot || requestedSlot.taken) {
@@ -100,7 +125,6 @@ export async function POST(req: NextRequest) {
     ? `رزرو ${firstServiceName} — نخلسپا`
     : `رزرو گروهی ${bookings.length} غرفه — نخلسپا`
 
-  // Create all bookings in a transaction
   const createdBookings = await prisma.$transaction(
     bookingData.map(({ b, selectedAddons, addonsPricePaid, endTime }) =>
       prisma.booking.create({
@@ -112,6 +136,7 @@ export async function POST(req: NextRequest) {
           date: bookingDate,
           startTime: b.startTime,
           endTime,
+          gender,
           status: BookingStatus.PENDING_PAYMENT,
           addonsPricePaid,
           groupToken,
@@ -127,7 +152,6 @@ export async function POST(req: NextRequest) {
 
   try {
     const { authority, paymentUrl } = await zarinpalRequest(totalPrice, paymentDescription, payerPhone)
-    // Store authority only on the first booking — verify route finds group via it
     await prisma.booking.update({ where: { id: payerBooking.id }, data: { zarinpalAuthority: authority } })
     return NextResponse.json({ paymentUrl })
   } catch (err) {
