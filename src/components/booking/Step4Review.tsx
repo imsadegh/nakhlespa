@@ -32,6 +32,7 @@ export function Step4Review({ state, goBack, services, addons }: Props) {
         date: state.date!,
         startTime: state.startTime!,
         addonIds: person.addonIds,
+        gender: state.gender!,
       }))
       const res = await fetch('/api/bookings/create', {
         method: 'POST',
@@ -60,10 +61,16 @@ export function Step4Review({ state, goBack, services, addons }: Props) {
             {state.date ? new Date(state.date).toLocaleDateString('fa-IR') : '—'}
           </span>
         </div>
-        <div className="flex justify-between text-xs">
+        <div className="flex justify-between text-xs mb-1">
           <span style={{ color: 'var(--text-muted)' }}>ساعت</span>
           <span style={{ color: 'var(--text-primary)' }}>
             {state.startTime ? toFaTime(state.startTime) : '—'}
+          </span>
+        </div>
+        <div className="flex justify-between text-xs">
+          <span style={{ color: 'var(--text-muted)' }}>جلسه</span>
+          <span className={`text-[10px] px-2 py-0.5 rounded-full ${state.gender === 'FEMALE' ? 'bg-pink-400/10 text-pink-400' : 'bg-blue-400/10 text-blue-400'}`}>
+            {state.gender === 'FEMALE' ? 'خانم' : 'آقا'}
           </span>
         </div>
       </GlassCard>

@@ -43,26 +43,28 @@ export function Step2DateTime({ state, update, goNext, goBack }: Props) {
   const serviceIdsKey = allServiceIds.join(',')
 
   useEffect(() => {
+    if (!state.gender) return
     fetch('/api/working-hours')
       .then(r => r.json())
-      .then((data: { dayOfWeek: number; isOpen: boolean }[]) => {
-        setClosedDays(new Set(data.filter(h => !h.isOpen).map(h => h.dayOfWeek)))
+      .then((data: { dayOfWeek: number; gender: string; isOpen: boolean }[]) => {
+        const genderData = data.filter(h => h.gender === state.gender)
+        setClosedDays(new Set(genderData.filter(h => !h.isOpen).map(h => h.dayOfWeek)))
       })
       .catch(() => setClosedDays(new Set()))
-  }, [])
+  }, [state.gender])
 
   useEffect(() => {
-    if (!state.date || !firstServiceId) return
+    if (!state.date || !firstServiceId || !state.gender) return
     setSlots([]); update({ startTime: undefined, endTime: undefined })
     setLoading(true)
     const url = allRoomsChosen
-      ? `/api/slots?date=${state.date}&serviceId=${firstServiceId}&serviceIds=${serviceIdsKey}`
-      : `/api/slots?date=${state.date}&serviceId=${firstServiceId}&count=${personCount}`
+      ? `/api/slots?date=${state.date}&serviceId=${firstServiceId}&serviceIds=${serviceIdsKey}&gender=${state.gender}`
+      : `/api/slots?date=${state.date}&serviceId=${firstServiceId}&count=${personCount}&gender=${state.gender}`
     fetch(url)
       .then(r => r.json())
       .then((data: SlotDTO[]) => setSlots(data))
       .finally(() => setLoading(false))
-  }, [state.date, firstServiceId, allRoomsChosen, serviceIdsKey, personCount, update])
+  }, [state.date, firstServiceId, allRoomsChosen, serviceIdsKey, personCount, state.gender, update])
 
   return (
     <div>
