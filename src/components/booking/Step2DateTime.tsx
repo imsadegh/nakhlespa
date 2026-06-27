@@ -17,7 +17,7 @@ function toFaNum(n: number) {
 
 function getDates(count = 14) {
   return Array.from({ length: count }, (_, i) => {
-    const d = new Date(); d.setDate(d.getDate() + i + 1)
+    const d = new Date(); d.setDate(d.getDate() + i)
     return d.toISOString().split('T')[0]
   })
 }
