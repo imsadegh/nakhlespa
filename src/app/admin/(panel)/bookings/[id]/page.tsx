@@ -55,10 +55,7 @@ export default async function BookingDetailPage({ params }: { params: Promise<{ 
     <div>
       <h1 className="text-xl font-light mb-6" style={{ color: 'var(--text-primary)' }}>جزئیات رزرو</h1>
 
-      {/* Customer & session info */}
-      <GlassCard className="p-5 mb-4 space-y-3">
-        <p className="text-[10px] tracking-widest mb-1" style={{ color: 'var(--text-faint)' }}>— اطلاعات مشتری</p>
-
+      <GlassCard className="p-5 mb-6 space-y-3">
         <Row label="نام">{booking.customerName}</Row>
         <Row label="موبایل">{booking.customerPhone}</Row>
         <Row label="جنسیت">
@@ -67,58 +64,48 @@ export default async function BookingDetailPage({ params }: { params: Promise<{ 
           </span>
         </Row>
         {booking.customerNotes && <Row label="توضیحات">{booking.customerNotes}</Row>}
-      </GlassCard>
 
-      {/* Booking time & service */}
-      <GlassCard className="p-5 mb-4 space-y-3">
-        <p className="text-[10px] tracking-widest mb-1" style={{ color: 'var(--text-faint)' }}>— زمان و خدمت</p>
-
-        <Row label="تاریخ">{faDate}</Row>
-        <Row label="ساعت">{faTime(booking.startTime)} — {faTime(booking.endTime)}</Row>
-        <Row label="خدمت">{booking.service.nameFa}</Row>
-      </GlassCard>
-
-      {/* Price breakdown */}
-      <GlassCard className="p-5 mb-4 space-y-3">
-        <p className="text-[10px] tracking-widest mb-1" style={{ color: 'var(--text-faint)' }}>— مبلغ</p>
-
-        <Row label="خدمت اصلی">{booking.service.price.toLocaleString('fa-IR')} ت</Row>
-        {booking.addons.map(ba => (
-          <Row key={ba.id} label={ba.addon.nameFa}>+{ba.pricePaid.toLocaleString('fa-IR')} ت</Row>
-        ))}
-        <div className="flex justify-between items-center border-t pt-2" style={{ borderColor: 'rgba(198,165,91,0.15)' }}>
-          <span className="text-xs font-medium" style={{ color: 'var(--text-primary)' }}>جمع کل</span>
-          <span className="text-xs font-semibold" style={{ color: '#C6A55B' }}>{totalPrice.toLocaleString('fa-IR')} تومان</span>
+        <div className="border-t pt-3 space-y-3" style={{ borderColor: 'var(--border-base)' }}>
+          <Row label="تاریخ">{faDate}</Row>
+          <Row label="ساعت">{faTime(booking.startTime)} — {faTime(booking.endTime)}</Row>
+          <Row label="خدمت">{booking.service.nameFa}</Row>
         </div>
-      </GlassCard>
 
-      {/* Group bookings */}
-      {groupBookings.length > 0 && (
-        <GlassCard className="p-5 mb-4 space-y-3">
-          <p className="text-[10px] tracking-widest mb-1" style={{ color: 'var(--text-faint)' }}>— رزروهای گروهی</p>
-          {groupBookings.map(gb => (
-            <div key={gb.id} className="flex justify-between items-center">
-              <span className="text-xs" style={{ color: 'var(--text-primary)' }}>{gb.customerName}</span>
-              <span className="text-xs" style={{ color: 'var(--text-muted)' }}>{gb.service.nameFa}</span>
-            </div>
+        <div className="border-t pt-3 space-y-3" style={{ borderColor: 'var(--border-base)' }}>
+          <Row label="خدمت اصلی">{booking.service.price.toLocaleString('fa-IR')} ت</Row>
+          {booking.addons.map(ba => (
+            <Row key={ba.id} label={ba.addon.nameFa}>+{ba.pricePaid.toLocaleString('fa-IR')} ت</Row>
           ))}
-        </GlassCard>
-      )}
+          <div className="flex justify-between items-center border-t pt-2" style={{ borderColor: 'rgba(198,165,91,0.15)' }}>
+            <span className="text-xs font-medium" style={{ color: 'var(--text-primary)' }}>جمع کل</span>
+            <span className="text-xs font-semibold" style={{ color: '#C6A55B' }}>{totalPrice.toLocaleString('fa-IR')} تومان</span>
+          </div>
+        </div>
 
-      {/* Status & payment */}
-      <GlassCard className="p-5 mb-6 space-y-3">
-        <p className="text-[10px] tracking-widest mb-1" style={{ color: 'var(--text-faint)' }}>— وضعیت و پرداخت</p>
+        {groupBookings.length > 0 && (
+          <div className="border-t pt-3 space-y-3" style={{ borderColor: 'var(--border-base)' }}>
+            <p className="text-[10px] tracking-widest" style={{ color: 'var(--text-faint)' }}>رزروهای گروهی</p>
+            {groupBookings.map(gb => (
+              <div key={gb.id} className="flex justify-between items-center">
+                <span className="text-xs" style={{ color: 'var(--text-primary)' }}>{gb.customerName}</span>
+                <span className="text-xs" style={{ color: 'var(--text-muted)' }}>{gb.service.nameFa}</span>
+              </div>
+            ))}
+          </div>
+        )}
 
-        <Row label="وضعیت">
-          <span className={`text-[10px] px-2.5 py-1 rounded-full ${statusStyle[booking.status]}`}>
-            {statusLabel[booking.status]}
-          </span>
-        </Row>
-        {booking.zarinpalRefId && <Row label="کد پیگیری">{booking.zarinpalRefId}</Row>}
-        {booking.zarinpalAuthority && <Row label="شناسه تراکنش">{booking.zarinpalAuthority}</Row>}
-        <Row label="تاریخ ثبت">
-          {new Date(booking.createdAt.toISOString().split('T')[0] + 'T12:00:00').toLocaleDateString('fa-IR')}
-        </Row>
+        <div className="border-t pt-3 space-y-3" style={{ borderColor: 'var(--border-base)' }}>
+          <Row label="وضعیت">
+            <span className={`text-[10px] px-2.5 py-1 rounded-full ${statusStyle[booking.status]}`}>
+              {statusLabel[booking.status]}
+            </span>
+          </Row>
+          {booking.zarinpalRefId && <Row label="کد پیگیری">{booking.zarinpalRefId}</Row>}
+          {booking.zarinpalAuthority && <Row label="شناسه تراکنش">{booking.zarinpalAuthority}</Row>}
+          <Row label="تاریخ ثبت">
+            {new Date(booking.createdAt.toISOString().split('T')[0] + 'T12:00:00').toLocaleDateString('fa-IR')}
+          </Row>
+        </div>
       </GlassCard>
 
       <BookingActions bookingId={booking.id} currentStatus={booking.status} />
