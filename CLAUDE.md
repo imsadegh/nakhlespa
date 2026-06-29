@@ -21,7 +21,7 @@ No lint or test commands are configured.
 ## Environment Files
 
 Two env files are required:
-- **`.env.local`** — read by Next.js at runtime: `DATABASE_URL`, `BETTER_AUTH_SECRET`, `REDIS_URL`, `NEXT_PUBLIC_SITE_URL`, `ZARINPAL_MERCHANT_ID`, `ZARINPAL_CALLBACK_URL`, `SMSIR_API_KEY`, `SMSIR_TEMPLATE_CONFIRM`, `SMSIR_TEMPLATE_ADMIN`, `SMSIR_TEMPLATE_REMINDER_24H`, `SMSIR_TEMPLATE_REMINDER_2H`, `ADMIN_PHONE`, `ADMIN_EMAIL`, `ADMIN_PASSWORD`
+- **`.env.local`** — read by Next.js at runtime: `DATABASE_URL`, `BETTER_AUTH_SECRET`, `REDIS_URL`, `NEXT_PUBLIC_SITE_URL`, `ZARINPAL_MERCHANT_ID`, `ZARINPAL_CALLBACK_URL`, `SMSIR_API_KEY`, `SMSIR_TEMPLATE_CONFIRM`, `SMSIR_TEMPLATE_ADMIN`, `SMSIR_TEMPLATE_REMINDER_24H`, `SMSIR_TEMPLATE_REMINDER_2H`, `SMSIR_TEMPLATE_OTP`, `ADMIN_PHONE`, `ADMIN_EMAIL`, `ADMIN_PASSWORD`
 - **`.env`** — read by Prisma CLI tools only: `DATABASE_URL`
 
 Prisma CLI (`migrate`, `studio`) reads `.env`, not `.env.local`. Both must have matching `DATABASE_URL`.
@@ -50,7 +50,10 @@ Generates 30-minute-interval slots within working hours, subtracting existing bo
 4. Zarinpal callback → `GET /api/bookings/verify` → sets status `PAID`, schedules SMS reminder, redirects to `/booking/confirm/[token]`
 
 ### Admin Area (`/admin/*`)
-Protected by `proxy.ts` matcher. Login at `/admin` (Better Auth email/password). Routes: `/admin/dashboard`, `/admin/bookings`, `/admin/bookings/[id]`, `/admin/schedule`.
+Protected by `proxy.ts` matcher. Login at `/admin` (Better Auth email/password). Routes: `/admin/dashboard`, `/admin/bookings`, `/admin/bookings/[id]`, `/admin/schedule`, `/admin/discounts`.
+
+### Customer Portal (`/my/*`)
+OTP-authenticated via `__customer_session` HttpOnly cookie. `proxy.ts` redirects unauthenticated requests to `/my/login?next=<path>`. Routes: `/my/login` (OTP flow), `/my/bookings` (booking history + loyalty progress), `/my/bookings/[token]` (detail). Session stored in `CustomerSession` table (30-min TTL). OTP codes SHA-256 hashed in `Verification` table; `SMSIR_TEMPLATE_OTP` template used for delivery.
 
 ### Theming
 CSS custom properties in `globals.css` — three layers: `:root` (dark default), `[data-theme="light"]`, `@media (prefers-color-scheme: light)`. Anti-flash inline script in `layout.tsx` reads `localStorage.getItem('theme')` before hydration. **Always use CSS vars** (`var(--text-primary)`, `var(--text-muted)`, `var(--text-faint)`) not hardcoded colors like `text-[#F3EFE8]` — hardcoded values break light mode.
