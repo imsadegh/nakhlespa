@@ -56,3 +56,10 @@ export async function sendReminderSms(mobile: string, template: 'reminder24h' | 
     { name: 'time',    value: params.time },
   ])
 }
+
+export async function sendOtpSms(mobile: string, code: string) {
+  const templateId = Number(process.env.SMSIR_TEMPLATE_OTP!)
+  return sendPattern(mobile, templateId, [
+    { name: 'code', value: code },
+  ])
+}
