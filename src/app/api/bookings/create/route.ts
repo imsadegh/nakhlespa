@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { zarinpalRequest } from '@/lib/zarinpal'
+import { validatePromoCode, checkLoyaltyDiscount } from '@/lib/discounts'
 import { BookingStatus } from '@prisma/client'
+import type { Booking } from '@prisma/client'
 import { randomUUID } from 'crypto'
 import type { BookingCreateInput, Gender } from '@/types'
 
@@ -17,14 +19,14 @@ function timeToMinutes(t: string): number {
 }
 
 export async function POST(req: NextRequest) {
-  let body: { bookings: BookingCreateInput[] }
+  let body: { bookings: BookingCreateInput[]; promoCode?: string }
   try {
     body = await req.json()
   } catch {
     return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 })
   }
 
-  const { bookings } = body
+  const { bookings, promoCode } = body
   if (!Array.isArray(bookings) || bookings.length === 0) {
     return NextResponse.json({ error: 'bookings must be a non-empty array' }, { status: 400 })
   }
@@ -118,15 +120,34 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Requested time slot is no longer available' }, { status: 409 })
   }
 
-  const totalPrice = bookingData.reduce((s, { svc, addonsPricePaid }) => s + svc.price + addonsPricePaid, 0)
+  const subtotal = bookingData.reduce((s, { svc, addonsPricePaid }) => s + svc.price + addonsPricePaid, 0)
   const payerPhone = bookings[0].customerPhone
   const firstServiceName = serviceMap.get(bookings[0].serviceId)!.nameFa
+
+  let discountAmount = 0
+  let discountCodeId: string | null = null
+
+  if (promoCode) {
+    const promoResult = await validatePromoCode(promoCode, payerPhone, subtotal)
+    if (promoResult.valid) {
+      discountAmount = promoResult.discountAmount
+      discountCodeId = promoResult.codeId
+    }
+  } else {
+    const loyaltyResult = await checkLoyaltyDiscount(payerPhone, subtotal)
+    if (loyaltyResult.eligible) {
+      discountAmount = loyaltyResult.discountAmount
+      discountCodeId = loyaltyResult.codeId
+    }
+  }
+
+  const totalPrice = Math.max(0, subtotal - discountAmount)
   const paymentDescription = bookings.length === 1
     ? `رزرو ${firstServiceName} — نخلسپا`
     : `رزرو گروهی ${bookings.length} غرفه — نخلسپا`
 
-  const createdBookings = await prisma.$transaction(
-    bookingData.map(({ b, selectedAddons, addonsPricePaid, endTime }) =>
+  const results = await prisma.$transaction([
+    ...bookingData.map(({ b, selectedAddons, addonsPricePaid, endTime }) =>
       prisma.booking.create({
         data: {
           serviceId: b.serviceId,
@@ -140,13 +161,19 @@ export async function POST(req: NextRequest) {
           status: BookingStatus.PENDING_PAYMENT,
           addonsPricePaid,
           groupToken,
+          discountCodeId: discountCodeId ?? undefined,
+          discountAmount,
           addons: {
             create: selectedAddons.map(a => ({ addonId: a.id, pricePaid: a.price })),
           },
         },
       })
-    )
-  )
+    ),
+    ...(discountCodeId
+      ? [prisma.discountCode.update({ where: { id: discountCodeId }, data: { usedCount: { increment: 1 } } })]
+      : []),
+  ])
+  const createdBookings = results.slice(0, bookingData.length) as Booking[]
 
   const payerBooking = createdBookings[0]
 
