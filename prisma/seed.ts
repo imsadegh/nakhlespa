@@ -62,6 +62,19 @@ async function main() {
     create: { nameFa: 'نوشیدنی ایوان گلاب', price: 150000, requiresTier: false },
   })
 
+  // Loyalty auto discount code
+  await prisma.discountCode.upsert({
+    where: { code: 'LOYALTY_AUTO' },
+    update: {},
+    create: {
+      code: 'LOYALTY_AUTO',
+      type: 'PERCENT',
+      value: 20,
+      maxUses: null,
+      isActive: true,
+    },
+  })
+
   // Gender-separated working hours
   // FEMALE: morning session 08:00–14:30 all days
   // MALE:   afternoon/evening session 15:00–22:00 all days
@@ -133,7 +146,7 @@ async function main() {
     console.log('ADMIN_EMAIL / ADMIN_PASSWORD not set — skipping admin user creation')
   }
 
-  console.log('Seeded 4 room tiers, مشاوره, حمام طهورا, 1 add-on, 14 gender-separated working hours, admin user, 8 sample bookings')
+  console.log('Seeded 4 room tiers, مشاوره, حمام طهورا, 1 add-on, 14 gender-separated working hours, admin user, 8 sample bookings, LOYALTY_AUTO discount code')
 }
 
 main().finally(() => prisma.$disconnect())

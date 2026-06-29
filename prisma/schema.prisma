@@ -96,6 +96,9 @@ model Booking {
   zarinpalRefId      String?
   addonsPricePaid    Int           @default(0)
   groupToken         String?
+  discountCodeId     String?
+  discountCode       DiscountCode? @relation(fields: [discountCodeId], references: [id])
+  discountAmount     Int           @default(0)
   createdAt          DateTime      @default(now())
   addons             BookingAddon[]
   smsReminders       SmsReminder[]
@@ -190,4 +193,35 @@ model Verification {
   updatedAt  DateTime?
 
   @@map("verification")
+}
+
+model CustomerSession {
+  id           String   @id @default(uuid())
+  phone        String
+  sessionToken String   @unique @default(uuid())
+  expiresAt    DateTime
+  createdAt    DateTime @default(now())
+
+  @@index([phone])
+  @@map("customer_sessions")
+}
+
+enum DiscountType {
+  PERCENT
+  FIXED
+}
+
+model DiscountCode {
+  id        String       @id @default(uuid())
+  code      String       @unique
+  type      DiscountType
+  value     Int
+  maxUses   Int?
+  usedCount Int          @default(0)
+  expiresAt DateTime?
+  isActive  Boolean      @default(true)
+  createdAt DateTime     @default(now())
+  bookings  Booking[]
+
+  @@map("discount_codes")
 }
