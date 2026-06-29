@@ -3,7 +3,7 @@ import { BookingStatus } from '@prisma/client'
 
 export async function validatePromoCode(
   code: string,
-  phone: string,
+  _phone: string,
   subtotal: number,
 ): Promise<{ valid: boolean; discountAmount: number; codeId: string; message?: string }> {
   const dc = await prisma.discountCode.findUnique({ where: { code: code.toUpperCase() } })
@@ -37,8 +37,14 @@ export async function checkLoyaltyDiscount(
   }
   const dc = await prisma.discountCode.findUnique({ where: { code: 'LOYALTY_AUTO' } })
   if (!dc || !dc.isActive) {
+    if (!dc) console.error('[discounts] LOYALTY_AUTO code not found in database — run seed')
     return { eligible: false, discountAmount: 0, codeId: '' }
   }
-  const discountAmount = Math.floor(subtotal * dc.value / 100)
+  if (dc.expiresAt && dc.expiresAt < new Date()) {
+    return { eligible: false, discountAmount: 0, codeId: '' }
+  }
+  const discountAmount = dc.type === 'PERCENT'
+    ? Math.floor(subtotal * dc.value / 100)
+    : Math.min(dc.value, subtotal)
   return { eligible: true, discountAmount, codeId: dc.id }
 }
