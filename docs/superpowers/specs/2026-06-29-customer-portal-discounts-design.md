@@ -80,7 +80,7 @@ discountAmount  Int          @default(0) // Tomans discounted, immutable snapsho
 **`POST /api/customer/auth/otp/send`**
 - Body: `{ phone: string }`
 - Rate limit: max 3 active `Verification` records per phone in the last 10 minutes. Return 429 if exceeded.
-- Generate a 6-digit numeric code. Store `bcrypt`-hashed value in `Verification` table: `identifier = phone`, `value = hashedCode`, `expiresAt = now + 10min`.
+- Generate a 6-digit numeric code. Store SHA-256 hashed value (using Node's built-in `crypto.createHash`) in `Verification` table: `identifier = phone`, `value = hashedCode`, `expiresAt = now + 10min`. Use `crypto.timingSafeEqual` for comparison to avoid timing attacks.
 - Send code via SMS.ir using a new OTP template (`SMSIR_TEMPLATE_OTP` env var).
 - Response: `{ ok: true }` or error.
 
@@ -88,6 +88,7 @@ discountAmount  Int          @default(0) // Tomans discounted, immutable snapsho
 - Body: `{ phone: string, code: string }`
 - Look up `Verification` by `identifier = phone`, check `bcrypt.compare(code, value)` and `expiresAt > now`.
 - On success: delete the `Verification` record, create a `CustomerSession` row (`expiresAt = now + 30min`), set `__customer_session` HttpOnly cookie (`sameSite=lax`, `path=/my`).
+- `POST /api/bookings/create` subtracts `discountAmount` from `totalPrice` before calling `zarinpalRequest`.
 - Response: `{ ok: true }` or `{ error: 'invalid_code' | 'expired' }`.
 
 **`POST /api/customer/auth/logout`**
@@ -128,7 +129,7 @@ Server component. Flow:
 3. Count `status IN [PAID, CONFIRMED]` bookings for loyalty progress.
 
 UI:
-- Loyalty progress bar/indicator: "X رزرو تأیید شده — تا تخفیف بعدی Y رزرو مانده" (Y = 5 - (count % 5), unless count % 5 === 0 and count > 0 meaning discount just applied).
+- Loyalty progress indicator: if `count % 5 === 4` (discount eligible on next booking), show "رزرو بعدی شما ۲۰٪ تخفیف دارد!". Otherwise show "X رزرو تأیید شده — تا تخفیف بعدی Y رزرو مانده" where Y = `5 - (count % 5)`.
 - Each booking as a `GlassCard`: service name, date, time, status badge, total paid (with discount line if `discountAmount > 0`).
 - Link each card to `/my/bookings/[token]`.
 
