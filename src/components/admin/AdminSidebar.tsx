@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { LayoutDashboard, CalendarDays, Clock, LogOut } from 'lucide-react'
+import { LayoutDashboard, CalendarDays, Clock, LogOut, Tag } from 'lucide-react'
 import {
   Sidebar,
   SidebarContent,
@@ -18,9 +18,10 @@ import { ThemeToggle } from '@/components/ui/ThemeToggle'
 import { authClient } from '@/lib/auth-client'
 
 const links = [
-  { href: '/admin/dashboard', label: 'داشبورد', icon: LayoutDashboard },
-  { href: '/admin/bookings',  label: 'رزروها',   icon: CalendarDays },
-  { href: '/admin/schedule',  label: 'زمان‌بندی', icon: Clock },
+  { href: '/admin/dashboard',  label: 'داشبورد',   icon: LayoutDashboard },
+  { href: '/admin/bookings',   label: 'رزروها',    icon: CalendarDays },
+  { href: '/admin/schedule',   label: 'زمان‌بندی',  icon: Clock },
+  { href: '/admin/discounts',  label: 'تخفیف‌ها',  icon: Tag },
 ]
 
 export function AdminSidebar() {

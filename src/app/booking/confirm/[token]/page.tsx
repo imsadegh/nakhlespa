@@ -94,6 +94,9 @@ export default async function ConfirmPage({ params }: { params: Promise<{ token:
         <Link href="/" className="w-full">
           <GoldButton className="w-full py-4">بازگشت به خانه</GoldButton>
         </Link>
+        <Link href="/my/bookings" className="w-full mt-3 block text-center text-xs underline" style={{ color: 'var(--text-muted)' }}>
+          مشاهده همه رزروهای شما ←
+        </Link>
       </div>
     </>
   )
