@@ -46,6 +46,7 @@ SMSIR_TEMPLATE_CONFIRM=<template id for customer confirmation>
 SMSIR_TEMPLATE_ADMIN=<template id for admin notification>
 SMSIR_TEMPLATE_REMINDER_24H=<template id for 24h reminder>
 SMSIR_TEMPLATE_REMINDER_2H=<template id for 2h reminder>
+SMSIR_TEMPLATE_OTP=<template id for customer OTP login>
 NEXT_PUBLIC_SITE_URL=http://localhost:3000
 ADMIN_PHONE=+989XXXXXXXXX
 ADMIN_EMAIL=admin@example.com
@@ -90,8 +91,12 @@ Open [http://localhost:3000](http://localhost:3000).
 | `/admin/bookings` | Full booking list |
 | `/admin/bookings/[id]` | Booking detail and status actions |
 | `/admin/schedule` | Working hours and blocked slots |
+| `/admin/discounts` | Promo code management |
+| `/my/login` | Customer OTP login (phone + 6-digit SMS code) |
+| `/my/bookings` | Customer booking history + loyalty progress |
+| `/my/bookings/[token]` | Customer booking detail |
 
-Admin routes (`/admin/dashboard`, `/admin/bookings`, `/admin/schedule`) are protected by `src/proxy.ts` — unauthenticated requests redirect to `/admin`.
+Admin routes (`/admin/dashboard`, `/admin/bookings`, `/admin/schedule`, `/admin/discounts`) are protected by `src/proxy.ts` — unauthenticated requests redirect to `/admin`. Customer portal routes (`/my/bookings`, `/my/bookings/[token]`) are also protected — unauthenticated requests redirect to `/my/login`.
 
 ---
 
@@ -243,6 +248,7 @@ SMSIR_TEMPLATE_CONFIRM=<template id for customer confirmation>
 SMSIR_TEMPLATE_ADMIN=<template id for admin notification>
 SMSIR_TEMPLATE_REMINDER_24H=<template id for 24h reminder>
 SMSIR_TEMPLATE_REMINDER_2H=<template id for 2h reminder>
+SMSIR_TEMPLATE_OTP=<template id for customer OTP login>
 NEXT_PUBLIC_SITE_URL=https://yourdomain.com
 ADMIN_PHONE=+989XXXXXXXXX
 ADMIN_EMAIL=admin@yourdomain.com
@@ -347,6 +353,7 @@ This app uses SMS.ir's **Verify** API (`POST /v1/send/verify`) with 4 separate t
 | 2 | `SMSIR_TEMPLATE_ADMIN` | `رزرو جدید: {name} — {service} — {date} {time} — تلفن: {phone}` |
 | 3 | `SMSIR_TEMPLATE_REMINDER_24H` | `{name} عزیز، یادآوری: نوبت {service} شما فردا ساعت {time} است — نخلسپا` |
 | 4 | `SMSIR_TEMPLATE_REMINDER_2H` | `{name} عزیز، یادآوری: نوبت {service} شما ۲ ساعت دیگر ساعت {time} است — نخلسپا` |
+| 5 | `SMSIR_TEMPLATE_OTP` | `کد ورود شما به نخلسپا: {code}` |
 
 **Step 2 — Add the Template IDs to `.env.local`:**
 
@@ -365,6 +372,7 @@ SMSIR_TEMPLATE_REMINDER_2H=123459
 | `ADMIN` | Payment verified | `ADMIN_PHONE` |
 | `REMINDER_24H` | 24h before appointment (BullMQ delayed job) | Customer |
 | `REMINDER_2H` | 2h before appointment (BullMQ delayed job) | Customer |
+| `OTP` | Customer requests login to `/my/bookings` | Customer |
 
 ---
 
