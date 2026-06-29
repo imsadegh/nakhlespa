@@ -30,12 +30,12 @@ model Service {
 }
 
 model Addon {
-  id           String         @id @default(uuid())
-  nameFa       String
-  price        Int
-  isActive     Boolean        @default(true)
-  requiresTier Boolean        @default(false)
-  createdAt    DateTime       @default(now())
+  id            String         @id @default(uuid())
+  nameFa        String
+  price         Int
+  isActive      Boolean        @default(true)
+  requiresTier  Boolean        @default(false)
+  createdAt     DateTime       @default(now())
   bookingAddons BookingAddon[]
 
   @@unique([nameFa])
@@ -56,13 +56,13 @@ model BookingAddon {
 }
 
 model WorkingHours {
-  id          String   @id @default(uuid())
-  dayOfWeek   Int
-  gender      Gender
-  openTime    String
-  closeTime   String
-  isOpen      Boolean  @default(true)
-  createdAt   DateTime @default(now())
+  id        String   @id @default(uuid())
+  dayOfWeek Int
+  gender    Gender
+  openTime  String
+  closeTime String
+  isOpen    Boolean  @default(true)
+  createdAt DateTime @default(now())
 
   @@unique([dayOfWeek, gender])
   @@map("working_hours")
@@ -80,28 +80,28 @@ model BlockedSlot {
 }
 
 model Booking {
-  id                 String        @id @default(uuid())
-  token              String        @unique @default(uuid())
-  service            Service       @relation(fields: [serviceId], references: [id])
-  serviceId          String
-  customerName       String
-  customerPhone      String
-  customerNotes      String?
-  date               DateTime      @db.Date
-  startTime          String
-  endTime            String
-  gender             Gender
-  status             BookingStatus @default(PENDING_PAYMENT)
-  zarinpalAuthority  String?
-  zarinpalRefId      String?
-  addonsPricePaid    Int           @default(0)
-  groupToken         String?
-  discountCodeId     String?
-  discountCode       DiscountCode? @relation(fields: [discountCodeId], references: [id])
-  discountAmount     Int           @default(0)
-  createdAt          DateTime      @default(now())
-  addons             BookingAddon[]
-  smsReminders       SmsReminder[]
+  id                String         @id @default(uuid())
+  token             String         @unique @default(uuid())
+  service           Service        @relation(fields: [serviceId], references: [id])
+  serviceId         String
+  customerName      String
+  customerPhone     String
+  customerNotes     String?
+  date              DateTime       @db.Date
+  startTime         String
+  endTime           String
+  gender            Gender
+  status            BookingStatus  @default(PENDING_PAYMENT)
+  zarinpalAuthority String?
+  zarinpalRefId     String?
+  addonsPricePaid   Int            @default(0)
+  groupToken        String?
+  discountCodeId    String?
+  discountCode      DiscountCode?  @relation(fields: [discountCodeId], references: [id])
+  discountAmount    Int            @default(0)
+  createdAt         DateTime       @default(now())
+  addons            BookingAddon[]
+  smsReminders      SmsReminder[]
 
   @@index([date])
   @@index([status])
