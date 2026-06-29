@@ -81,3 +81,29 @@ export type BookingSummary = {
   service: ServiceDTO
   createdAt: string
 }
+
+export type DiscountCodeDTO = {
+  id: string
+  code: string
+  type: 'PERCENT' | 'FIXED'
+  value: number
+  maxUses: number | null
+  usedCount: number
+  expiresAt: string | null
+  isActive: boolean
+  createdAt: string
+}
+
+export type CustomerBookingDTO = {
+  id: string
+  token: string
+  date: string
+  startTime: string
+  endTime: string
+  status: string
+  serviceName: string
+  totalPaid: number
+  discountAmount: number
+  discountCode: string | null
+  zarinpalRefId: string | null
+}
