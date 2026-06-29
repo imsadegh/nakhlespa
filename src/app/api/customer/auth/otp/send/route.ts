@@ -27,7 +27,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'تعداد درخواست بیش از حد مجاز است. لطفاً ۱۰ دقیقه صبر کنید.' }, { status: 429 })
   }
 
-  const code = String(randomInt(100000, 999999))
+  const code = String(randomInt(100000, 1000000))
   const expiresAt = new Date(Date.now() + 10 * 60 * 1000)
 
   await prisma.verification.create({
