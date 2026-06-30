@@ -5,7 +5,7 @@ import { prisma } from '@/lib/prisma'
 export async function GET() {
   try {
     const [hours, blocks] = await Promise.all([
-      prisma.workingHours.findMany({ orderBy: { dayOfWeek: 'asc' } }),
+      prisma.workingHours.findMany({ orderBy: [{ gender: 'asc' }, { dayOfWeek: 'asc' }] }),
       prisma.blockedSlot.findMany({ orderBy: { date: 'asc' } }),
     ])
     return NextResponse.json({ hours, blocks })

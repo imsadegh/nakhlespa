@@ -4,7 +4,7 @@ import { prisma } from '@/lib/prisma'
 
 export async function PUT(req: NextRequest) {
   try {
-    const hours: { id: string; isOpen: boolean; openTime: string; closeTime: string }[] = await req.json()
+    const hours: { id: string; dayOfWeek: number; gender: 'FEMALE' | 'MALE'; isOpen: boolean; openTime: string; closeTime: string }[] = await req.json()
     await Promise.all(
       hours.map(h => prisma.workingHours.update({
         where: { id: h.id },
