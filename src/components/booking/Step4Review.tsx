@@ -14,7 +14,6 @@ function toFaTime(t: string) {
 export function Step4Review({ state, goBack, services, addons }: Props) {
   const [loading, setLoading] = useState(false)
   const [promoCode, setPromoCode] = useState('')
-  const [promoOpen, setPromoOpen] = useState(false)
   const [promoStatus, setPromoStatus] = useState<'idle' | 'valid' | 'invalid'>('idle')
   const [promoDiscount, setPromoDiscount] = useState(0)
   const [promoCodeId, setPromoCodeId] = useState('')
@@ -161,26 +160,17 @@ export function Step4Review({ state, goBack, services, addons }: Props) {
 
       {/* Promo code */}
       <div className="mb-3">
-        <button
-          type="button"
-          onClick={() => setPromoOpen(v => !v)}
-          className="text-xs underline"
-          style={{ color: 'var(--text-muted)' }}
-        >
-          {promoOpen ? 'بستن کد تخفیف' : 'دارید کد تخفیف؟'}
-        </button>
-        {promoOpen && (
-          <div className="flex gap-2 mt-2">
-            <input
-              value={promoCode}
-              onChange={e => { setPromoCode(e.target.value.toUpperCase()); setPromoStatus('idle') }}
-              placeholder="کد تخفیف"
-              className="flex-1 text-xs px-3 py-2 rounded-lg bg-white/5 border border-white/10 outline-none"
-              style={{ color: 'var(--text-primary)', direction: 'ltr' }}
-            />
-            <GhostButton onClick={handlePromoValidate} className="text-xs px-3">اعمال</GhostButton>
-          </div>
-        )}
+        <p className="text-xs mb-1.5" style={{ color: 'var(--text-muted)' }}>کد تخفیف</p>
+        <div className="flex gap-2">
+          <input
+            value={promoCode}
+            onChange={e => { setPromoCode(e.target.value.toUpperCase()); setPromoStatus('idle') }}
+            placeholder="کد تخفیف را وارد کنید"
+            className="flex-1 text-xs px-3 py-2 rounded-lg bg-white/5 border border-white/10 outline-none"
+            style={{ color: 'var(--text-primary)', direction: 'ltr' }}
+          />
+          <GhostButton onClick={handlePromoValidate} className="text-xs px-3">اعمال</GhostButton>
+        </div>
         {promoStatus === 'valid' && (
           <p className="text-xs mt-1 text-emerald-400">کد اعمال شد: −{promoDiscount.toLocaleString('fa-IR')} ت</p>
         )}

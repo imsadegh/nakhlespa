@@ -33,6 +33,8 @@ export function Navbar() {
 
       <div className="flex items-center gap-2">
         <ThemeToggle />
+        <Link href="/my/bookings" className="text-xs transition-colors hover:text-[#C6A55B] hidden sm:block"
+          style={{ color: 'var(--text-muted)' }}>رزروهای من</Link>
         <NavBookButton />
       </div>
     </nav>
