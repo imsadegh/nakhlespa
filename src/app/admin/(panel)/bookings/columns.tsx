@@ -26,6 +26,8 @@ export type BookingRow = {
   notes: string | null
   refId: string | null
   gender: 'FEMALE' | 'MALE'
+  discountAmount: number
+  discountCode: { code: string } | null
 }
 
 const statusLabel: Record<BookingStatus, string> = {

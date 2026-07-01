@@ -61,7 +61,8 @@ export function BookingDetailDialog({ booking }: { booking: BookingRow }) {
     }
   }
 
-  const totalPrice = booking.servicePrice + booking.addonsPricePaid
+  const subtotal = booking.servicePrice + booking.addonsPricePaid
+  const totalPrice = subtotal - booking.discountAmount
 
   const genderLabel = booking.gender === 'FEMALE' ? 'خانم' : 'آقا'
 
@@ -128,6 +129,14 @@ export function BookingDetailDialog({ booking }: { booking: BookingRow }) {
               <span style={{ color: "var(--text-primary)" }}>+{a.pricePaid.toLocaleString('fa-IR')} ت</span>
             </div>
           ))}
+          {booking.discountAmount > 0 && (
+            <div className="flex justify-between text-xs">
+              <span style={{ color: "var(--text-faint)" }}>
+                تخفیف{booking.discountCode ? ` (${booking.discountCode.code})` : ''}
+              </span>
+              <span className="text-emerald-400">−{booking.discountAmount.toLocaleString('fa-IR')} ت</span>
+            </div>
+          )}
           <div className="flex justify-between text-xs font-semibold pt-1 border-t" style={{ borderColor: "var(--border-base)" }}>
             <span style={{ color: "var(--text-primary)" }}>جمع کل</span>
             <span className="text-[#C6A55B]">{totalPrice.toLocaleString('fa-IR')} تومان</span>

@@ -10,7 +10,7 @@ function toFaDate(date: Date) {
 
 export default async function BookingsPage() {
   const bookings = await prisma.booking.findMany({
-    include: { service: true, addons: { include: { addon: true } } },
+    include: { service: true, addons: { include: { addon: true } }, discountCode: true },
     orderBy: { createdAt: 'desc' },
   })
 
@@ -29,6 +29,8 @@ export default async function BookingsPage() {
     notes: b.customerNotes,
     refId: b.zarinpalRefId,
     gender: b.gender,
+    discountAmount: b.discountAmount,
+    discountCode: b.discountCode ? { code: b.discountCode.code } : null,
   }))
 
   return (
