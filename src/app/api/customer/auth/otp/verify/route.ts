@@ -51,7 +51,7 @@ export async function POST(req: NextRequest) {
     sameSite: 'lax',
     path: '/my',
     expires: expiresAt,
-    secure: process.env.NODE_ENV === 'production',
+    secure: false,
   })
   return res
 }
