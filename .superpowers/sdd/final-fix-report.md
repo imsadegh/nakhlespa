@@ -150,3 +150,53 @@ user changes were modified.
 - `.env.example`
 - `tests/production-compose.test.ts`
 - `.superpowers/sdd/final-fix-report.md`
+
+## Final Broad-Review Fixes — 2026-08-29
+
+### Status
+
+Applied and committed the requested Coolify deployment fixes. Scope is limited to
+runtime-rendering contracts for the two concrete DB-backed admin pages,
+migration-gated production web startup, deployment contract tests, and README
+sequencing. No business logic, schema, payment behavior, SMS templates, UI, or
+unrelated user changes were modified.
+
+### Changes
+
+- Added `export const dynamic = 'force-dynamic'` to
+  `src/app/admin/(panel)/dashboard/page.tsx` and
+  `src/app/admin/(panel)/schedule/page.tsx`, preventing Next.js 16 build-time
+  prerendering from querying the unavailable production database. Other
+  DB-backed pages were left unchanged because they already have a dynamic
+  contract or request-time APIs.
+- Updated `compose.production.yml` so `web` runs
+  `bunx prisma migrate deploy && exec bun run start`; `next start` and traffic
+  begin only after migrations succeed. The worker command remains independent.
+- Added Compose and documentation assertions for migration-gated startup,
+  dynamic admin pages, automatic migrations, and the one-time manual seed.
+- Corrected the Coolify README runbook: startup migrations are automatic on
+  every web restart/deploy; the seed is run manually once after first deployment
+  and is not run on every restart.
+
+### Verification
+
+- `bun test tests/production-compose.test.ts tests/deployment-docs.test.ts tests/sms-worker-entrypoint.test.ts` — **16 pass, 0 fail**.
+- `bun test` — **22 pass, 0 fail** across 4 files.
+- `bun run build` with local Postgres and Redis services running — **exit 0**.
+  Next.js reported both `/admin/dashboard` and `/admin/schedule` as dynamic
+  server-rendered routes.
+- `docker compose --env-file .env.example -f compose.production.yml config` —
+  **exit 0**; rendered command is migration-gated and only `web` exposes port
+  3000.
+- `docker compose ps` — local Postgres healthy and Redis running; these local
+  services were started for the requested build verification.
+- `git diff --check` — **exit 0**.
+
+### Concerns
+
+- The build emitted existing Better Auth warnings for the local short
+  development secret and an existing Node `url.parse` deprecation warning.
+  Production must use a long random `BETTER_AUTH_SECRET`.
+- Docker image build was not rerun separately; the requested application build
+  and Compose configuration validation both passed. Local verification services
+  remain running after the build.

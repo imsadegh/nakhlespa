@@ -150,14 +150,15 @@ Do not add `DATABASE_URL` or `REDIS_URL` from `.env.example` to Coolify: those l
 
 ### 4. First deployment and initialization
 
-Deploy the Compose resource from Coolify and wait for `web`, `postgres`, `redis`, and `worker-sms` to become running. Run the following commands from the `web` container's Coolify terminal (or an equivalent one-off command using the production image):
+Deploy the Compose resource from Coolify. The `web` service automatically runs `prisma migrate deploy` before `next start`; it does not accept traffic until migrations succeed. PostgreSQL and Redis health checks complete before the application services start. Do not add a separate manual migration step before enabling traffic.
+
+After the first deployment is healthy, run this one-time manual seed from the `web` container's Coolify terminal (or an equivalent one-off command using the production image):
 
 ```bash
-bunx prisma migrate deploy
 ADMIN_EMAIL=admin@yourdomain.com ADMIN_PASSWORD=your-production-password bun prisma/seed.ts
 ```
 
-`prisma migrate deploy` applies pending migrations. The seed is idempotent and creates the services, working hours, add-ons, and admin user. Repeat the migration command after each release before enabling new application traffic.
+The seed creates services, working hours, add-ons, and the admin user. It is idempotent if it must be rerun intentionally, but it is a one-time manual initialization step. Do not run the seed on every restart.
 
 ### 5. Verify before enabling webhooks
 
@@ -167,7 +168,7 @@ After the health checks pass, enable the Zarinpal webhook/callback configuration
 
 ### 6. Maintenance and database access
 
-For a release, push the change and redeploy the same Compose resource in Coolify. Review the deployment logs, then run `bunx prisma migrate deploy` if the release includes migrations. Do not run a second Compose stack alongside the resource.
+For a release, push the change and redeploy the same Compose resource in Coolify. Review the deployment logs; the `web` startup command applies any pending migrations before `next start`. Do not run a second Compose stack alongside the resource.
 
 For emergency database access, use an SSH tunnel to the VPS/Coolify host and connect through the private database endpoint; do not publish PostgreSQL's port:
 

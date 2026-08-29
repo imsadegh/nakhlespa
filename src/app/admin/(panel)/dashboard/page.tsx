@@ -3,6 +3,8 @@ import { GlassCard } from '@/components/ui/GlassCard'
 import { BookingStatus } from '@prisma/client'
 import Link from 'next/link'
 
+export const dynamic = 'force-dynamic'
+
 function toFaDate(date: Date) {
   return new Date(date.toISOString().split('T')[0] + 'T12:00:00').toLocaleDateString('fa-IR', {
     day: 'numeric',

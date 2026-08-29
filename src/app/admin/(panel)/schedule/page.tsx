@@ -1,6 +1,8 @@
 import { prisma } from '@/lib/prisma'
 import { ScheduleManager } from '@/components/admin/ScheduleManager'
 
+export const dynamic = 'force-dynamic'
+
 export default async function SchedulePage() {
   const [hours, blocks] = await Promise.all([
     prisma.workingHours.findMany({ orderBy: [{ gender: 'asc' }, { dayOfWeek: 'asc' }] }),

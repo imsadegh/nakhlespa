@@ -18,6 +18,14 @@ describe('deployment documentation contract', () => {
     expect(readme).toContain('Do not open')
   })
 
+  test('documents automatic startup migrations and one-time manual seed', () => {
+    const readme = readFileSync('README.md', 'utf8')
+    expect(readme).toContain('automatically runs `prisma migrate deploy` before `next start`')
+    expect(readme).toContain('one-time manual seed')
+    expect(readme).toContain('Do not run the seed on every restart')
+    expect(readme).not.toContain('Repeat the migration command after each release before enabling new application traffic')
+  })
+
   test('documents safe production Zarinpal mode and Coolify URL handling', () => {
     const compose = readFileSync('compose.production.yml', 'utf8')
     const readme = readFileSync('README.md', 'utf8')
