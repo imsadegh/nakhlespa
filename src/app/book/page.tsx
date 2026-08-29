@@ -3,6 +3,8 @@ import { AmbientBackground } from '@/components/ui/AmbientBackground'
 import { Navbar } from '@/components/ui/Navbar'
 import { BookingWizard } from '@/components/booking/BookingWizard'
 
+export const dynamic = 'force-dynamic'
+
 export default async function BookPage() {
   const services = await prisma.service.findMany({ where: { isActive: true } })
   const serviceDTOs = services.map(s => ({

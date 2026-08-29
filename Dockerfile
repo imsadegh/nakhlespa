@@ -25,6 +25,7 @@ COPY --from=builder /app/public ./public
 COPY --from=builder /app/src ./src
 COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/prisma.config.ts ./prisma.config.ts
+RUN bunx prisma generate
 COPY --from=builder /app/tsconfig.json ./tsconfig.json
 
 USER bun

@@ -52,6 +52,14 @@ describe('production Compose contract', () => {
     expect(dashboardPage).toContain("export const dynamic = 'force-dynamic'")
   })
 
+  test('marks the public DB-backed pages for runtime rendering', () => {
+    const homePage = readFileSync('src/app/page.tsx', 'utf8')
+    const bookPage = readFileSync('src/app/book/page.tsx', 'utf8')
+
+    expect(homePage).toContain("export const dynamic = 'force-dynamic'")
+    expect(bookPage).toContain("export const dynamic = 'force-dynamic'")
+  })
+
   test('generates Prisma after config and schema are available in the image', () => {
     const generateIndex = dockerfile.indexOf('RUN bunx prisma generate')
     const buildIndex = dockerfile.indexOf('RUN bun run build')
@@ -59,6 +67,16 @@ describe('production Compose contract', () => {
     expect(dockerfile).toContain('COPY --from=builder /app/prisma.config.ts ./prisma.config.ts')
     expect(generateIndex).toBeGreaterThan(dockerfile.indexOf('COPY . .'))
     expect(buildIndex).toBeGreaterThan(generateIndex)
+  })
+
+  test('generates Prisma in the release image after production dependencies are installed', () => {
+    const productionInstallIndex = dockerfile.indexOf('RUN bun install --frozen-lockfile --production')
+    const releaseMarkerIndex = dockerfile.indexOf('FROM base AS release')
+    const releaseGenerateIndex = dockerfile.indexOf('RUN bunx prisma generate', releaseMarkerIndex)
+    const releaseConfigIndex = dockerfile.indexOf('COPY --from=builder /app/prisma.config.ts ./prisma.config.ts')
+
+    expect(releaseGenerateIndex).toBeGreaterThan(productionInstallIndex)
+    expect(releaseGenerateIndex).toBeGreaterThan(releaseConfigIndex)
   })
 
   test('does not ship a predictable admin password in the example environment', () => {

@@ -8,6 +8,8 @@ import { HowItWorksSection } from '@/components/home/HowItWorksSection'
 import { BookingCtaSection } from '@/components/home/BookingCtaSection'
 import { BookingDialogProvider } from '@/components/booking/BookingDialogProvider'
 
+export const dynamic = 'force-dynamic'
+
 export default async function HomePage() {
   const services = await prisma.service.findMany({ where: { isActive: true } })
   const serviceDTOs = services.map(s => ({
