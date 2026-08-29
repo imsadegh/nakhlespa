@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { isOtpCode, normalizeOtpDigits } from '@/lib/customer-otp'
 import { createHash, timingSafeEqual } from 'crypto'
 
 function hashCode(code: string) {
@@ -21,8 +22,10 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 })
   }
 
-  if (!/^09\d{9}$/.test(phone) || !/^\d{6}$/.test(code)) {
-    return NextResponse.json({ error: 'درخواست نامعتبر است' }, { status: 400 })
+  phone = normalizeOtpDigits(phone)
+  code = normalizeOtpDigits(code)
+  if (!/^09\d{9}$/.test(phone) || !isOtpCode(code)) {
+    return NextResponse.json({ error: 'invalid_request', message: 'درخواست نامعتبر است' }, { status: 400 })
   }
 
   const verification = await prisma.verification.findFirst({
@@ -30,11 +33,11 @@ export async function POST(req: NextRequest) {
     orderBy: { createdAt: 'desc' },
   })
   if (!verification) {
-    return NextResponse.json({ error: 'کد منقضی شده است' }, { status: 400 })
+    return NextResponse.json({ error: 'expired', message: 'کد منقضی شده است' }, { status: 400 })
   }
   if (!safeEqual(hashCode(code), verification.value)) {
     await prisma.verification.delete({ where: { id: verification.id } })
-    return NextResponse.json({ error: 'کد وارد شده اشتباه است' }, { status: 400 })
+    return NextResponse.json({ error: 'invalid_code', message: 'کد وارد شده اشتباه است' }, { status: 400 })
   }
 
   await prisma.verification.delete({ where: { id: verification.id } })

@@ -24,11 +24,11 @@ bun install
 
 ### 2. Start Postgres and Redis locally
 
-Use [OrbStack](https://orbstack.dev) to run containers:
+Use [OrbStack](https://orbstack.dev) with the included Compose file. Nakhlespa uses host ports `5434` and `6380` so it can run alongside Bonyad:
 
 ```bash
-docker run -d --name postgres-nakhlespa -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=nakhlespa -p 5432:5432 postgres:16-alpine
-docker run -d --name redis-nakhlespa -p 6379:6379 redis:7-alpine
+test -f .env || cp .env.example .env
+docker compose --env-file .env up -d
 ```
 
 ### 3. Configure environment
@@ -36,9 +36,9 @@ docker run -d --name redis-nakhlespa -p 6379:6379 redis:7-alpine
 Create `.env.local` (Next.js runtime):
 
 ```bash
-DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:5432/nakhlespa
+DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:5434/nakhlespa
 BETTER_AUTH_SECRET=dev-secret-not-for-production
-REDIS_URL=redis://127.0.0.1:6379
+REDIS_URL=redis://127.0.0.1:6380
 ZARINPAL_MERCHANT_ID=your_merchant_id
 ZARINPAL_CALLBACK_URL=http://localhost:3000/api/bookings/verify
 SMSIR_API_KEY=your_api_key
@@ -56,7 +56,7 @@ ADMIN_PASSWORD=DevPassword123
 Create `.env` (Prisma CLI — must match `DATABASE_URL` above):
 
 ```bash
-DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:5432/nakhlespa
+DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:5434/nakhlespa
 ```
 
 ### 4. Migrate and seed the database
@@ -386,4 +386,3 @@ bunx prisma migrate deploy
 bun run build
 pm2 reload nakhlespa
 ```
-

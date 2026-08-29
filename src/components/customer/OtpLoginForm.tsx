@@ -1,8 +1,9 @@
 'use client'
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { GlassCard } from '@/components/ui/GlassCard'
 import { GoldButton } from '@/components/ui/GoldButton'
+import { createOtpRequestGate, getOtpErrorMessage, isOtpCode, normalizeOtpDigits } from '@/lib/customer-otp'
 
 export function OtpLoginForm() {
   const router = useRouter()
@@ -15,6 +16,7 @@ export function OtpLoginForm() {
   const [code, setCode] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const verifyGate = useRef(createOtpRequestGate())
 
   async function handleSend() {
     setError('')
@@ -42,19 +44,29 @@ export function OtpLoginForm() {
 
   async function handleVerify() {
     setError('')
-    setLoading(true)
-    const res = await fetch('/api/customer/auth/otp/verify', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ phone, code }),
-    })
-    setLoading(false)
-    if (!res.ok) {
-      const data = await res.json()
-      setError(data.error === 'expired' ? 'کد منقضی شده است. دوباره درخواست دهید.' : 'کد وارد شده اشتباه است.')
+    if (!isOtpCode(code)) {
+      setError('کد باید ۶ رقم باشد')
       return
     }
-    router.push(next)
+    if (!verifyGate.current.tryStart()) return
+
+    setLoading(true)
+    try {
+      const res = await fetch('/api/customer/auth/otp/verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone, code }),
+      })
+      if (!res.ok) {
+        const data = await res.json()
+        setError(getOtpErrorMessage(data.error))
+        return
+      }
+      router.push(next)
+    } finally {
+      verifyGate.current.finish()
+      setLoading(false)
+    }
   }
 
   return (
@@ -71,7 +83,7 @@ export function OtpLoginForm() {
           <input
             type="tel"
             value={phone}
-            onChange={e => setPhone(e.target.value)}
+            onChange={e => setPhone(normalizeOtpDigits(e.target.value))}
             placeholder="۰۹۱۲۱۲۳۴۵۶۷"
             className="w-full text-sm px-4 py-3 rounded-lg bg-white/5 border border-white/10 outline-none text-center"
             style={{ color: 'var(--text-primary)', direction: 'ltr' }}
@@ -90,13 +102,13 @@ export function OtpLoginForm() {
             type="text"
             inputMode="numeric"
             value={code}
-            onChange={e => setCode(e.target.value.replace(/\D/g, ''))}
+            onChange={e => setCode(normalizeOtpDigits(e.target.value).replace(/\D/g, ''))}
             placeholder="_ _ _ _ _ _"
             className="w-full text-lg tracking-widest px-4 py-3 rounded-lg bg-white/5 border border-white/10 outline-none text-center"
             style={{ color: 'var(--text-primary)', direction: 'ltr' }}
             maxLength={6}
           />
-          <GoldButton onClick={handleVerify} className="w-full" disabled={loading || code.length !== 6}>
+          <GoldButton onClick={handleVerify} className="w-full" disabled={loading || !isOtpCode(code)}>
             {loading ? 'در حال بررسی...' : 'تأیید و ورود'}
           </GoldButton>
           <button

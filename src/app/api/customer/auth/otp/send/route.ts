@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { sendOtpSms } from '@/lib/smsir'
+import { normalizeOtpDigits } from '@/lib/customer-otp'
 import { createHash, randomInt } from 'crypto'
 
 function hashCode(code: string) {
@@ -14,6 +15,7 @@ export async function POST(req: NextRequest) {
   } catch {
     return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 })
   }
+  phone = normalizeOtpDigits(phone)
   if (!/^09\d{9}$/.test(phone)) {
     return NextResponse.json({ error: 'شماره موبایل معتبر نیست' }, { status: 400 })
   }
