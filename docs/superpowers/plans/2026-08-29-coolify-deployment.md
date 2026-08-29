@@ -17,6 +17,7 @@
 - Preserve the existing local `compose.yaml` host ports `5434` and `6380`.
 - Production secrets must be supplied by Coolify and must not be committed.
 - Keep application behavior, database schema, payment behavior, SMS templates, and UI unchanged.
+- The production image must include Prisma CLI/runtime migration artifacts so `bunx prisma migrate deploy` can run inside the web container.
 
 ---
 
@@ -156,7 +157,7 @@ Expected: FAIL because the production Dockerfile, Compose file, and service cont
 
 - [ ] **Step 3: Write the minimal implementation**
 
-Create a multi-stage `Dockerfile` based on `oven/bun:1.4.0`: install frozen dependencies, run `bun run build`, install production dependencies, copy `.next`, `public`, `src`, `package.json`, and `tsconfig.json`, run as user `bun`, expose 3000, and default to `bun run start`.
+Create a multi-stage `Dockerfile` based on `oven/bun:1.4.0`: install frozen dependencies, run `bun run build`, install production dependencies, copy `.next`, `public`, `src`, `prisma`, `package.json`, and `tsconfig.json`, run as user `bun`, expose 3000, and default to `bun run start`. Move `prisma` from `devDependencies` to `dependencies` so the release image has the Prisma CLI for `bunx prisma migrate deploy`; preserve the existing lockfile consistency by running `bun install --lockfile-only` or the repository’s normal lockfile update command after the package edit.
 
 Create `.dockerignore` excluding `node_modules`, `.next`, `.git`, all `.env` files, `graphify-out`, and `coverage`.
 
@@ -308,7 +309,7 @@ Expected: FAIL because `.env.example` and the Coolify runbook sections do not ex
 
 - [ ] **Step 3: Write the minimal implementation**
 
-Create `.env.example` with safe placeholders for all Compose interpolation and application variables. Document local URLs using `127.0.0.1:5434` and `127.0.0.1:6380`; document production URLs in README using `postgres:5432` and `redis:6379`. Never include real credentials.
+Create `.env.example` with safe placeholders for all Compose interpolation and application variables, including `REDIS_URL` and a local `DATABASE_URL` for Prisma CLI use. Document local URLs using `127.0.0.1:5434` and `127.0.0.1:6380`; document production URLs in README using `postgres:5432` and `redis:6379`. Never include real credentials.
 
 Replace the obsolete VPS/PM2/Nginx deployment instructions in `README.md` with: Coolify installation, Traefik-only routing, one Compose resource, public domain only on `web`, private PostgreSQL/Redis, Coolify environment setup, first deployment, Prisma migration/seed commands, SMS template configuration, SSH-tunneled database access, and webhook enablement after verification. Keep local setup and application route documentation intact.
 
