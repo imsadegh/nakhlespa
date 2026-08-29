@@ -17,4 +17,15 @@ describe('deployment documentation contract', () => {
     expect(readme).toContain('worker-sms')
     expect(readme).toContain('Do not open')
   })
+
+  test('documents safe production Zarinpal mode and Coolify URL handling', () => {
+    const compose = readFileSync('compose.production.yml', 'utf8')
+    const readme = readFileSync('README.md', 'utf8')
+
+    expect(compose).toContain('ZARINPAL_SANDBOX: ${ZARINPAL_SANDBOX}')
+    expect(readme).toContain('ZARINPAL_SANDBOX=false')
+    expect(readme).toContain('Do not add `DATABASE_URL` or `REDIS_URL`')
+    expect(readme).toContain('Compose interpolation and application variables')
+    expect(readme).not.toContain('Add every variable from `.env.example`')
+  })
 })

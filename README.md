@@ -104,7 +104,6 @@ Admin routes (`/admin/dashboard`, `/admin/bookings`, `/admin/schedule`, `/admin/
 ```bash
 bun run build          # Production build
 bunx prisma studio     # Visual DB browser at http://localhost:5555
-podman ps              # Show running containers (Postgres, Redis)
 ```
 
 ---
@@ -125,16 +124,29 @@ Set the public domain only on `web`, targeting its exposed port `3000` through T
 
 ### 3. Configure Coolify environment variables
 
-Add every variable from `.env.example` in the resource's Environment Variables screen. Use real production secrets and approved SMS.ir/Zarinpal values; never commit them. The service-to-service values must use the Compose network, not localhost:
+In the resource's Environment Variables screen, add only the Compose interpolation and application variables listed below. Use real production secrets and approved SMS.ir/Zarinpal values; never commit them. Compose constructs the container-local database and Redis URLs from the interpolation variables and service names:
 
 ```bash
-DATABASE_URL=postgresql://${DB_USER}:${DB_PASSWORD}@postgres:5432/${DB_NAME}
-REDIS_URL=redis://redis:6379
-NEXT_PUBLIC_SITE_URL=https://yourdomain.com
+DB_USER=your-production-db-user
+DB_PASSWORD=your-production-db-password
+DB_NAME=nakhlespa
+BETTER_AUTH_SECRET=your-long-random-secret
+ZARINPAL_MERCHANT_ID=your-production-merchant-id
+ZARINPAL_SANDBOX=false
 ZARINPAL_CALLBACK_URL=https://yourdomain.com/api/bookings/verify
+SMSIR_API_KEY=your-production-smsir-api-key
+SMSIR_TEMPLATE_CONFIRM=your-confirm-template-id
+SMSIR_TEMPLATE_ADMIN=your-admin-template-id
+SMSIR_TEMPLATE_REMINDER_24H=your-24h-template-id
+SMSIR_TEMPLATE_REMINDER_2H=your-2h-template-id
+SMSIR_TEMPLATE_OTP=your-otp-template-id
+NEXT_PUBLIC_SITE_URL=https://yourdomain.com
+ADMIN_PHONE=your-admin-phone
+ADMIN_EMAIL=admin@yourdomain.com
+ADMIN_PASSWORD=your-production-admin-password
 ```
 
-Set `BETTER_AUTH_SECRET` to a long random value, set the admin credentials, and configure all five SMS.ir template IDs, including `SMSIR_TEMPLATE_OTP`. Use `SMSIR_TEMPLATE_REMINDER_24H` and `SMSIR_TEMPLATE_REMINDER_2H` for the `worker-sms` service.
+Do not add `DATABASE_URL` or `REDIS_URL` from `.env.example` to Coolify: those local `127.0.0.1` values are for local Prisma/app setup only, and the Compose file supplies `postgresql://${DB_USER}:${DB_PASSWORD}@postgres:5432/${DB_NAME}` and `redis://redis:6379` inside the containers. `ZARINPAL_SANDBOX` should normally be `false` in production; use `true` only for an explicitly configured Zarinpal sandbox environment. Configure all five SMS.ir template IDs, including `SMSIR_TEMPLATE_OTP`. Use `SMSIR_TEMPLATE_REMINDER_24H` and `SMSIR_TEMPLATE_REMINDER_2H` for the `worker-sms` service.
 
 ### 4. First deployment and initialization
 
