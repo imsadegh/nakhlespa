@@ -13,14 +13,14 @@ describe('deployment documentation contract', () => {
     const readme = readFileSync('README.md', 'utf8')
     expect(readme).toContain('Coolify')
     expect(readme).toContain('compose.production.yml')
-    expect(readme).toContain('prisma migrate deploy')
+    expect(readme).toContain('bun run db:migrate')
     expect(readme).toContain('worker-sms')
     expect(readme).toContain('Do not open')
   })
 
   test('documents automatic startup migrations and one-time manual seed', () => {
     const readme = readFileSync('README.md', 'utf8')
-    expect(readme).toContain('automatically runs `prisma migrate deploy` before `next start`')
+    expect(readme).toContain('automatically runs `bun run db:migrate` before `next start`')
     expect(readme).toContain('one-time manual seed')
     expect(readme).toContain('Do not run the seed on every restart')
     expect(readme).not.toContain('Repeat the migration command after each release before enabling new application traffic')
@@ -29,7 +29,7 @@ describe('deployment documentation contract', () => {
   test('documents one root env file for local setup', () => {
     const readme = readFileSync('README.md', 'utf8')
     expect(readme).toContain('cp .env.example .env')
-    expect(readme).toContain('Next.js and Prisma read the same root `.env` file')
+    expect(readme).toContain('Next.js and Drizzle read the same root `.env` file')
     expect(readme).not.toContain('Create `.env.local`')
   })
 

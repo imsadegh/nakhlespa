@@ -1,19 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
-import { BookingStatus } from '@prisma/client'
+import { BookingStatus, bookings } from '@/db/schema'
+import { db } from '@/lib/db'
+import { desc, eq } from 'drizzle-orm'
 
 // Auth enforced by src/proxy.ts for /api/admin/* routes
 
 export async function GET(req: NextRequest) {
   const statusParam = req.nextUrl.searchParams.get('status')
-  const validStatuses = Object.values(BookingStatus)
+  const validStatuses = Object.values(BookingStatus) as string[]
   if (statusParam && !validStatuses.includes(statusParam as BookingStatus)) {
     return NextResponse.json({ error: 'Invalid status' }, { status: 400 })
   }
-  const bookings = await prisma.booking.findMany({
-    where: statusParam ? { status: statusParam as BookingStatus } : undefined,
-    include: { service: true, addons: { include: { addon: true } } },
-    orderBy: { date: 'desc' },
+  const rows = await db.query.bookings.findMany({
+    where: statusParam ? eq(bookings.status, statusParam as BookingStatus) : undefined,
+    with: { service: true, addons: { with: { addon: true } } },
+    orderBy: desc(bookings.date),
   })
-  return NextResponse.json(bookings)
+  return NextResponse.json(rows)
 }

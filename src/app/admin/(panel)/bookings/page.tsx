@@ -1,4 +1,6 @@
-import { prisma } from '@/lib/prisma'
+import { db } from '@/lib/db'
+import { bookings } from '@/db/schema'
+import { desc } from 'drizzle-orm'
 import { columns, type BookingRow } from './columns'
 import { BookingsDataTable } from './data-table'
 
@@ -9,12 +11,12 @@ function toFaDate(date: Date) {
 }
 
 export default async function BookingsPage() {
-  const bookings = await prisma.booking.findMany({
-    include: { service: true, addons: { include: { addon: true } }, discountCode: true },
-    orderBy: { createdAt: 'desc' },
+  const bookingRows = await db.query.bookings.findMany({
+    with: { service: true, addons: { with: { addon: true } }, discountCode: true },
+    orderBy: desc(bookings.createdAt),
   })
 
-  const rows: BookingRow[] = bookings.map(b => ({
+  const rows: BookingRow[] = bookingRows.map(b => ({
     id: b.id,
     date: toFaDate(b.date),
     startTime: b.startTime,

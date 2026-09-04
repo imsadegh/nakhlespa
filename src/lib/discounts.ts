@@ -1,12 +1,13 @@
-import { prisma } from '@/lib/prisma'
-import { BookingStatus } from '@prisma/client'
+import { and, eq, inArray } from 'drizzle-orm'
+import { db } from '@/lib/db'
+import { BookingStatus, bookings, discountCodes } from '@/db/schema'
 
 export async function validatePromoCode(
   code: string,
   _phone: string,
   subtotal: number,
 ): Promise<{ valid: boolean; discountAmount: number; codeId: string; message?: string }> {
-  const dc = await prisma.discountCode.findUnique({ where: { code: code.toUpperCase() } })
+  const [dc] = await db.select().from(discountCodes).where(eq(discountCodes.code, code.toUpperCase())).limit(1)
   if (!dc || !dc.isActive || dc.code === 'LOYALTY_AUTO') {
     return { valid: false, discountAmount: 0, codeId: '', message: 'کد تخفیف معتبر نیست' }
   }
@@ -26,16 +27,14 @@ export async function checkLoyaltyDiscount(
   phone: string,
   subtotal: number,
 ): Promise<{ eligible: boolean; discountAmount: number; codeId: string }> {
-  const count = await prisma.booking.count({
-    where: {
-      customerPhone: phone,
-      status: { in: [BookingStatus.PAID, BookingStatus.CONFIRMED] },
-    },
-  })
+  const [{ count }] = await db.select({ count: db.$count(bookings, and(
+    eq(bookings.customerPhone, phone),
+    inArray(bookings.status, [BookingStatus.PAID, BookingStatus.CONFIRMED]),
+  )) }).from(bookings)
   if (count % 5 !== 4) {
     return { eligible: false, discountAmount: 0, codeId: '' }
   }
-  const dc = await prisma.discountCode.findUnique({ where: { code: 'LOYALTY_AUTO' } })
+  const [dc] = await db.select().from(discountCodes).where(eq(discountCodes.code, 'LOYALTY_AUTO')).limit(1)
   if (!dc || !dc.isActive) {
     if (!dc) console.error('[discounts] LOYALTY_AUTO code not found in database — run seed')
     return { eligible: false, discountAmount: 0, codeId: '' }

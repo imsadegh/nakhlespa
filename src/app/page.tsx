@@ -1,4 +1,6 @@
-import { prisma } from '@/lib/prisma'
+import { eq } from 'drizzle-orm'
+import { services } from '@/db/schema'
+import { db } from '@/lib/db'
 import { AmbientBackground } from '@/components/ui/AmbientBackground'
 import { Navbar } from '@/components/ui/Navbar'
 import { Footer } from '@/components/ui/Footer'
@@ -11,8 +13,8 @@ import { BookingDialogProvider } from '@/components/booking/BookingDialogProvide
 export const dynamic = 'force-dynamic'
 
 export default async function HomePage() {
-  const services = await prisma.service.findMany({ where: { isActive: true } })
-  const serviceDTOs = services.map(s => ({
+  const serviceRows = await db.select().from(services).where(eq(services.isActive, true))
+  const serviceDTOs = serviceRows.map(s => ({
     id: s.id,
     nameFa: s.nameFa,
     descriptionFa: s.descriptionFa,

@@ -1,15 +1,16 @@
 // Auth enforced by src/proxy.ts for /api/admin/* routes
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
+import { workingHours } from '@/db/schema'
+import { db } from '@/lib/db'
+import { eq } from 'drizzle-orm'
 
 export async function PUT(req: NextRequest) {
   try {
     const hours: { id: string; dayOfWeek: number; gender: 'FEMALE' | 'MALE'; isOpen: boolean; openTime: string; closeTime: string }[] = await req.json()
     await Promise.all(
-      hours.map(h => prisma.workingHours.update({
-        where: { id: h.id },
-        data: { isOpen: h.isOpen, openTime: h.openTime, closeTime: h.closeTime }
-      }))
+      hours.map(h => db.update(workingHours)
+        .set({ isOpen: h.isOpen, openTime: h.openTime, closeTime: h.closeTime })
+        .where(eq(workingHours.id, h.id)))
     )
     return NextResponse.json({ ok: true })
   } catch (err) {

@@ -1,5 +1,6 @@
-import { BookingStatus } from '@prisma/client'
-import { prisma } from '@/lib/prisma'
+import { and, eq, inArray, isNotNull, ne } from 'drizzle-orm'
+import { db } from '@/lib/db'
+import { BookingStatus, blockedSlots, bookings, services, workingHours } from '@/db/schema'
 import type { SlotDTO } from '@/types'
 
 function timeToMinutes(t: string): number {
@@ -20,14 +21,12 @@ function parseDateUTC(date: string) {
 async function getWorkingDay(jsDate: Date, gender: 'FEMALE' | 'MALE') {
   const jsDayMap: Record<number, number> = { 6: 0, 0: 1, 1: 2, 2: 3, 3: 4, 4: 5, 5: 6 }
   const dayOfWeek = jsDayMap[jsDate.getUTCDay()]
-  return prisma.workingHours.findFirst({ where: { dayOfWeek, gender, isOpen: true } })
+  const [row] = await db.select().from(workingHours).where(and(eq(workingHours.dayOfWeek, dayOfWeek), eq(workingHours.gender, gender), eq(workingHours.isOpen, true))).limit(1)
+  return row
 }
 
 async function getBlockedRanges(jsDate: Date) {
-  const blocked = await prisma.blockedSlot.findMany({
-    where: { date: jsDate },
-    select: { startTime: true, endTime: true },
-  })
+  const blocked = await db.select({ startTime: blockedSlots.startTime, endTime: blockedSlots.endTime }).from(blockedSlots).where(eq(blockedSlots.date, jsDate))
   return blocked.map(b => ({ start: timeToMinutes(b.startTime), end: timeToMinutes(b.endTime) }))
 }
 
@@ -44,12 +43,9 @@ export async function getAvailableSlots(
   const open = timeToMinutes(workingDay.openTime)
   const close = timeToMinutes(workingDay.closeTime)
 
-  const totalRooms = await prisma.service.count({ where: { isActive: true, tier: { not: null } } })
+  const [{ totalRooms }] = await db.select({ totalRooms: db.$count(services, and(eq(services.isActive, true), isNotNull(services.tier))) }).from(services)
 
-  const existingBookings = await prisma.booking.findMany({
-    where: { date: jsDate, status: { not: BookingStatus.CANCELLED }, gender },
-    select: { startTime: true, endTime: true },
-  })
+  const existingBookings = await db.select({ startTime: bookings.startTime, endTime: bookings.endTime }).from(bookings).where(and(eq(bookings.date, jsDate), ne(bookings.status, BookingStatus.CANCELLED), eq(bookings.gender, gender)))
 
   const existingBookingRanges = existingBookings.map(b => ({
     start: timeToMinutes(b.startTime),
@@ -101,22 +97,11 @@ export async function getSlotsForRooms(
   const open = timeToMinutes(workingDay.openTime)
   const close = timeToMinutes(workingDay.closeTime)
 
-  const services = await prisma.service.findMany({
-    where: { id: { in: serviceIds }, isActive: true },
-    select: { id: true, durationMinutes: true },
-  })
-  if (services.length === 0) return []
-  const durationMinutes = Math.max(...services.map(s => s.durationMinutes))
+  const serviceRows = await db.select({ id: services.id, durationMinutes: services.durationMinutes }).from(services).where(and(inArray(services.id, serviceIds), eq(services.isActive, true)))
+  if (serviceRows.length === 0) return []
+  const durationMinutes = Math.max(...serviceRows.map(s => s.durationMinutes))
 
-  const bookingsByRoom = await prisma.booking.findMany({
-    where: {
-      serviceId: { in: serviceIds },
-      date: jsDate,
-      status: { not: BookingStatus.CANCELLED },
-      gender,
-    },
-    select: { serviceId: true, startTime: true, endTime: true },
-  })
+  const bookingsByRoom = await db.select({ serviceId: bookings.serviceId, startTime: bookings.startTime, endTime: bookings.endTime }).from(bookings).where(and(inArray(bookings.serviceId, serviceIds), eq(bookings.date, jsDate), ne(bookings.status, BookingStatus.CANCELLED), eq(bookings.gender, gender)))
 
   const roomRanges = new Map<string, { start: number; end: number }[]>()
   for (const id of serviceIds) roomRanges.set(id, [])
@@ -129,12 +114,9 @@ export async function getSlotsForRooms(
 
   const blockedRanges = await getBlockedRanges(jsDate)
 
-  const totalRooms = await prisma.service.count({ where: { isActive: true, tier: { not: null } } })
+  const [{ totalRooms }] = await db.select({ totalRooms: db.$count(services, and(eq(services.isActive, true), isNotNull(services.tier))) }).from(services)
 
-  const allBookings = await prisma.booking.findMany({
-    where: { date: jsDate, status: { not: BookingStatus.CANCELLED }, gender },
-    select: { startTime: true, endTime: true },
-  })
+  const allBookings = await db.select({ startTime: bookings.startTime, endTime: bookings.endTime }).from(bookings).where(and(eq(bookings.date, jsDate), ne(bookings.status, BookingStatus.CANCELLED), eq(bookings.gender, gender)))
   const allRanges = allBookings.map(b => ({
     start: timeToMinutes(b.startTime),
     end: timeToMinutes(b.endTime),

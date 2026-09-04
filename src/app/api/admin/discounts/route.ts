@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
+import { discountCodes, DiscountType } from '@/db/schema'
+import { db } from '@/lib/db'
+import { desc } from 'drizzle-orm'
 
 export async function GET() {
-  const codes = await prisma.discountCode.findMany({ orderBy: { createdAt: 'desc' } })
+  const codes = await db.select().from(discountCodes).orderBy(desc(discountCodes.createdAt))
   return NextResponse.json(codes)
 }
 
@@ -24,15 +26,13 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'این کد رزرو شده است' }, { status: 400 })
   }
   try {
-    const dc = await prisma.discountCode.create({
-      data: {
-        code: code.toUpperCase(),
-        type,
-        value,
-        maxUses: maxUses ?? null,
-        expiresAt: expiresAt ? new Date(expiresAt) : null,
-      },
-    })
+    const [dc] = await db.insert(discountCodes).values({
+      code: code.toUpperCase(),
+      type: type as typeof DiscountType[keyof typeof DiscountType],
+      value,
+      maxUses: maxUses ?? null,
+      expiresAt: expiresAt ? new Date(expiresAt) : null,
+    }).returning()
     return NextResponse.json(dc, { status: 201 })
   } catch {
     return NextResponse.json({ error: 'کد تخفیف تکراری است' }, { status: 409 })

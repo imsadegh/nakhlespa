@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
+import { verification } from '@/db/schema'
+import { db } from '@/lib/db'
+import { and, count, eq, gte } from 'drizzle-orm'
 import { sendOtpSms } from '@/lib/smsir'
 import { normalizeOtpDigits } from '@/lib/customer-otp'
 import { createHash, randomInt } from 'crypto'
@@ -22,9 +24,8 @@ export async function POST(req: NextRequest) {
 
   // Rate limit: max 3 active verifications per phone in last 10 min
   const since = new Date(Date.now() - 10 * 60 * 1000)
-  const recent = await prisma.verification.count({
-    where: { identifier: phone, createdAt: { gte: since } },
-  })
+  const [{ count: recent }] = await db.select({ count: count() }).from(verification)
+    .where(and(eq(verification.identifier, phone), gte(verification.createdAt, since)))
   if (recent >= 3) {
     return NextResponse.json({ error: 'تعداد درخواست بیش از حد مجاز است. لطفاً ۱۰ دقیقه صبر کنید.' }, { status: 429 })
   }
@@ -32,15 +33,13 @@ export async function POST(req: NextRequest) {
   const code = String(randomInt(100000, 1000000))
   const expiresAt = new Date(Date.now() + 10 * 60 * 1000)
 
-  await prisma.verification.create({
-    data: {
+  await db.insert(verification).values({
       id: crypto.randomUUID(),
       identifier: phone,
       value: hashCode(code),
       expiresAt,
       createdAt: new Date(),
       updatedAt: new Date(),
-    },
   })
 
   await sendOtpSms(phone, code)

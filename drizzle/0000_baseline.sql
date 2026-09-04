@@ -1,0 +1,2 @@
+-- Baseline for the existing Prisma-created PostgreSQL schema.
+-- Application tables, enums, constraints, and indexes already exist.

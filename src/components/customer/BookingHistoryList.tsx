@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { GlassCard } from '@/components/ui/GlassCard'
-import { BookingStatus } from '@prisma/client'
+import type { BookingStatus } from '@/db/schema'
 
 type FullBooking = {
   token: string

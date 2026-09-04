@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
+import { eq } from 'drizzle-orm'
+import { db } from '@/lib/db'
+import { services } from '@/db/schema'
 import { getAvailableSlots, getSlotsForRooms } from '@/lib/slots'
 import type { Gender } from '@/types'
 
@@ -24,7 +26,7 @@ export async function GET(req: NextRequest) {
     }
 
     const count = countParam ? Math.max(1, parseInt(countParam, 10)) : 1
-    const service = await prisma.service.findUnique({ where: { id: serviceId } })
+    const [service] = await db.select().from(services).where(eq(services.id, serviceId)).limit(1)
     if (!service) return NextResponse.json({ error: 'Service not found' }, { status: 404 })
     const slots = await getAvailableSlots(date, service.durationMinutes, count, gender)
     return NextResponse.json(slots)

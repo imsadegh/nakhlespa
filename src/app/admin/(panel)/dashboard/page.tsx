@@ -1,6 +1,7 @@
-import { prisma } from '@/lib/prisma'
+import { BookingStatus, bookings } from '@/db/schema'
+import { db } from '@/lib/db'
+import { and, asc, count, desc, eq, gte, gt, lt, ne } from 'drizzle-orm'
 import { GlassCard } from '@/components/ui/GlassCard'
-import { BookingStatus } from '@prisma/client'
 import Link from 'next/link'
 
 export const dynamic = 'force-dynamic'
@@ -30,24 +31,27 @@ export default async function DashboardPage() {
   const todayStr = new Date().toISOString().split('T')[0]
   const today = new Date(todayStr + 'T00:00:00.000Z')
 
-  const [todayCount, upcomingCount, totalPaid] = await Promise.all([
-    prisma.booking.count({ where: { date: today, status: { not: BookingStatus.CANCELLED } } }),
-    prisma.booking.count({ where: { date: { gt: today }, status: { not: BookingStatus.CANCELLED } } }),
-    prisma.booking.count({ where: { status: BookingStatus.PAID } }),
+  const [todayResult, upcomingResult, paidResult] = await Promise.all([
+    db.select({ count: count() }).from(bookings).where(and(eq(bookings.date, today), ne(bookings.status, BookingStatus.CANCELLED))),
+    db.select({ count: count() }).from(bookings).where(and(gt(bookings.date, today), ne(bookings.status, BookingStatus.CANCELLED))),
+    db.select({ count: count() }).from(bookings).where(eq(bookings.status, BookingStatus.PAID)),
   ])
+  const todayCount = todayResult[0].count
+  const upcomingCount = upcomingResult[0].count
+  const totalPaid = paidResult[0].count
 
-  const upcoming = await prisma.booking.findMany({
-    where: { date: { gte: today }, status: { not: BookingStatus.CANCELLED } },
-    include: { service: true },
-    orderBy: [{ date: 'asc' }, { startTime: 'asc' }],
-    take: 10,
+  const upcoming = await db.query.bookings.findMany({
+    where: and(gte(bookings.date, today), ne(bookings.status, BookingStatus.CANCELLED)),
+    with: { service: true },
+    orderBy: [asc(bookings.date), asc(bookings.startTime)],
+    limit: 10,
   })
 
-  const past = await prisma.booking.findMany({
-    where: { date: { lt: today }, status: { not: BookingStatus.CANCELLED } },
-    include: { service: true },
-    orderBy: [{ date: 'desc' }, { startTime: 'desc' }],
-    take: 10,
+  const past = await db.query.bookings.findMany({
+    where: and(lt(bookings.date, today), ne(bookings.status, BookingStatus.CANCELLED)),
+    with: { service: true },
+    orderBy: [desc(bookings.date), desc(bookings.startTime)],
+    limit: 10,
   })
 
   // Group by date string

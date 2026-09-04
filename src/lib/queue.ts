@@ -1,7 +1,8 @@
 import { Queue, Worker, type Job } from 'bullmq'
-import { prisma } from '@/lib/prisma'
+import { eq } from 'drizzle-orm'
+import { db } from '@/lib/db'
+import { smsReminders, SmsReminderStatus, type SmsReminderStatusValue } from '@/db/schema'
 import { sendReminderSms } from '@/lib/smsir'
-import { SmsReminderStatus } from '@prisma/client'
 
 const connectionOpts = { url: process.env.REDIS_URL!, maxRetriesPerRequest: null as null }
 
@@ -14,30 +15,46 @@ export interface SmsJobData {
   params: { name: string; service: string; time: string }
 }
 
+type UpdateReminder = (status: SmsReminderStatusValue, sentAt?: Date) => Promise<boolean>
+
+interface SmsJobDependencies {
+  updateReminder?: UpdateReminder
+  sendSms?: typeof sendReminderSms
+}
+
+async function updateReminderStatus(reminderId: string, status: SmsReminderStatusValue, sentAt?: Date) {
+  const updated = await db
+    .update(smsReminders)
+    .set(sentAt ? { status, sentAt } : { status })
+    .where(eq(smsReminders.id, reminderId))
+    .returning({ id: smsReminders.id })
+
+  return updated.length > 0
+}
+
+export async function processSmsJob(data: SmsJobData, dependencies: SmsJobDependencies = {}) {
+  const updateReminder = dependencies.updateReminder ?? ((status, sentAt) => updateReminderStatus(data.reminderId, status, sentAt))
+  const sendSms = dependencies.sendSms ?? sendReminderSms
+
+  const claimed = await updateReminder(SmsReminderStatus.SENDING)
+  if (!claimed) throw new Error('SMS reminder was not found')
+
+  try {
+    await sendSms(data.phone, data.template, data.params)
+
+    const markedSent = await updateReminder(SmsReminderStatus.SENT, new Date())
+    if (!markedSent) throw new Error('SMS reminder was not found')
+  } catch (err) {
+    await updateReminder(SmsReminderStatus.FAILED)
+    throw err
+  }
+}
+
 export function startSmsWorker() {
   const worker = new Worker<SmsJobData>(
     'sms-reminders',
     async (job: Job<SmsJobData>) => {
-      const { reminderId, phone, template, params } = job.data
-
-      await prisma.smsReminder.update({
-        where: { id: reminderId },
-        data: { status: SmsReminderStatus.SENDING },
-      })
-
-      try {
-        await sendReminderSms(phone, template, params)
-        await prisma.smsReminder.update({
-          where: { id: reminderId },
-          data: { status: SmsReminderStatus.SENT, sentAt: new Date() },
-        })
-      } catch (err) {
-        await prisma.smsReminder.update({
-          where: { id: reminderId },
-          data: { status: SmsReminderStatus.FAILED },
-        })
-        throw err
-      }
+      await processSmsJob(job.data)
     },
     { connection: connectionOpts }
   )

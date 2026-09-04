@@ -1,7 +1,8 @@
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
-import { BookingStatus } from '@prisma/client'
-import { prisma } from '@/lib/prisma'
+import { BookingStatus, bookings } from '@/db/schema'
+import { db } from '@/lib/db'
+import { and, desc, eq, inArray } from 'drizzle-orm'
 import { getCustomerSessionFromCookies } from '@/lib/customer-auth'
 import { AmbientBackground } from '@/components/ui/AmbientBackground'
 import { BookingHistoryList } from '@/components/customer/BookingHistoryList'
@@ -10,17 +11,13 @@ export default async function MyBookingsPage() {
   const session = await getCustomerSessionFromCookies()
   if (!session) notFound()
 
-  const allBookings = await prisma.booking.findMany({
-    where: {
-      customerPhone: session.phone,
-      status: { in: [BookingStatus.PAID, BookingStatus.CONFIRMED, BookingStatus.CANCELLED] },
-    },
-    include: {
-      service: true,
-      addons: { include: { addon: true } },
-      discountCode: true,
-    },
-    orderBy: { date: 'desc' },
+  const allBookings = await db.query.bookings.findMany({
+    where: and(
+      eq(bookings.customerPhone, session.phone),
+      inArray(bookings.status, [BookingStatus.PAID, BookingStatus.CONFIRMED, BookingStatus.CANCELLED]),
+    ),
+    with: { service: true, addons: { with: { addon: true } }, discountCode: true },
+    orderBy: desc(bookings.date),
   })
 
   const completedCount = allBookings.filter(
