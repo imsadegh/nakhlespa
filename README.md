@@ -32,31 +32,13 @@ docker compose --env-file .env up -d
 
 ### 3. Configure environment
 
-Create `.env.local` (Next.js runtime):
+Create one root `.env` file from the example:
 
 ```bash
-DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:5434/nakhlespa
-BETTER_AUTH_SECRET=dev-secret-not-for-production
-REDIS_URL=redis://127.0.0.1:6380
-ZARINPAL_MERCHANT_ID=your_merchant_id
-ZARINPAL_CALLBACK_URL=http://localhost:3000/api/bookings/verify
-SMSIR_API_KEY=your_api_key
-SMSIR_TEMPLATE_CONFIRM=<template id for customer confirmation>
-SMSIR_TEMPLATE_ADMIN=<template id for admin notification>
-SMSIR_TEMPLATE_REMINDER_24H=<template id for 24h reminder>
-SMSIR_TEMPLATE_REMINDER_2H=<template id for 2h reminder>
-SMSIR_TEMPLATE_OTP=<template id for customer OTP login>
-NEXT_PUBLIC_SITE_URL=http://localhost:3000
-ADMIN_PHONE=+989XXXXXXXXX
-ADMIN_EMAIL=admin@example.com
-ADMIN_PASSWORD=DevPassword123
+cp .env.example .env
 ```
 
-Create `.env` (Prisma CLI — must match `DATABASE_URL` above):
-
-```bash
-DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:5434/nakhlespa
-```
+Next.js and Prisma read the same root `.env` file. The local Compose file also reads it through `--env-file .env`; keep `DATABASE_URL` on port `5434` and `REDIS_URL` on port `6380`.
 
 ### 4. Migrate and seed the database
 
@@ -124,7 +106,7 @@ Set the public domain only on `web`, targeting its exposed port `3000` through T
 
 ### 3. Configure Coolify environment variables
 
-In the resource's Environment Variables screen, add only the Compose interpolation and application variables listed below. Use real production secrets and approved SMS.ir/Zarinpal values; never commit them. Compose constructs the container-local database and Redis URLs from the interpolation variables and service names:
+In the resource's Environment Variables screen, add only the Compose interpolation and application variables listed below. Coolify injects production values separately from the local root `.env`; use real production secrets and approved SMS.ir/Zarinpal values, and never commit them. Compose constructs the container-local database and Redis URLs from the interpolation variables and service names:
 
 ```bash
 DB_USER=your-production-db-user

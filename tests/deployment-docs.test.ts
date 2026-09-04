@@ -26,6 +26,13 @@ describe('deployment documentation contract', () => {
     expect(readme).not.toContain('Repeat the migration command after each release before enabling new application traffic')
   })
 
+  test('documents one root env file for local setup', () => {
+    const readme = readFileSync('README.md', 'utf8')
+    expect(readme).toContain('cp .env.example .env')
+    expect(readme).toContain('Next.js and Prisma read the same root `.env` file')
+    expect(readme).not.toContain('Create `.env.local`')
+  })
+
   test('documents safe production Zarinpal mode and Coolify URL handling', () => {
     const compose = readFileSync('compose.production.yml', 'utf8')
     const readme = readFileSync('README.md', 'utf8')
