@@ -26,7 +26,6 @@ bun install
 Use [OrbStack](https://orbstack.dev) with the included Compose file. Nakhlespa uses host ports `5434` and `6380` so it can run alongside Bonyad:
 
 ```bash
-test -f .env || cp .env.example .env
 docker compose --env-file .env up -d
 ```
 
