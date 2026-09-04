@@ -1,10 +1,11 @@
 import { notFound } from 'next/navigation'
-import { prisma } from '@/lib/prisma'
+import { BookingStatus, bookings } from '@/db/schema'
+import { db } from '@/lib/db'
+import { and, asc, eq, inArray } from 'drizzle-orm'
 import { AmbientBackground } from '@/components/ui/AmbientBackground'
 import { GlassCard } from '@/components/ui/GlassCard'
 import { ConfirmCheckmark } from '@/components/booking/ConfirmCheckmark'
 import { GoldButton } from '@/components/ui/GoldButton'
-import { BookingStatus } from '@prisma/client'
 import Link from 'next/link'
 
 function toFaTime(t: string) {
@@ -13,22 +14,16 @@ function toFaTime(t: string) {
 
 export default async function ConfirmPage({ params }: { params: Promise<{ token: string }> }) {
   const { token } = await params
-  const booking = await prisma.booking.findUnique({
-    where: { token },
-    include: { service: true },
-  })
+  const booking = await db.query.bookings.findFirst({ where: eq(bookings.token, token), with: { service: true } })
   if (!booking || (booking.status !== BookingStatus.PAID && booking.status !== BookingStatus.CONFIRMED)) notFound()
 
   // Fetch all bookings in the group (or just this one if solo / legacy)
   // Filter to only PAID/CONFIRMED to exclude cancelled members from display
   const groupBookings = booking.groupToken
-    ? await prisma.booking.findMany({
-        where: {
-          groupToken: booking.groupToken,
-          status: { in: [BookingStatus.PAID, BookingStatus.CONFIRMED] },
-        },
-        include: { service: true },
-        orderBy: { createdAt: 'asc' },
+    ? await db.query.bookings.findMany({
+        where: and(eq(bookings.groupToken, booking.groupToken), inArray(bookings.status, [BookingStatus.PAID, BookingStatus.CONFIRMED])),
+        with: { service: true },
+        orderBy: asc(bookings.createdAt),
       })
     : [booking]
 

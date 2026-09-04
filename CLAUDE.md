@@ -11,26 +11,22 @@ bun run dev          # Start dev server
 bun run build        # Production build
 bun run start        # Start production server
 
-bunx prisma migrate dev --name <name>   # Run DB migrations (reads .env, not .env.local)
-bun prisma/seed.ts                       # Seed services, working hours, add-ons, and admin user
-bunx prisma studio                       # Open Prisma Studio GUI
+bun run db:generate                      # Generate Drizzle migrations after schema changes
+bun run db:migrate                       # Apply Drizzle migrations (reads DATABASE_URL)
+bun run db:seed                          # Seed services, working hours, add-ons, and admin user
 ```
 
 No lint or test commands are configured.
 
 ## Environment Files
 
-Two env files are required:
-- **`.env.local`** — read by Next.js at runtime: `DATABASE_URL`, `BETTER_AUTH_SECRET`, `REDIS_URL`, `NEXT_PUBLIC_SITE_URL`, `ZARINPAL_MERCHANT_ID`, `ZARINPAL_CALLBACK_URL`, `SMSIR_API_KEY`, `SMSIR_TEMPLATE_CONFIRM`, `SMSIR_TEMPLATE_ADMIN`, `SMSIR_TEMPLATE_REMINDER_24H`, `SMSIR_TEMPLATE_REMINDER_2H`, `SMSIR_TEMPLATE_OTP`, `ADMIN_PHONE`, `ADMIN_EMAIL`, `ADMIN_PASSWORD`
-- **`.env`** — read by Prisma CLI tools only: `DATABASE_URL`
-
-Prisma CLI (`migrate`, `studio`) reads `.env`, not `.env.local`. Both must have matching `DATABASE_URL`.
+Use one root `.env` file for local CLI commands and application runtime. It contains `DATABASE_URL`, `BETTER_AUTH_SECRET`, `REDIS_URL`, `NEXT_PUBLIC_SITE_URL`, `ZARINPAL_MERCHANT_ID`, `ZARINPAL_CALLBACK_URL`, `SMSIR_API_KEY`, `SMSIR_TEMPLATE_CONFIRM`, `SMSIR_TEMPLATE_ADMIN`, `SMSIR_TEMPLATE_REMINDER_24H`, `SMSIR_TEMPLATE_REMINDER_2H`, `SMSIR_TEMPLATE_OTP`, `ADMIN_PHONE`, `ADMIN_EMAIL`, and `ADMIN_PASSWORD`.
 
 ## Architecture
 
 ### Stack
 - **Next.js 16** with App Router — `proxy.ts` (not `middleware.ts`) for auth guards
-- **Prisma v7** with `@prisma/adapter-pg` driver adapter — `PrismaClient` must receive `{ adapter }` everywhere, including `prisma/seed.ts`. The `datasource` block in `schema.prisma` has **no `url` field** (breaking change from v6).
+- **Drizzle ORM** with the shared `node-postgres` client in `src/lib/db.ts`; schema and migrations live in `src/db/schema.ts` and `drizzle/`.
 - **Better Auth** — admin authentication using Postgres-backed sessions; all auth calls go through server-side API routes (`/api/auth/login`, `/api/auth/logout`). `proxy.ts` validates sessions server-side.
 - **BullMQ** — Redis-backed job queue for SMS reminder scheduling (replaces node-cron)
 - **Tailwind v4** — config via `@theme {}` in `globals.css`; font variables must be registered there for utility classes to work

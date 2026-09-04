@@ -3,7 +3,7 @@
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
-import { BookingStatus } from "@prisma/client"
+import { BookingStatus } from "@/db/schema"
 import {
   Dialog,
   DialogContent,

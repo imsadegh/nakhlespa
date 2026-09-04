@@ -1,11 +1,13 @@
-import { prisma } from '@/lib/prisma'
+import { db } from '@/lib/db'
+import { discountCodes } from '@/db/schema'
+import { desc } from 'drizzle-orm'
 import { DiscountManager } from '@/components/admin/DiscountManager'
 import type { DiscountCodeDTO } from '@/types'
 
 export const dynamic = 'force-dynamic'
 
 export default async function AdminDiscountsPage() {
-  const codes = await prisma.discountCode.findMany({ orderBy: { createdAt: 'desc' } })
+  const codes = await db.select().from(discountCodes).orderBy(desc(discountCodes.createdAt))
   const dtos: DiscountCodeDTO[] = codes.map(c => ({
     id: c.id,
     code: c.code,

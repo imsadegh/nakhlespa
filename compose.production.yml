@@ -7,7 +7,7 @@ services:
     restart: unless-stopped
     expose:
       - "3000"
-    command: ["sh", "-c", "bunx prisma migrate deploy && exec bun run start"]
+    command: ["sh", "-c", "bun run db:migrate && exec bun run start"]
     environment:
       NODE_ENV: production
       DATABASE_URL: postgresql://${DB_USER}:${DB_PASSWORD}@postgres:5432/${DB_NAME}

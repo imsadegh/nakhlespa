@@ -1,6 +1,7 @@
-import { BookingStatus } from '@prisma/client'
+import type { BookingStatus, Gender } from '@/db/schema'
 
-export type Gender = 'FEMALE' | 'MALE'
+export type { Gender }
+
 
 export type ServiceDTO = {
   id: string

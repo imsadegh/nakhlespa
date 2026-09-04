@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
+import { customerSessions, verification } from '@/db/schema'
+import { db } from '@/lib/db'
+import { and, desc, eq, gt } from 'drizzle-orm'
 import { isOtpCode, normalizeOtpDigits } from '@/lib/customer-otp'
 import { createHash, timingSafeEqual } from 'crypto'
 
@@ -28,25 +30,22 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'invalid_request', message: 'درخواست نامعتبر است' }, { status: 400 })
   }
 
-  const verification = await prisma.verification.findFirst({
-    where: { identifier: phone, expiresAt: { gt: new Date() } },
-    orderBy: { createdAt: 'desc' },
-  })
-  if (!verification) {
+  const [verificationRow] = await db.select().from(verification)
+    .where(and(eq(verification.identifier, phone), gt(verification.expiresAt, new Date())))
+    .orderBy(desc(verification.createdAt)).limit(1)
+  if (!verificationRow) {
     return NextResponse.json({ error: 'expired', message: 'کد منقضی شده است' }, { status: 400 })
   }
-  if (!safeEqual(hashCode(code), verification.value)) {
-    await prisma.verification.delete({ where: { id: verification.id } })
+  if (!safeEqual(hashCode(code), verificationRow.value)) {
+    await db.delete(verification).where(eq(verification.id, verificationRow.id))
     return NextResponse.json({ error: 'invalid_code', message: 'کد وارد شده اشتباه است' }, { status: 400 })
   }
 
-  await prisma.verification.delete({ where: { id: verification.id } })
+  await db.delete(verification).where(eq(verification.id, verificationRow.id))
 
   const sessionToken = crypto.randomUUID()
   const expiresAt = new Date(Date.now() + 30 * 60 * 1000)
-  await prisma.customerSession.create({
-    data: { phone, sessionToken, expiresAt },
-  })
+  await db.insert(customerSessions).values({ phone, sessionToken, expiresAt })
 
   const res = NextResponse.json({ ok: true })
   res.cookies.set('__customer_session', sessionToken, {

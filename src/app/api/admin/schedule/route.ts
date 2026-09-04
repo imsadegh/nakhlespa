@@ -1,12 +1,14 @@
 // Auth enforced by src/proxy.ts for /api/admin/* routes
 import { NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
+import { blockedSlots, workingHours } from '@/db/schema'
+import { db } from '@/lib/db'
+import { asc, desc } from 'drizzle-orm'
 
 export async function GET() {
   try {
     const [hours, blocks] = await Promise.all([
-      prisma.workingHours.findMany({ orderBy: [{ gender: 'asc' }, { dayOfWeek: 'asc' }] }),
-      prisma.blockedSlot.findMany({ orderBy: { date: 'asc' } }),
+      db.select().from(workingHours).orderBy(asc(workingHours.gender), asc(workingHours.dayOfWeek)),
+      db.select().from(blockedSlots).orderBy(desc(blockedSlots.date)),
     ])
     return NextResponse.json({ hours, blocks })
   } catch (err) {

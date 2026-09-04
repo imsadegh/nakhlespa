@@ -1,7 +1,9 @@
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
-import { BookingStatus } from '@prisma/client'
-import { prisma } from '@/lib/prisma'
+import type { BookingStatus } from '@/db/schema'
+import { bookings } from '@/db/schema'
+import { db } from '@/lib/db'
+import { eq } from 'drizzle-orm'
 import { getCustomerSessionFromCookies } from '@/lib/customer-auth'
 import { AmbientBackground } from '@/components/ui/AmbientBackground'
 import { GlassCard } from '@/components/ui/GlassCard'
@@ -22,13 +24,9 @@ export default async function BookingDetailPage({
   const session = await getCustomerSessionFromCookies()
   if (!session) notFound()
 
-  const booking = await prisma.booking.findUnique({
-    where: { token },
-    include: {
-      service: true,
-      addons: { include: { addon: true } },
-      discountCode: true,
-    },
+  const booking = await db.query.bookings.findFirst({
+    where: eq(bookings.token, token),
+    with: { service: true, addons: { with: { addon: true } }, discountCode: true },
   })
 
   if (!booking || booking.customerPhone !== session.phone) notFound()

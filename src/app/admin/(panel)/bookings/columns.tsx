@@ -1,7 +1,7 @@
 "use client"
 
 import { ColumnDef } from "@tanstack/react-table"
-import { BookingStatus } from "@prisma/client"
+import type { BookingStatus, Gender } from '@/db/schema'
 import { ArrowUpDown } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { BookingDetailDialog } from "./BookingDetailDialog"
@@ -25,7 +25,7 @@ export type BookingRow = {
   status: BookingStatus
   notes: string | null
   refId: string | null
-  gender: 'FEMALE' | 'MALE'
+  gender: Gender
   discountAmount: number
   discountCode: { code: string } | null
 }

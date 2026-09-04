@@ -1,8 +1,10 @@
 import { notFound } from 'next/navigation'
-import { prisma } from '@/lib/prisma'
+import { bookings } from '@/db/schema'
+import { db } from '@/lib/db'
+import { and, asc, eq, ne } from 'drizzle-orm'
 import { GlassCard } from '@/components/ui/GlassCard'
 import { BookingActions } from '@/components/admin/BookingActions'
-import { BookingStatus } from '@prisma/client'
+import type { BookingStatus } from '@/db/schema'
 
 const statusLabel: Record<BookingStatus, string> = {
   PENDING_PAYMENT: 'در انتظار پرداخت',
@@ -29,12 +31,9 @@ function Row({ label, children }: { label: string; children: React.ReactNode }) 
 
 export default async function BookingDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
-  const booking = await prisma.booking.findUnique({
-    where: { id },
-    include: {
-      service: true,
-      addons: { include: { addon: true } },
-    },
+  const booking = await db.query.bookings.findFirst({
+    where: eq(bookings.id, id),
+    with: { service: true, addons: { with: { addon: true } } },
   })
   if (!booking) notFound()
 
@@ -44,10 +43,10 @@ export default async function BookingDetailPage({ params }: { params: Promise<{ 
 
   // Fetch sibling bookings in the same group
   const groupBookings = booking.groupToken
-    ? await prisma.booking.findMany({
-        where: { groupToken: booking.groupToken, id: { not: booking.id } },
-        include: { service: true },
-        orderBy: { createdAt: 'asc' },
+    ? await db.query.bookings.findMany({
+        where: and(eq(bookings.groupToken, booking.groupToken), ne(bookings.id, booking.id)),
+        with: { service: true },
+        orderBy: asc(bookings.createdAt),
       })
     : []
 

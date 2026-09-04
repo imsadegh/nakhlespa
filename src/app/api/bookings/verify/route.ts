@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
+import { and, eq, inArray } from 'drizzle-orm'
+import { db } from '@/lib/db'
+import { BookingStatus, bookings, services, smsReminders } from '@/db/schema'
 import { zarinpalVerify } from '@/lib/zarinpal'
 import { smsQueue } from '@/lib/queue'
 import { sendConfirmSms, sendAdminSms } from '@/lib/smsir'
-import { BookingStatus } from '@prisma/client'
 
 export async function GET(req: NextRequest) {
   const authority = req.nextUrl.searchParams.get('Authority')
@@ -15,42 +16,40 @@ export async function GET(req: NextRequest) {
   }
 
   // Payer booking carries the zarinpalAuthority
-  const payerBooking = await prisma.booking.findFirst({
-    where: { zarinpalAuthority: authority },
-    include: { service: true },
-  })
+  const [payerBooking] = await db.select({ booking: bookings, service: services }).from(bookings)
+    .innerJoin(services, eq(bookings.serviceId, services.id))
+    .where(eq(bookings.zarinpalAuthority, authority)).limit(1)
   if (!payerBooking) return NextResponse.redirect(`${siteUrl}/booking/failed`)
+  const payer = { ...payerBooking.booking, service: payerBooking.service }
 
-  if (payerBooking.status === BookingStatus.PAID) {
-    return NextResponse.redirect(`${siteUrl}/booking/confirm/${payerBooking.token}`)
+  if (payer.status === BookingStatus.PAID) {
+    return NextResponse.redirect(`${siteUrl}/booking/confirm/${payer.token}`)
   }
 
-  if (payerBooking.status !== BookingStatus.PENDING_PAYMENT) {
+  if (payer.status !== BookingStatus.PENDING_PAYMENT) {
     return NextResponse.redirect(`${siteUrl}/booking/failed`)
   }
 
   // Atomic guard: only one concurrent callback wins
-  const updated = await prisma.booking.updateMany({
-    where: { id: payerBooking.id, status: BookingStatus.PENDING_PAYMENT },
-    data: { status: BookingStatus.PAID },
-  })
-  if (updated.count === 0) {
-    return NextResponse.redirect(`${siteUrl}/booking/confirm/${payerBooking.token}`)
+  const updated = await db.update(bookings).set({ status: BookingStatus.PAID })
+    .where(and(eq(bookings.id, payer.id), eq(bookings.status, BookingStatus.PENDING_PAYMENT))).returning({ id: bookings.id })
+  if (updated.length === 0) {
+    return NextResponse.redirect(`${siteUrl}/booking/confirm/${payer.token}`)
   }
 
   try {
     // Total price = sum of all bookings in the group
-    const groupToken = payerBooking.groupToken
+    const groupToken = payer.groupToken
     const allGroupBookings = groupToken
-      ? await prisma.booking.findMany({ where: { groupToken } })
-      : [payerBooking]
+      ? await db.select().from(bookings).where(eq(bookings.groupToken, groupToken))
+      : [payer]
 
     const totalPrice = allGroupBookings.reduce(
       (s, b) => s + b.addonsPricePaid,
       0
     ) + await (async () => {
       const svcIds = [...new Set(allGroupBookings.map(b => b.serviceId))]
-      const svcs = await prisma.service.findMany({ where: { id: { in: svcIds } }, select: { id: true, price: true } })
+      const svcs = await db.select({ id: services.id, price: services.price }).from(services).where(inArray(services.id, svcIds))
       const svcMap = new Map(svcs.map(s => [s.id, s.price]))
       return allGroupBookings.reduce((s, b) => {
         const price = svcMap.get(b.serviceId)
@@ -62,45 +61,39 @@ export async function GET(req: NextRequest) {
     const { refId } = await zarinpalVerify(authority, totalPrice)
 
     // Mark all group bookings PAID and store refId on payer
-    await prisma.$transaction([
-      prisma.booking.updateMany({
-        where: groupToken ? { groupToken } : { id: payerBooking.id },
-        data: { status: BookingStatus.PAID },
-      }),
-      prisma.booking.update({
-        where: { id: payerBooking.id },
-        data: { zarinpalRefId: refId },
-      }),
-    ])
+    await db.transaction(async tx => {
+      await tx.update(bookings).set({ status: BookingStatus.PAID })
+        .where(groupToken ? eq(bookings.groupToken, groupToken) : eq(bookings.id, payer.id))
+      await tx.update(bookings).set({ zarinpalRefId: refId }).where(eq(bookings.id, payer.id))
+    })
 
     // Schedule SMS reminders for payer only
-    const [h, m] = payerBooking.startTime.split(':').map(Number)
-    const appointmentMs = payerBooking.date.getTime() + (h * 60 + m) * 60 * 1000
+    const [h, m] = payer.startTime.split(':').map(Number)
+    const appointmentMs = payer.date.getTime() + (h * 60 + m) * 60 * 1000
     const delay24h = Math.max(0, appointmentMs - 24 * 60 * 60 * 1000 - Date.now())
     const delay2h = Math.max(0, appointmentMs - 2 * 60 * 60 * 1000 - Date.now())
 
-    const [reminder24, reminder2] = await prisma.$transaction([
-      prisma.smsReminder.create({ data: { bookingId: payerBooking.id, sendAt: new Date(appointmentMs - 24 * 60 * 60 * 1000) } }),
-      prisma.smsReminder.create({ data: { bookingId: payerBooking.id, sendAt: new Date(appointmentMs - 2 * 60 * 60 * 1000) } }),
-    ])
+    const reminders = await db.transaction(async tx => {
+      const [reminder24] = await tx.insert(smsReminders).values({ bookingId: payer.id, sendAt: new Date(appointmentMs - 24 * 60 * 60 * 1000) }).returning()
+      const [reminder2] = await tx.insert(smsReminders).values({ bookingId: payer.id, sendAt: new Date(appointmentMs - 2 * 60 * 60 * 1000) }).returning()
+      return [reminder24, reminder2]
+    })
+    const [reminder24, reminder2] = reminders
 
-    const dateFa = payerBooking.date.toLocaleDateString('fa-IR')
-    const reminderParams = { name: payerBooking.customerName, service: payerBooking.service.nameFa, time: payerBooking.startTime }
+    const dateFa = payer.date.toLocaleDateString('fa-IR')
+    const reminderParams = { name: payer.customerName, service: payer.service.nameFa, time: payer.startTime }
 
     await Promise.all([
-      smsQueue.add('reminder-24h', { reminderId: reminder24.id, phone: payerBooking.customerPhone, template: 'reminder24h', params: reminderParams }, { delay: delay24h }),
-      smsQueue.add('reminder-2h',  { reminderId: reminder2.id,  phone: payerBooking.customerPhone, template: 'reminder2h',  params: reminderParams }, { delay: delay2h }),
-      sendConfirmSms(payerBooking.customerPhone, { name: payerBooking.customerName, service: payerBooking.service.nameFa, date: dateFa, time: payerBooking.startTime, refId: String(refId) }),
-      sendAdminSms(process.env.ADMIN_PHONE!, { name: payerBooking.customerName, service: payerBooking.service.nameFa, date: dateFa, time: payerBooking.startTime, phone: payerBooking.customerPhone }),
+      smsQueue.add('reminder-24h', { reminderId: reminder24.id, phone: payer.customerPhone, template: 'reminder24h', params: reminderParams }, { delay: delay24h }),
+      smsQueue.add('reminder-2h',  { reminderId: reminder2.id,  phone: payer.customerPhone, template: 'reminder2h', params: reminderParams }, { delay: delay2h }),
+      sendConfirmSms(payer.customerPhone, { name: payer.customerName, service: payer.service.nameFa, date: dateFa, time: payer.startTime, refId: String(refId) }),
+      sendAdminSms(process.env.ADMIN_PHONE!, { name: payer.customerName, service: payer.service.nameFa, date: dateFa, time: payer.startTime, phone: payer.customerPhone }),
     ])
 
-    return NextResponse.redirect(`${siteUrl}/booking/confirm/${payerBooking.token}`)
+    return NextResponse.redirect(`${siteUrl}/booking/confirm/${payer.token}`)
   } catch (err) {
     console.error('Booking verify error', err)
-    await prisma.booking.update({
-      where: { id: payerBooking.id },
-      data: { status: BookingStatus.PENDING_PAYMENT },
-    }).catch(() => {})
+    await db.update(bookings).set({ status: BookingStatus.PENDING_PAYMENT }).where(eq(bookings.id, payer.id)).catch(() => {})
     return NextResponse.redirect(`${siteUrl}/booking/failed`)
   }
 }

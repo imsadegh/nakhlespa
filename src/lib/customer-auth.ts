@@ -1,12 +1,14 @@
 import { NextRequest } from 'next/server'
 import { cookies } from 'next/headers'
-import { prisma } from '@/lib/prisma'
+import { eq } from 'drizzle-orm'
+import { customerSessions } from '@/db/schema'
+import { db } from '@/lib/db'
 
 const COOKIE = '__customer_session'
 
 async function resolveSession(token: string | undefined): Promise<{ phone: string } | null> {
   if (!token) return null
-  const session = await prisma.customerSession.findUnique({ where: { sessionToken: token } })
+  const [session] = await db.select().from(customerSessions).where(eq(customerSessions.sessionToken, token)).limit(1)
   if (!session || session.expiresAt < new Date()) return null
   return { phone: session.phone }
 }

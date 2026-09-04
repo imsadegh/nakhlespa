@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
+import { and, eq, inArray, sql } from 'drizzle-orm'
+import { db } from '@/lib/db'
+import { addons, BookingStatus, bookings as bookingsTable, bookingAddons, discountCodes, services, workingHours } from '@/db/schema'
 import { zarinpalRequest } from '@/lib/zarinpal'
 import { validatePromoCode, checkLoyaltyDiscount } from '@/lib/discounts'
-import { BookingStatus } from '@prisma/client'
-import type { Booking } from '@prisma/client'
+import type { Booking } from '@/db/schema'
 import { randomUUID } from 'crypto'
 import type { BookingCreateInput, Gender } from '@/types'
 
@@ -51,15 +52,15 @@ export async function POST(req: NextRequest) {
   const gender = genders[0] as Gender
 
   const serviceIds = [...new Set(bookings.map(b => b.serviceId))]
-  const services = await prisma.service.findMany({ where: { id: { in: serviceIds }, isActive: true } })
-  if (services.length !== serviceIds.length) {
+  const serviceRows = await db.select().from(services).where(and(inArray(services.id, serviceIds), eq(services.isActive, true)))
+  if (serviceRows.length !== serviceIds.length) {
     return NextResponse.json({ error: 'One or more services not found or inactive' }, { status: 404 })
   }
-  const serviceMap = new Map(services.map(s => [s.id, s]))
+  const serviceMap = new Map(serviceRows.map(s => [s.id, s]))
 
   const allAddonIds = [...new Set(bookings.flatMap(b => b.addonIds ?? []))]
   const fetchedAddons = allAddonIds.length > 0
-    ? await prisma.addon.findMany({ where: { id: { in: allAddonIds }, isActive: true }, select: { id: true, price: true, requiresTier: true } })
+    ? await db.select({ id: addons.id, price: addons.price, requiresTier: addons.requiresTier }).from(addons).where(and(inArray(addons.id, allAddonIds), eq(addons.isActive, true)))
     : []
   if (fetchedAddons.length !== allAddonIds.length) {
     return NextResponse.json({ error: 'One or more add-ons are invalid' }, { status: 400 })
@@ -85,7 +86,7 @@ export async function POST(req: NextRequest) {
   const jsDate = new Date(Date.UTC(year, month - 1, day))
   const jsDayMap: Record<number, number> = { 6: 0, 0: 1, 1: 2, 2: 3, 3: 4, 4: 5, 5: 6 }
   const dayOfWeek = jsDayMap[jsDate.getUTCDay()]
-  const workingDay = await prisma.workingHours.findFirst({ where: { dayOfWeek, gender, isOpen: true } })
+  const [workingDay] = await db.select().from(workingHours).where(and(eq(workingHours.dayOfWeek, dayOfWeek), eq(workingHours.gender, gender), eq(workingHours.isOpen, true))).limit(1)
   if (!workingDay) {
     return NextResponse.json({ error: 'No working hours configured for this gender and day' }, { status: 400 })
   }
@@ -146,45 +147,34 @@ export async function POST(req: NextRequest) {
     ? `رزرو ${firstServiceName} — نخلسپا`
     : `رزرو گروهی ${bookings.length} غرفه — نخلسپا`
 
-  const results = await prisma.$transaction([
-    ...bookingData.map(({ b, selectedAddons, addonsPricePaid, endTime }) =>
-      prisma.booking.create({
-        data: {
-          serviceId: b.serviceId,
-          customerName: b.customerName,
-          customerPhone: b.customerPhone,
-          customerNotes: b.customerNotes,
-          date: bookingDate,
-          startTime: b.startTime,
-          endTime,
-          gender,
-          status: BookingStatus.PENDING_PAYMENT,
-          addonsPricePaid,
-          groupToken,
-          discountCodeId: discountCodeId ?? undefined,
-          discountAmount,
-          addons: {
-            create: selectedAddons.map(a => ({ addonId: a.id, pricePaid: a.price })),
-          },
-        },
-      })
-    ),
-    ...(discountCodeId
-      ? [prisma.discountCode.update({ where: { id: discountCodeId }, data: { usedCount: { increment: 1 } } })]
-      : []),
-  ])
-  const createdBookings = results.slice(0, bookingData.length) as Booking[]
+  const createdBookings = await db.transaction(async tx => {
+    const created: Booking[] = []
+    for (const { b, selectedAddons, addonsPricePaid, endTime } of bookingData) {
+      const [booking] = await tx.insert(bookingsTable).values({
+        serviceId: b.serviceId, customerName: b.customerName, customerPhone: b.customerPhone,
+        customerNotes: b.customerNotes, date: bookingDate, startTime: b.startTime, endTime,
+        gender, status: BookingStatus.PENDING_PAYMENT, addonsPricePaid, groupToken,
+        discountCodeId, discountAmount,
+      }).returning()
+      created.push(booking)
+      if (selectedAddons.length) {
+        await tx.insert(bookingAddons).values(selectedAddons.map(a => ({ bookingId: booking.id, addonId: a.id, pricePaid: a.price })))
+      }
+    }
+    if (discountCodeId) await tx.update(discountCodes).set({ usedCount: sql`${discountCodes.usedCount} + 1` }).where(eq(discountCodes.id, discountCodeId))
+    return created
+  })
 
   const payerBooking = createdBookings[0]
 
   try {
     const { authority, paymentUrl } = await zarinpalRequest(totalPrice, paymentDescription, payerPhone)
-    await prisma.booking.update({ where: { id: payerBooking.id }, data: { zarinpalAuthority: authority } })
+    await db.update(bookingsTable).set({ zarinpalAuthority: authority }).where(eq(bookingsTable.id, payerBooking.id))
     return NextResponse.json({ paymentUrl })
   } catch (err) {
     console.error('Zarinpal request failed, rolling back bookings', err)
     try {
-      await prisma.booking.deleteMany({ where: { groupToken } })
+      await db.delete(bookingsTable).where(eq(bookingsTable.groupToken, groupToken))
     } catch (deleteErr) {
       console.error('CRITICAL: failed to delete orphaned bookings for groupToken', groupToken, deleteErr)
     }

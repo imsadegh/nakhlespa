@@ -2,7 +2,7 @@
 
 Persian spa booking web app. Customers browse services and book appointments through a guided wizard with Zarinpal payment integration. Admins manage bookings, working hours, and blocked slots through a protected dashboard.
 
-**Stack:** Next.js 16 · Prisma v7 · Better Auth · BullMQ · Redis · Tailwind v4 · Bun
+**Stack:** Next.js 16 · Drizzle ORM · Better Auth · BullMQ · Redis · Tailwind v4 · Bun
 
 ---
 
@@ -37,13 +37,13 @@ Create one root `.env` file from the example:
 cp .env.example .env
 ```
 
-Next.js and Prisma read the same root `.env` file. The local Compose file also reads it through `--env-file .env`; keep `DATABASE_URL` on port `5434` and `REDIS_URL` on port `6380`.
+Next.js and Drizzle read the same root `.env` file. The local Compose file also reads it through `--env-file .env`; keep `DATABASE_URL` on port `5434` and `REDIS_URL` on port `6380`.
 
 ### 4. Migrate and seed the database
 
 ```bash
-bunx prisma migrate dev --name init
-ADMIN_EMAIL=admin@example.com ADMIN_PASSWORD=DevPassword123 bun prisma/seed.ts
+bun run db:migrate
+ADMIN_EMAIL=admin@example.com ADMIN_PASSWORD=DevPassword123 bun run db:seed
 ```
 
 The seed creates services, working hours, add-ons, and the admin user. It is idempotent (safe to run multiple times).
@@ -84,7 +84,7 @@ Admin routes (`/admin/dashboard`, `/admin/bookings`, `/admin/schedule`, `/admin/
 
 ```bash
 bun run build          # Production build
-bunx prisma studio     # Visual DB browser at http://localhost:5555
+bun run db:generate    # Generate Drizzle migrations after schema changes
 ```
 
 ---
@@ -127,16 +127,16 @@ ADMIN_EMAIL=admin@yourdomain.com
 ADMIN_PASSWORD=your-production-admin-password
 ```
 
-Do not add `DATABASE_URL` or `REDIS_URL` from `.env.example` to Coolify: those local `127.0.0.1` values are for local Prisma/app setup only, and the Compose file supplies `postgresql://${DB_USER}:${DB_PASSWORD}@postgres:5432/${DB_NAME}` and `redis://redis:6379` inside the containers. `ZARINPAL_SANDBOX` should normally be `false` in production; use `true` only for an explicitly configured Zarinpal sandbox environment. Configure all five SMS.ir template IDs, including `SMSIR_TEMPLATE_OTP`. Use `SMSIR_TEMPLATE_REMINDER_24H` and `SMSIR_TEMPLATE_REMINDER_2H` for the `worker-sms` service.
+Do not add `DATABASE_URL` or `REDIS_URL` from `.env.example` to Coolify: those local `127.0.0.1` values are for local Drizzle/app setup only, and the Compose file supplies `postgresql://${DB_USER}:${DB_PASSWORD}@postgres:5432/${DB_NAME}` and `redis://redis:6379` inside the containers. `ZARINPAL_SANDBOX` should normally be `false` in production; use `true` only for an explicitly configured Zarinpal sandbox environment. Configure all five SMS.ir template IDs, including `SMSIR_TEMPLATE_OTP`. Use `SMSIR_TEMPLATE_REMINDER_24H` and `SMSIR_TEMPLATE_REMINDER_2H` for the `worker-sms` service.
 
 ### 4. First deployment and initialization
 
-Deploy the Compose resource from Coolify. The `web` service automatically runs `prisma migrate deploy` before `next start`; it does not accept traffic until migrations succeed. PostgreSQL and Redis health checks complete before the application services start. Do not add a separate manual migration step before enabling traffic.
+Deploy the Compose resource from Coolify. The `web` service automatically runs `bun run db:migrate` before `next start`; it does not accept traffic until migrations succeed. PostgreSQL and Redis health checks complete before the application services start. Do not add a separate manual migration step before enabling traffic.
 
 After the first deployment is healthy, run this one-time manual seed from the `web` container's Coolify terminal (or an equivalent one-off command using the production image):
 
 ```bash
-ADMIN_EMAIL=admin@yourdomain.com ADMIN_PASSWORD=your-production-password bun prisma/seed.ts
+ADMIN_EMAIL=admin@yourdomain.com ADMIN_PASSWORD=your-production-password bun run db:seed
 ```
 
 The seed creates services, working hours, add-ons, and the admin user. It is idempotent if it must be rerun intentionally, but it is a one-time manual initialization step. Do not run the seed on every restart.
@@ -149,7 +149,7 @@ After the health checks pass, enable the Zarinpal webhook/callback configuration
 
 ### 6. Maintenance and database access
 
-For a release, push the change and redeploy the same Compose resource in Coolify. Review the deployment logs; the `web` startup command applies any pending migrations before `next start`. Do not run a second Compose stack alongside the resource.
+For a release, push the change and redeploy the same Compose resource in Coolify. Review the deployment logs; the `web` startup command applies any pending Drizzle migrations before `next start`. Do not run a second Compose stack alongside the resource.
 
 For emergency database access, use an SSH tunnel to the VPS/Coolify host and connect through the private database endpoint; do not publish PostgreSQL's port:
 

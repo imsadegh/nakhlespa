@@ -4,6 +4,7 @@ import { describe, expect, test } from 'bun:test'
 const compose = readFileSync('compose.production.yml', 'utf8')
 const dockerfile = readFileSync('Dockerfile', 'utf8')
 const envExample = readFileSync('.env.example', 'utf8')
+const legacyOrm = ['pris', 'ma'].join('')
 
 describe('production Compose contract', () => {
   test('defines the four required services', () => {
@@ -39,7 +40,7 @@ describe('production Compose contract', () => {
   })
 
   test('gates web startup on production migrations', () => {
-    expect(compose).toContain('command: ["sh", "-c", "bunx prisma migrate deploy && exec bun run start"]')
+    expect(compose).toContain('command: ["sh", "-c", "bun run db:migrate && exec bun run start"]')
   })
 
   test('marks the DB-backed schedule page for runtime rendering', () => {
@@ -60,23 +61,17 @@ describe('production Compose contract', () => {
     expect(bookPage).toContain("export const dynamic = 'force-dynamic'")
   })
 
-  test('generates Prisma after config and schema are available in the image', () => {
-    const generateIndex = dockerfile.indexOf('RUN bunx prisma generate')
-    const buildIndex = dockerfile.indexOf('RUN bun run build')
-
-    expect(dockerfile).toContain('COPY --from=builder /app/prisma.config.ts ./prisma.config.ts')
-    expect(generateIndex).toBeGreaterThan(dockerfile.indexOf('COPY . .'))
-    expect(buildIndex).toBeGreaterThan(generateIndex)
+  test('includes Drizzle migration assets without Prisma build steps', () => {
+    expect(dockerfile).not.toContain(legacyOrm)
+    expect(dockerfile).toContain('COPY --from=builder /app/drizzle ./drizzle')
+    expect(dockerfile).toContain('COPY --from=builder /app/src/db ./src/db')
+    expect(dockerfile).toContain('COPY --from=builder /app/drizzle.config.ts ./drizzle.config.ts')
+    expect(dockerfile).not.toContain(`bunx ${legacyOrm} generate`)
   })
 
-  test('generates Prisma in the release image after production dependencies are installed', () => {
-    const productionInstallIndex = dockerfile.indexOf('RUN bun install --frozen-lockfile --production')
-    const releaseMarkerIndex = dockerfile.indexOf('FROM base AS release')
-    const releaseGenerateIndex = dockerfile.indexOf('RUN bunx prisma generate', releaseMarkerIndex)
-    const releaseConfigIndex = dockerfile.indexOf('COPY --from=builder /app/prisma.config.ts ./prisma.config.ts')
-
-    expect(releaseGenerateIndex).toBeGreaterThan(productionInstallIndex)
-    expect(releaseGenerateIndex).toBeGreaterThan(releaseConfigIndex)
+  test('ships Drizzle Kit for runtime migrations', () => {
+    expect(dockerfile).toContain('RUN bun install --frozen-lockfile')
+    expect(dockerfile).not.toContain('--production')
   })
 
   test('does not ship a predictable admin password in the example environment', () => {
