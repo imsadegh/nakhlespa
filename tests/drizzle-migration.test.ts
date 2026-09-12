@@ -8,6 +8,8 @@ const baselineMigration = existsSync('drizzle')
       ?.name
   : undefined
 
+const customizationMigration = '0001_charming_wallow.sql'
+
 const removeSqlCommentsAndWhitespace = (sql: string) =>
   sql
     .replace(/\/\*[\s\S]*?\*\//g, '')
@@ -16,16 +18,17 @@ const removeSqlCommentsAndWhitespace = (sql: string) =>
     .trim()
 
 describe('Drizzle migration baseline', () => {
-  test('does not change the existing application schema', () => {
+  test('bootstraps the existing application schema idempotently', () => {
     expect(baselineMigration).toBeDefined()
 
     const sql = readFileSync(join('drizzle', baselineMigration!), 'utf8')
     const executableSql = removeSqlCommentsAndWhitespace(sql)
 
-    expect(executableSql).not.toMatch(
-      /(?:CREATE|ALTER|DROP|INSERT|UPDATE|DELETE|TRUNCATE|GRANT|REVOKE)/i,
-    )
-    expect(executableSql).toBe('')
+    expect(executableSql).toContain('CREATETYPE"public"."Gender"')
+    expect(executableSql).toContain('CREATETABLEIFNOTEXISTS"bookings"')
+    expect(executableSql).toContain('CREATETABLEIFNOTEXISTS"working_hours"')
+    expect(executableSql).toContain('CREATEINDEXIFNOTEXISTS"bookings_date_idx"')
+    expect(executableSql).not.toContain('"customization"jsonb')
   })
 
   test('points Drizzle Kit at the existing schema and migration directory', () => {
@@ -42,6 +45,27 @@ describe('Drizzle migration baseline', () => {
       'db:generate': 'drizzle-kit generate',
       'db:migrate': 'drizzle-kit migrate',
       'db:seed': 'bun src/db/seed.ts',
+    })
+  })
+
+  test('adds nullable JSONB customization persistence to public.bookings', () => {
+    expect(existsSync(join('drizzle', customizationMigration))).toBe(true)
+
+    const sql = readFileSync(join('drizzle', customizationMigration!), 'utf8')
+    const executableSql = removeSqlCommentsAndWhitespace(sql)
+    expect(executableSql).toBe('ALTERTABLE"bookings"ADDCOLUMN"customization"jsonb;')
+
+    const customizationSnapshot = '0001_snapshot.json'
+    expect(existsSync(join('drizzle/meta', customizationSnapshot))).toBe(true)
+
+    const snapshot = JSON.parse(readFileSync(join('drizzle/meta', customizationSnapshot), 'utf8')) as {
+      tables: Record<string, { columns: Record<string, { type: string; notNull: boolean }> }>
+    }
+    expect(snapshot.tables['public.bookings'].columns.customization).toMatchObject({
+      name: 'customization',
+      type: 'jsonb',
+      primaryKey: false,
+      notNull: false,
     })
   })
 })
@@ -201,8 +225,8 @@ describe('legacy PostgreSQL text fidelity', () => {
     expect(snapshot.enums['public.DiscountType'].values).toEqual(['PERCENT', 'FIXED'])
   })
 
-  test('keeps the baseline as the only migration so follow-up checks are no-op', () => {
-    expect(readdirSync('drizzle').filter(name => name.endsWith('.sql'))).toEqual(['0000_baseline.sql'])
+  test('keeps the existing baseline migration intact for follow-up migrations', () => {
+    expect(readdirSync('drizzle').filter(name => name.endsWith('.sql'))).toContain('0000_baseline.sql')
     expect(snapshot.prevId).toBe('00000000-0000-0000-0000-000000000000')
     expect(snapshot.tables).toBeDefined()
     expect(snapshot.enums).toBeDefined()

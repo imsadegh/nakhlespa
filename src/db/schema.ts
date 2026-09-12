@@ -1,10 +1,13 @@
 import { randomUUID } from 'node:crypto'
 import { relations } from 'drizzle-orm'
+import type { BookingCustomization } from '@/types'
+import type { HealthIntake } from '@/lib/health-intake'
 import {
   boolean,
   date,
   index,
   integer,
+  jsonb,
   pgEnum,
   pgTable,
   text,
@@ -117,6 +120,8 @@ export const bookings = pgTable(
     groupToken: text('groupToken'),
     discountCodeId: text('discountCodeId').references(() => discountCodes.id, { onDelete: 'set null', onUpdate: 'cascade' }),
     discountAmount: integer('discountAmount').notNull().default(0),
+    customization: jsonb('customization').$type<BookingCustomization>(),
+    healthIntake: jsonb('healthIntake').$type<HealthIntake>(),
     createdAt: timestamp('createdAt', { precision: 3 }).notNull().defaultNow(),
   },
   table => [

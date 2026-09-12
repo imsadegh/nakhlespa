@@ -89,8 +89,8 @@ async function seedDatabase() {
     })
 
     const genderHours = [
-      { gender: Gender.FEMALE, openTime: '08:00', closeTime: '14:30' },
-      { gender: Gender.MALE, openTime: '15:00', closeTime: '22:00' },
+      { gender: Gender.FEMALE, openTime: '07:00', closeTime: '13:00' },
+      { gender: Gender.MALE, openTime: '14:00', closeTime: '22:00' },
     ] as const
 
     for (const { gender, openTime, closeTime } of genderHours) {
