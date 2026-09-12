@@ -4,7 +4,9 @@ import { db } from '@/lib/db'
 import { and, asc, eq, ne } from 'drizzle-orm'
 import { GlassCard } from '@/components/ui/GlassCard'
 import { BookingActions } from '@/components/admin/BookingActions'
+import { PrintHealthFormButton } from '@/components/admin/PrintHealthFormButton'
 import type { BookingStatus } from '@/db/schema'
+import { formatCustomization } from '@/lib/booking-customization'
 
 const statusLabel: Record<BookingStatus, string> = {
   PENDING_PAYMENT: 'در انتظار پرداخت',
@@ -65,6 +67,13 @@ export default async function BookingDetailPage({ params }: { params: Promise<{ 
         {booking.customerNotes && <Row label="توضیحات">{booking.customerNotes}</Row>}
 
         <div className="border-t pt-3 space-y-3" style={{ borderColor: 'var(--border-base)' }}>
+          <p className="text-xs font-medium" style={{ color: 'var(--text-muted)' }}>سفارشی‌سازی</p>
+          {formatCustomization(booking.customization).map(row => (
+            <Row key={row.key} label={row.label}>{row.value}</Row>
+          ))}
+        </div>
+
+        <div className="border-t pt-3 space-y-3" style={{ borderColor: 'var(--border-base)' }}>
           <Row label="تاریخ">{faDate}</Row>
           <Row label="ساعت">{faTime(booking.startTime)} — {faTime(booking.endTime)}</Row>
           <Row label="خدمت">{booking.service.nameFa}</Row>
@@ -106,6 +115,10 @@ export default async function BookingDetailPage({ params }: { params: Promise<{ 
           </Row>
         </div>
       </GlassCard>
+
+      <div className="mb-4 flex justify-end">
+        <PrintHealthFormButton bookingId={booking.id} />
+      </div>
 
       <BookingActions bookingId={booking.id} currentStatus={booking.status} />
     </div>

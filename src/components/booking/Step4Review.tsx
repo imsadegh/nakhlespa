@@ -4,6 +4,7 @@ import { GlassCard } from '@/components/ui/GlassCard'
 import { GoldButton } from '@/components/ui/GoldButton'
 import { GhostButton } from '@/components/ui/GhostButton'
 import type { WizardState, ServiceDTO, AddonDTO } from '@/types'
+import { formatCustomization, getCustomizationAdditionalPrice } from '@/lib/booking-customization'
 
 type Props = { state: WizardState; goBack: () => void; services: ServiceDTO[]; addons: AddonDTO[] }
 
@@ -24,7 +25,8 @@ export function Step4Review({ state, goBack, services, addons }: Props) {
   const subtotal = state.persons.reduce((sum, person) => {
     const svc = services.find(s => s.id === person.serviceId)
     const addonSum = person.addonIds.reduce((a, id) => a + (addons.find(ad => ad.id === id)?.price ?? 0), 0)
-    return sum + (svc?.price ?? 0) + addonSum
+    const customizationSum = getCustomizationAdditionalPrice(person.customization, svc?.tier)
+    return sum + (svc?.price ?? 0) + addonSum + customizationSum
   }, 0)
 
   const phone = state.persons[0]?.customerPhone ?? ''
@@ -62,16 +64,21 @@ export function Step4Review({ state, goBack, services, addons }: Props) {
     if (loading || !state.date || !state.startTime) return
     setLoading(true)
     try {
-      const bookings = state.persons.map(person => ({
-        serviceId: person.serviceId,
-        customerName: person.customerName,
-        customerPhone: person.customerPhone,
-        customerNotes: person.customerNotes || undefined,
-        date: state.date!,
-        startTime: state.startTime!,
-        addonIds: person.addonIds,
-        gender: state.gender!,
-      }))
+      const bookings = state.persons.map(person => {
+        const service = services.find(item => item.id === person.serviceId)
+        return {
+          serviceId: person.serviceId,
+          customerName: person.customerName,
+          customerPhone: person.customerPhone,
+          customerNotes: person.customerNotes || undefined,
+          date: state.date!,
+          startTime: state.startTime!,
+          addonIds: person.addonIds,
+          customization: service?.tier !== null && service?.tier !== undefined ? person.customization : null,
+          healthIntake: person.healthIntake,
+          gender: state.gender!,
+        }
+      })
       const body: { bookings: typeof bookings; promoCode?: string } = { bookings }
       if (promoStatus === 'valid' && promoCode) body.promoCode = promoCode
       const res = await fetch('/api/bookings/create', {
@@ -109,7 +116,7 @@ export function Step4Review({ state, goBack, services, addons }: Props) {
         </div>
         <div className="flex justify-between text-xs">
           <span style={{ color: 'var(--text-muted)' }}>جلسه</span>
-          <span className={`text-[10px] px-2 py-0.5 rounded-full ${state.gender === 'FEMALE' ? 'bg-pink-400/10 text-pink-400' : 'bg-blue-400/10 text-blue-400'}`}>
+          <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${state.gender === 'FEMALE' ? 'bg-pink-400/10 text-pink-400' : 'bg-blue-400/10 text-blue-400'}`}>
             {state.gender === 'FEMALE' ? 'خانم' : 'آقا'}
           </span>
         </div>
@@ -120,7 +127,8 @@ export function Step4Review({ state, goBack, services, addons }: Props) {
         {state.persons.map((person, i) => {
           const svc = services.find(s => s.id === person.serviceId)
           const selectedAddons = addons.filter(a => person.addonIds.includes(a.id))
-          const personTotal = (svc?.price ?? 0) + selectedAddons.reduce((s, a) => s + a.price, 0)
+          const customizationTotal = getCustomizationAdditionalPrice(person.customization, svc?.tier)
+          const personTotal = (svc?.price ?? 0) + selectedAddons.reduce((s, a) => s + a.price, 0) + customizationTotal
           return (
             <GlassCard key={i} className="p-3 space-y-1.5">
               <p className="text-[10px] font-medium mb-1" style={{ color: 'var(--text-faint)' }}>
@@ -141,6 +149,23 @@ export function Step4Review({ state, goBack, services, addons }: Props) {
                   <span style={{ color: 'var(--text-primary)' }}>+{a.price.toLocaleString('fa-IR')} ت</span>
                 </div>
               ))}
+              {customizationTotal > 0 && (
+                <div className="flex justify-between text-xs">
+                  <span style={{ color: 'var(--text-muted)' }}>هزینه انتخاب‌های ویژه</span>
+                  <span style={{ color: 'var(--text-primary)' }}>+{customizationTotal.toLocaleString('fa-IR')} ت</span>
+                </div>
+              )}
+              {svc?.tier !== null && svc?.tier !== undefined && <div className="border-t border-[rgba(198,165,91,0.15)] pt-1.5 mt-1.5">
+                <p className="text-[10px] font-medium mb-1" style={{ color: 'var(--text-faint)' }}>سفارشی‌سازی</p>
+                <div className="space-y-1">
+                  {formatCustomization(person.customization).map(row => (
+                    <div key={row.key} className="flex justify-between gap-3 text-xs">
+                      <span style={{ color: 'var(--text-muted)' }}>{row.label}</span>
+                      <span className="text-end" style={{ color: 'var(--text-primary)' }}>{row.value}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>}
               <div className="flex justify-between text-xs font-semibold border-t border-[rgba(198,165,91,0.15)] pt-1.5">
                 <span style={{ color: 'var(--text-muted)' }}>جمع</span>
                 <span className="text-[#C6A55B]">{personTotal.toLocaleString('fa-IR')} ت</span>
@@ -166,7 +191,7 @@ export function Step4Review({ state, goBack, services, addons }: Props) {
             value={promoCode}
             onChange={e => { setPromoCode(e.target.value.toUpperCase()); setPromoStatus('idle') }}
             placeholder="کد تخفیف را وارد کنید"
-            className="flex-1 text-xs px-3 py-2 rounded-lg bg-white/5 border border-white/10 outline-none"
+            className="flex-1 rounded-lg border border-border/70 bg-background/40 px-3 py-2 text-sm text-right outline-none placeholder:text-right placeholder:text-xs focus-visible:border-ring focus-visible:ring-1 focus-visible:ring-ring"
             style={{ color: 'var(--text-primary)', direction: 'ltr' }}
           />
           <GhostButton onClick={handlePromoValidate} className="text-xs px-3">اعمال</GhostButton>

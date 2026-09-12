@@ -33,6 +33,7 @@ export default async function BookingsPage() {
     gender: b.gender,
     discountAmount: b.discountAmount,
     discountCode: b.discountCode ? { code: b.discountCode.code } : null,
+    customization: b.customization,
   }))
 
   return (

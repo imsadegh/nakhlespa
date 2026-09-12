@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/popover"
 import { Button } from "@/components/ui/button"
 import type { BookingRow, BookingAddonRow } from "./columns"
+import { formatCustomization } from '@/lib/booking-customization'
 
 const statusLabel: Record<BookingStatus, string> = {
   PENDING_PAYMENT: "در انتظار پرداخت",
@@ -109,6 +110,17 @@ export function BookingDetailDialog({ booking }: { booking: BookingRow }) {
               )}
             </div>
           ))}
+          <div className="border-t pt-2 mt-1" style={{ borderColor: "var(--border-base)" }}>
+            <p className="text-xs font-medium mb-2" style={{ color: "var(--text-muted)" }}>سفارشی‌سازی</p>
+            <div className="flex flex-col gap-2">
+              {formatCustomization(booking.customization).map(row => (
+                <div key={row.key} className="flex justify-between items-start gap-4">
+                  <span className="text-xs flex-shrink-0" style={{ color: "var(--text-faint)" }}>{row.label}</span>
+                  <span className="text-xs text-end" style={{ color: "var(--text-primary)" }}>{row.value}</span>
+                </div>
+              ))}
+            </div>
+          </div>
           <div className="flex justify-between items-center gap-4">
             <span className="text-xs flex-shrink-0" style={{ color: "var(--text-faint)" }}>وضعیت</span>
             <span className={`text-[10px] px-2 py-0.5 rounded-full ${statusStyle[status]}`}>

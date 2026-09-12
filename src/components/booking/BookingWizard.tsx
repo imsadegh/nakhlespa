@@ -4,9 +4,11 @@ import { AnimatePresence, motion } from 'framer-motion'
 import { StepProgress } from './StepProgress'
 import { StepGender } from './StepGender'
 import { Step1Service } from './Step1Service'
+import { StepCustomization } from './StepCustomization'
 import { Step2DateTime } from './Step2DateTime'
 import { Step3Details } from './Step3Details'
 import { Step4Review } from './Step4Review'
+import { getDefaultCustomization } from '@/lib/booking-customization'
 import type { ServiceDTO, AddonDTO, WizardState } from '@/types'
 
 const variants = {
@@ -16,7 +18,15 @@ const variants = {
 }
 
 function emptyPerson() {
-  return { serviceId: '', addonIds: [], customerName: '', customerPhone: '', customerNotes: '' }
+  return {
+    serviceId: '',
+    addonIds: [],
+    customization: getDefaultCustomization(),
+    healthIntake: null,
+    customerName: '',
+    customerPhone: '',
+    customerNotes: '',
+  }
 }
 
 export function BookingWizard({ services }: { services: ServiceDTO[] }) {
@@ -37,7 +47,7 @@ export function BookingWizard({ services }: { services: ServiceDTO[] }) {
 
   return (
     <div className="px-4 sm:px-5 pt-4 pb-5">
-      <StepProgress current={step} total={5} />
+      <StepProgress current={step} total={6} />
       <AnimatePresence mode="wait" custom={dir}>
         <motion.div
           key={step}
@@ -50,9 +60,10 @@ export function BookingWizard({ services }: { services: ServiceDTO[] }) {
         >
           {step === 0 && <StepGender {...stepProps} />}
           {step === 1 && <Step1Service {...stepProps} />}
-          {step === 2 && <Step2DateTime {...stepProps} />}
-          {step === 3 && <Step3Details {...stepProps} />}
-          {step === 4 && <Step4Review {...stepProps} />}
+          {step === 2 && <StepCustomization {...stepProps} />}
+          {step === 3 && <Step2DateTime {...stepProps} />}
+          {step === 4 && <Step3Details {...stepProps} />}
+          {step === 5 && <Step4Review {...stepProps} />}
         </motion.div>
       </AnimatePresence>
     </div>

@@ -4,9 +4,11 @@ import { db } from '@/lib/db'
 import { addons, BookingStatus, bookings as bookingsTable, bookingAddons, discountCodes, services, workingHours } from '@/db/schema'
 import { zarinpalRequest } from '@/lib/zarinpal'
 import { validatePromoCode, checkLoyaltyDiscount } from '@/lib/discounts'
+import { getCustomizationAdditionalPrice, validateCustomization } from '@/lib/booking-customization'
+import { validateHealthIntake } from '@/lib/health-intake'
 import type { Booking } from '@/db/schema'
 import { randomUUID } from 'crypto'
-import type { BookingCreateInput, Gender } from '@/types'
+import type { BookingCreateInput, BookingCustomization, Gender } from '@/types'
 
 function addMinutesToTime(time: string, minutes: number): string {
   const [h, m] = time.split(':').map(Number)
@@ -33,7 +35,7 @@ export async function POST(req: NextRequest) {
   }
 
   for (const b of bookings) {
-    if (!b.serviceId || !b.customerName || !b.customerPhone || !b.date || !b.startTime) {
+    if (!b || typeof b !== 'object' || !b.serviceId || !b.customerName || !b.customerPhone || !b.date || !b.startTime) {
       return NextResponse.json({ error: 'Missing required fields in one or more bookings' }, { status: 400 })
     }
     if (b.gender !== 'FEMALE' && b.gender !== 'MALE') {
@@ -51,12 +53,31 @@ export async function POST(req: NextRequest) {
   }
   const gender = genders[0] as Gender
 
+  const validatedHealthIntakes = new Map<BookingCreateInput, NonNullable<BookingCreateInput['healthIntake']>>()
+  for (const b of bookings) {
+    const validation = validateHealthIntake(b.healthIntake, gender)
+    if (!validation.valid) {
+      return NextResponse.json({ error: validation.error }, { status: 400 })
+    }
+    validatedHealthIntakes.set(b, validation.value)
+  }
+
   const serviceIds = [...new Set(bookings.map(b => b.serviceId))]
   const serviceRows = await db.select().from(services).where(and(inArray(services.id, serviceIds), eq(services.isActive, true)))
   if (serviceRows.length !== serviceIds.length) {
     return NextResponse.json({ error: 'One or more services not found or inactive' }, { status: 404 })
   }
   const serviceMap = new Map(serviceRows.map(s => [s.id, s]))
+
+  const validatedCustomizations = new Map<BookingCreateInput, BookingCustomization | null>()
+  for (const b of bookings) {
+    const svc = serviceMap.get(b.serviceId)!
+    const validation = validateCustomization(b.customization, svc.tier)
+    if (!validation.valid) {
+      return NextResponse.json({ error: validation.error }, { status: 400 })
+    }
+    validatedCustomizations.set(b, validation.value)
+  }
 
   const allAddonIds = [...new Set(bookings.flatMap(b => b.addonIds ?? []))]
   const fetchedAddons = allAddonIds.length > 0
@@ -106,7 +127,10 @@ export async function POST(req: NextRequest) {
     const selectedAddons = addonIds.map(id => addonMap.get(id)!)
     const addonsPricePaid = selectedAddons.reduce((s, a) => s + a.price, 0)
     const endTime = addMinutesToTime(b.startTime, svc.durationMinutes)
-    return { b, svc, selectedAddons, addonsPricePaid, endTime }
+    const validatedCustomization = validatedCustomizations.get(b)!
+    const validatedHealthIntake = validatedHealthIntakes.get(b)!
+    const customizationPricePaid = getCustomizationAdditionalPrice(validatedCustomization, svc.tier)
+    return { b, svc, selectedAddons, addonsPricePaid, customizationPricePaid, endTime, validatedCustomization, validatedHealthIntake }
   })
 
   const { getAvailableSlots } = await import('@/lib/slots')
@@ -121,7 +145,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Requested time slot is no longer available' }, { status: 409 })
   }
 
-  const subtotal = bookingData.reduce((s, { svc, addonsPricePaid }) => s + svc.price + addonsPricePaid, 0)
+  const subtotal = bookingData.reduce((s, { svc, addonsPricePaid, customizationPricePaid }) => s + svc.price + addonsPricePaid + customizationPricePaid, 0)
   const payerPhone = bookings[0].customerPhone
   const firstServiceName = serviceMap.get(bookings[0].serviceId)!.nameFa
 
@@ -149,11 +173,13 @@ export async function POST(req: NextRequest) {
 
   const createdBookings = await db.transaction(async tx => {
     const created: Booking[] = []
-    for (const { b, selectedAddons, addonsPricePaid, endTime } of bookingData) {
+    for (const { b, selectedAddons, addonsPricePaid, endTime, validatedCustomization, validatedHealthIntake } of bookingData) {
       const [booking] = await tx.insert(bookingsTable).values({
         serviceId: b.serviceId, customerName: b.customerName, customerPhone: b.customerPhone,
         customerNotes: b.customerNotes, date: bookingDate, startTime: b.startTime, endTime,
         gender, status: BookingStatus.PENDING_PAYMENT, addonsPricePaid, groupToken,
+        customization: validatedCustomization,
+        healthIntake: validatedHealthIntake,
         discountCodeId, discountAmount,
       }).returning()
       created.push(booking)

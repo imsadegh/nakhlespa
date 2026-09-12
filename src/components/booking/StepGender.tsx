@@ -27,7 +27,7 @@ export function StepGender({ state, update, goNext }: Props) {
           MALE: `${toFaTime(earliest(male))} — ${toFaTime(latest(male))}`,
         })
       })
-      .catch(() => setWindows({ FEMALE: '۰۸:۰۰ — ۱۴:۳۰', MALE: '۱۵:۰۰ — ۲۲:۰۰' }))
+      .catch(() => setWindows({ FEMALE: '۰۷:۰۰ — ۱۳:۰۰', MALE: '۱۴:۰۰ — ۲۲:۰۰' }))
   }, [])
 
   function select(gender: Gender) {

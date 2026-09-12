@@ -7,6 +7,7 @@ import { GlassCard } from '@/components/ui/GlassCard'
 import { ConfirmCheckmark } from '@/components/booking/ConfirmCheckmark'
 import { GoldButton } from '@/components/ui/GoldButton'
 import Link from 'next/link'
+import { CUSTOMER_BOOKING_PROJECTION } from '@/lib/customer-booking'
 
 function toFaTime(t: string) {
   return t.replace(/\d/g, d => '۰۱۲۳۴۵۶۷۸۹'[+d])
@@ -14,15 +15,18 @@ function toFaTime(t: string) {
 
 export default async function ConfirmPage({ params }: { params: Promise<{ token: string }> }) {
   const { token } = await params
-  const booking = await db.query.bookings.findFirst({ where: eq(bookings.token, token), with: { service: true } })
+  const booking = await db.query.bookings.findFirst({
+    ...CUSTOMER_BOOKING_PROJECTION,
+    where: eq(bookings.token, token),
+  })
   if (!booking || (booking.status !== BookingStatus.PAID && booking.status !== BookingStatus.CONFIRMED)) notFound()
 
   // Fetch all bookings in the group (or just this one if solo / legacy)
   // Filter to only PAID/CONFIRMED to exclude cancelled members from display
   const groupBookings = booking.groupToken
-    ? await db.query.bookings.findMany({
+      ? await db.query.bookings.findMany({
+        ...CUSTOMER_BOOKING_PROJECTION,
         where: and(eq(bookings.groupToken, booking.groupToken), inArray(bookings.status, [BookingStatus.PAID, BookingStatus.CONFIRMED])),
-        with: { service: true },
         orderBy: asc(bookings.createdAt),
       })
     : [booking]

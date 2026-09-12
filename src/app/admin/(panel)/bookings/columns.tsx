@@ -2,6 +2,7 @@
 
 import { ColumnDef } from "@tanstack/react-table"
 import type { BookingStatus, Gender } from '@/db/schema'
+import type { BookingCustomization } from '@/types'
 import { ArrowUpDown } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { BookingDetailDialog } from "./BookingDetailDialog"
@@ -28,6 +29,7 @@ export type BookingRow = {
   gender: Gender
   discountAmount: number
   discountCode: { code: string } | null
+  customization: BookingCustomization | null
 }
 
 const statusLabel: Record<BookingStatus, string> = {
