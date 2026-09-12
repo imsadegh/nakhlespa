@@ -6,12 +6,14 @@ import { and, desc, eq, inArray } from 'drizzle-orm'
 import { getCustomerSessionFromCookies } from '@/lib/customer-auth'
 import { AmbientBackground } from '@/components/ui/AmbientBackground'
 import { BookingHistoryList } from '@/components/customer/BookingHistoryList'
+import { CUSTOMER_BOOKING_PROJECTION } from '@/lib/customer-booking'
 
 export default async function MyBookingsPage() {
   const session = await getCustomerSessionFromCookies()
   if (!session) notFound()
 
   const allBookings = await db.query.bookings.findMany({
+    ...CUSTOMER_BOOKING_PROJECTION,
     where: and(
       eq(bookings.customerPhone, session.phone),
       inArray(bookings.status, [BookingStatus.PAID, BookingStatus.CONFIRMED, BookingStatus.CANCELLED]),

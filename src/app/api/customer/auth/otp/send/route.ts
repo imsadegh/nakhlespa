@@ -42,6 +42,19 @@ export async function POST(req: NextRequest) {
       updatedAt: new Date(),
   })
 
-  await sendOtpSms(phone, code)
-  return NextResponse.json({ ok: true })
+  try {
+    await sendOtpSms(phone, code)
+  } catch (error) {
+    if (process.env.NODE_ENV === 'production') {
+      console.error('Customer OTP SMS delivery failed', error)
+      return NextResponse.json({ error: 'ارسال پیامک با خطا مواجه شد' }, { status: 502 })
+    }
+
+    console.warn('Customer OTP SMS delivery failed in development; returning the test OTP', error)
+  }
+
+  return NextResponse.json({
+    ok: true,
+    ...(process.env.NODE_ENV !== 'production' ? { devOtp: code } : {}),
+  })
 }

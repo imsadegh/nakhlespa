@@ -9,6 +9,7 @@ export async function POST(req: NextRequest) {
     await db.delete(customerSessions).where(eq(customerSessions.sessionToken, token))
   }
   const res = NextResponse.json({ ok: true })
+  res.cookies.set('__customer_session', '', { path: '/', maxAge: 0 })
   res.cookies.set('__customer_session', '', { path: '/my', maxAge: 0 })
   return res
 }

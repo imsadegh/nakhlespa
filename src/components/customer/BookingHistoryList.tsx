@@ -4,7 +4,7 @@ import type { BookingStatus } from '@/db/schema'
 
 type FullBooking = {
   token: string
-  date: Date
+  date: Date | string
   startTime: string
   status: BookingStatus
   service: { nameFa: string; price: number }
@@ -58,8 +58,9 @@ export function BookingHistoryList({
 
       {bookings.map(b => {
         const totalPaid = b.service.price + b.addonsPricePaid - b.discountAmount
+        const date = b.date instanceof Date ? b.date : new Date(b.date)
         const dateFa = new Date(
-          b.date.toISOString().split('T')[0] + 'T12:00:00'
+          date.toISOString().split('T')[0] + 'T12:00:00'
         ).toLocaleDateString('fa-IR')
         return (
           <Link key={b.token} href={`/my/bookings/${b.token}`}>

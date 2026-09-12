@@ -51,7 +51,7 @@ export async function POST(req: NextRequest) {
   res.cookies.set('__customer_session', sessionToken, {
     httpOnly: true,
     sameSite: 'lax',
-    path: '/my',
+    path: '/',
     expires: expiresAt,
     secure: false,
   })

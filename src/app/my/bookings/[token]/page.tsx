@@ -3,10 +3,11 @@ import Link from 'next/link'
 import type { BookingStatus } from '@/db/schema'
 import { bookings } from '@/db/schema'
 import { db } from '@/lib/db'
-import { eq } from 'drizzle-orm'
+import { and, eq } from 'drizzle-orm'
 import { getCustomerSessionFromCookies } from '@/lib/customer-auth'
 import { AmbientBackground } from '@/components/ui/AmbientBackground'
 import { GlassCard } from '@/components/ui/GlassCard'
+import { CUSTOMER_BOOKING_PROJECTION } from '@/lib/customer-booking'
 
 const STATUS_LABEL: Record<BookingStatus, string> = {
   PAID: 'پرداخت شده',
@@ -25,11 +26,11 @@ export default async function BookingDetailPage({
   if (!session) notFound()
 
   const booking = await db.query.bookings.findFirst({
-    where: eq(bookings.token, token),
-    with: { service: true, addons: { with: { addon: true } }, discountCode: true },
+    ...CUSTOMER_BOOKING_PROJECTION,
+    where: and(eq(bookings.token, token), eq(bookings.customerPhone, session.phone)),
   })
 
-  if (!booking || booking.customerPhone !== session.phone) notFound()
+  if (!booking) notFound()
 
   const dateFa = new Date(
     booking.date.toISOString().split('T')[0] + 'T12:00:00'

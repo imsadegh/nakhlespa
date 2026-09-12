@@ -5,7 +5,7 @@ import { GlassCard } from '@/components/ui/GlassCard'
 import { GoldButton } from '@/components/ui/GoldButton'
 import { createOtpRequestGate, getOtpErrorMessage, isOtpCode, normalizeOtpDigits } from '@/lib/customer-otp'
 
-export function OtpLoginForm() {
+export function OtpLoginForm({ onAuthenticated, compact = false }: { onAuthenticated?: () => void; compact?: boolean } = {}) {
   const router = useRouter()
   const searchParams = useSearchParams()
   const rawNext = searchParams.get('next') ?? ''
@@ -14,6 +14,7 @@ export function OtpLoginForm() {
   const [step, setStep] = useState<'phone' | 'otp'>('phone')
   const [phone, setPhone] = useState('')
   const [code, setCode] = useState('')
+  const [devOtp, setDevOtp] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const verifyGate = useRef(createOtpRequestGate())
@@ -39,6 +40,8 @@ export function OtpLoginForm() {
       setError('خطا در ارسال کد. دوباره تلاش کنید.')
       return
     }
+    const data = await res.json() as { devOtp?: string }
+    setDevOtp(data.devOtp ?? null)
     setStep('otp')
   }
 
@@ -62,7 +65,8 @@ export function OtpLoginForm() {
         setError(getOtpErrorMessage(data.error))
         return
       }
-      router.push(next)
+      if (onAuthenticated) onAuthenticated()
+      else router.push(next)
     } finally {
       verifyGate.current.finish()
       setLoading(false)
@@ -70,10 +74,10 @@ export function OtpLoginForm() {
   }
 
   return (
-    <GlassCard className="w-full max-w-sm p-6 space-y-4">
-      <h1 className="text-lg font-light text-center" style={{ color: 'var(--text-primary)' }}>
+    <GlassCard className={`mx-auto flex w-full max-w-md flex-col gap-4 ${compact ? 'p-5' : 'p-6'}`}>
+      {/* <h2 className={`${compact ? 'text-base' : 'text-lg'} text-center font-light`} style={{ color: 'var(--text-primary)' }}>
         ورود به حساب کاربری
-      </h1>
+      </h2> */}
 
       {step === 'phone' ? (
         <>
@@ -85,7 +89,7 @@ export function OtpLoginForm() {
             value={phone}
             onChange={e => setPhone(normalizeOtpDigits(e.target.value))}
             placeholder="۰۹۱۲۱۲۳۴۵۶۷"
-            className="w-full text-sm px-4 py-3 rounded-lg bg-white/5 border border-white/10 outline-none text-center"
+            className="w-full rounded-lg border border-border/70 bg-background/40 px-4 py-3 text-center text-sm outline-none focus-visible:border-ring focus-visible:ring-1 focus-visible:ring-ring"
             style={{ color: 'var(--text-primary)', direction: 'ltr' }}
             maxLength={11}
           />
@@ -98,13 +102,19 @@ export function OtpLoginForm() {
           <p className="text-xs text-center" style={{ color: 'var(--text-muted)' }}>
             کد ۶ رقمی ارسال شده به {phone} را وارد کنید
           </p>
+          {devOtp && (
+            <div className="rounded-lg border border-primary/30 bg-primary/5 px-3 py-2 text-center" role="status">
+              <p className="text-[11px] text-muted-foreground">کد تست محیط توسعه</p>
+              <p className="mt-1 font-mono text-lg font-semibold tracking-[0.3em] text-foreground" dir="ltr">{devOtp}</p>
+            </div>
+          )}
           <input
             type="text"
             inputMode="numeric"
             value={code}
             onChange={e => setCode(normalizeOtpDigits(e.target.value).replace(/\D/g, ''))}
             placeholder="_ _ _ _ _ _"
-            className="w-full text-lg tracking-widest px-4 py-3 rounded-lg bg-white/5 border border-white/10 outline-none text-center"
+            className="w-full rounded-lg border border-border/70 bg-background/40 px-4 py-3 text-center text-lg tracking-widest outline-none focus-visible:border-ring focus-visible:ring-1 focus-visible:ring-ring"
             style={{ color: 'var(--text-primary)', direction: 'ltr' }}
             maxLength={6}
           />
