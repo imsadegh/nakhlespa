@@ -3,10 +3,19 @@ import axios from 'axios'
 const MERCHANT = process.env.ZARINPAL_MERCHANT_ID!
 const CALLBACK = process.env.ZARINPAL_CALLBACK_URL!
 const SANDBOX = process.env.ZARINPAL_SANDBOX === 'true'
+const MOCK = process.env.NODE_ENV !== 'production' && process.env.ZARINPAL_MOCK === 'true'
 const HOST = SANDBOX ? 'sandbox.zarinpal.com' : 'payment.zarinpal.com'
 const BASE = `https://${HOST}/pg/v4/payment`
 
 export async function zarinpalRequest(amount: number, description: string, mobile: string) {
+  if (MOCK) {
+    const authority = `mock-${crypto.randomUUID()}`
+    const callback = new URL(CALLBACK)
+    callback.searchParams.set('Authority', authority)
+    callback.searchParams.set('Status', 'OK')
+    return { authority, paymentUrl: callback.toString() }
+  }
+
   let res
   try {
     res = await axios.post(`${BASE}/request.json`, {
@@ -33,6 +42,10 @@ export async function zarinpalRequest(amount: number, description: string, mobil
 }
 
 export async function zarinpalVerify(authority: string, amount: number) {
+  if (MOCK && authority.startsWith('mock-')) {
+    return { refId: authority.slice('mock-'.length) }
+  }
+
   let res
   try {
     res = await axios.post(`${BASE}/verify.json`, {
