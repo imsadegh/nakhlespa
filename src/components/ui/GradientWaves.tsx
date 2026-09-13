@@ -113,13 +113,18 @@ export default function GradientWaves({
     const setSize = () => { const r = container.getBoundingClientRect(); renderer.setSize(Math.max(1, r.width), Math.max(1, r.height)); const v = program.uniforms.iResolution.value as Float32Array; v[0] = gl.drawingBufferWidth; v[1] = gl.drawingBufferHeight; };
     const resizeObserver = new ResizeObserver(setSize); resizeObserver.observe(container); setSize();
     const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
-    let reduced = reducedMotion.matches; let raf = 0; const current = [.5, .5]; const target = [.5, .5];
-    const render = (time: number) => { (program.uniforms.iTime.value as number) = time * .001; const m = program.uniforms.uMouse.value as Float32Array; current[0] += .05 * (target[0] - current[0]); current[1] += .05 * (target[1] - current[1]); m[0] = current[0]; m[1] = current[1]; renderer.render({ scene: mesh }); if (!reduced) raf = requestAnimationFrame(render); };
-    const updateMotion = (event?: MediaQueryListEvent) => { reduced = event ? event.matches : reducedMotion.matches; program.uniforms.uEnableMouse.value = mouseInteraction && !reduced; if (reduced) { if (raf) cancelAnimationFrame(raf); raf = 0; render(0); } else if (!raf) raf = requestAnimationFrame(render); };
-    const pointerMove = (e: PointerEvent) => { if (reduced || !mouseInteraction) return; const r = canvas.getBoundingClientRect(); target[0] = (e.clientX-r.left)/r.width; target[1] = 1-(e.clientY-r.top)/r.height; };
+    let reduced = reducedMotion.matches; let raf = 0; let inViewport = true; let pageVisible = !document.hidden;
+    const current = [.5, .5]; const target = [.5, .5];
+    const render = (time: number) => { (program.uniforms.iTime.value as number) = time * .001; const m = program.uniforms.uMouse.value as Float32Array; current[0] += .05 * (target[0] - current[0]); current[1] += .05 * (target[1] - current[1]); m[0] = current[0]; m[1] = current[1]; renderer.render({ scene: mesh }); if (!reduced && inViewport && pageVisible) raf = requestAnimationFrame(render); };
+    const stop = () => { if (raf) { cancelAnimationFrame(raf); raf = 0; } };
+    const start = () => { if (!reduced && inViewport && pageVisible && !raf) raf = requestAnimationFrame(render); };
+    const updateMotion = (event?: MediaQueryListEvent) => { reduced = event ? event.matches : reducedMotion.matches; program.uniforms.uEnableMouse.value = mouseInteraction && !reduced; stop(); if (reduced) render(0); else start(); };
+    const pointerMove = (e: PointerEvent) => { if (reduced || !mouseInteraction) return; const r = canvas.getBoundingClientRect(); const inside = e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom; if (!inside) { target[0] = .5; target[1] = .5; return; } target[0] = (e.clientX-r.left)/r.width; target[1] = 1-(e.clientY-r.top)/r.height; };
     const pointerLeave = () => { target[0] = .5; target[1] = .5; };
-    canvas.addEventListener('pointermove', pointerMove); canvas.addEventListener('pointerleave', pointerLeave); reducedMotion.addEventListener('change', updateMotion); updateMotion();
-    return () => { if (raf) cancelAnimationFrame(raf); resizeObserver.disconnect(); reducedMotion.removeEventListener('change', updateMotion); canvas.removeEventListener('pointermove', pointerMove); canvas.removeEventListener('pointerleave', pointerLeave); canvas.remove(); gl.getExtension('WEBGL_lose_context')?.loseContext(); };
+    const observer = new IntersectionObserver(([entry]) => { inViewport = entry.isIntersecting; inViewport ? start() : stop(); });
+    const visibilityChange = () => { pageVisible = !document.hidden; pageVisible ? start() : stop(); };
+    window.addEventListener('pointermove', pointerMove); window.addEventListener('blur', pointerLeave); reducedMotion.addEventListener('change', updateMotion); document.addEventListener('visibilitychange', visibilityChange); observer.observe(container); updateMotion();
+    return () => { stop(); resizeObserver.disconnect(); observer.disconnect(); reducedMotion.removeEventListener('change', updateMotion); document.removeEventListener('visibilitychange', visibilityChange); window.removeEventListener('pointermove', pointerMove); window.removeEventListener('blur', pointerLeave); canvas.remove(); gl.getExtension('WEBGL_lose_context')?.loseContext(); };
   }, [amplitude, brightness, crestColor, detail, fogDepth, grain, grainIntensity, height, horizonColor, mouseInteraction, opacity, parallaxStrength, speed, swell, tilt, turbulence, waveColor, waveRatio, waveScale, zoom]);
 
   return <div ref={containerRef} className={`gradient-waves-container ${className}`.trim()} />;
