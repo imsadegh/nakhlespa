@@ -30,7 +30,7 @@ export function LandingWavesBackground() {
   }, [])
 
   const colors = theme === 'dark'
-    ? { horizonColor: '#04100b', waveColor: '#0F3D2E', crestColor: '#C6A55B' }
+    ? { horizonColor: '#0F3D2E', waveColor: '#1F5E46', crestColor: '#C6A55B' }
     : { horizonColor: '#f5ede0', waveColor: '#8eb89a', crestColor: '#d4b368' }
 
   return (
