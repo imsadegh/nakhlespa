@@ -76,8 +76,16 @@ void main() {
   if(uEnableMouse){ float yaw=(uMouse.x-.5)*uParallax*.4; float pitch=(uMouse.y-.5)*uParallax*.4;
     c=cos(yaw);s=sin(yaw);d=mat3(c,0.,s,0.,1.,0.,-s,0.,c)*d; c=cos(pitch);s=sin(pitch);d=mat3(1.,0.,0.,0.,c,-s,0.,s,c)*d; }
   vec3 cam=vec3(0.,0.,30.); float dist=march(cam,d,f,t); vec3 p=cam+dist*d;
-  float fog=clamp(uFogDepth/max(dist,.001),0.,1.); vec3 body=mix(uWaveColor,uCrestColor,clamp(p.z*.08+.5,0.,1.));
-  vec3 col=clamp(mix(uHorizonColor,body,fog)*uBrightness,0.,1.); float a=fog*uOpacity;
+  bool hit=dist<MAX_DIST;
+  float fog=hit?clamp(uFogDepth/max(dist,.001),0.,1.):0.;
+  vec3 body=mix(uWaveColor,uCrestColor,clamp(p.z*.08+.5,0.,1.));
+  vec3 col=clamp(mix(uHorizonColor,body,fog)*uBrightness,0.,1.);
+  float a=(hit?fog:0.0)*uOpacity;
+  if(!hit){
+    float horizon=clamp(0.5+0.5*sin(uv.x*2.4+t*0.35),0.,1.);
+    col=clamp(mix(uHorizonColor,uWaveColor,horizon*.22)*uBrightness,0.,1.);
+    a=.16*uOpacity;
+  }
   if(uGrain>.5) a=clamp(a+(hash21(gl_FragCoord.xy+mod(iTime,64.)*11.)-.5)*uGrainIntensity,0.,1.);
   fragColor=vec4(col*a,a);
 }`;
