@@ -1,7 +1,7 @@
 import { eq } from 'drizzle-orm'
 import { services } from '@/db/schema'
 import { db } from '@/lib/db'
-import { LandingWavesBackground } from '@/components/ui/LandingWavesBackground'
+import { AmbientBackground } from '@/components/ui/AmbientBackground'
 import { Navbar } from '@/components/ui/Navbar'
 import { Footer } from '@/components/ui/Footer'
 import { HeroSection } from '@/components/home/HeroSection'
@@ -26,7 +26,7 @@ export default async function HomePage() {
   }))
   return (
     <BookingDialogProvider services={serviceDTOs}>
-      <LandingWavesBackground />
+      <AmbientBackground />
       <div className="relative z-10 min-h-screen">
         <Navbar />
         <main className="mx-auto w-full max-w-screen-xl pt-20">
