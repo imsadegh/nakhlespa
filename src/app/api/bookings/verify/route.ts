@@ -6,6 +6,8 @@ import { zarinpalVerify } from '@/lib/zarinpal'
 import { smsQueue } from '@/lib/queue'
 import { sendConfirmSms, sendAdminSms } from '@/lib/smsir'
 
+const MOCK_PAYMENT = process.env.NODE_ENV !== 'production' && process.env.ZARINPAL_MOCK === 'true'
+
 export async function GET(req: NextRequest) {
   const authority = req.nextUrl.searchParams.get('Authority')
   const status = req.nextUrl.searchParams.get('Status')
@@ -66,6 +68,10 @@ export async function GET(req: NextRequest) {
         .where(groupToken ? eq(bookings.groupToken, groupToken) : eq(bookings.id, payer.id))
       await tx.update(bookings).set({ zarinpalRefId: refId }).where(eq(bookings.id, payer.id))
     })
+
+    // Local mock payments should exercise booking completion without requiring
+    // real SMS credentials or a running Redis reminder worker.
+    if (MOCK_PAYMENT) return NextResponse.redirect(`${siteUrl}/booking/confirm/${payer.token}`)
 
     // Schedule SMS reminders for payer only
     const [h, m] = payer.startTime.split(':').map(Number)
