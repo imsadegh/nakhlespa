@@ -94,6 +94,8 @@ export default function GradientWaves({
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
+    const supportCanvas = document.createElement('canvas');
+    if (!supportCanvas.getContext('webgl2')) return;
     const renderer = new Renderer({ webgl: 2, alpha: true, premultipliedAlpha: true, antialias: false, dpr: Math.min(window.devicePixelRatio || 1, 2) });
     const gl = renderer.gl;
     gl.clearColor(0, 0, 0, 0);
