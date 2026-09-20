@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { and, eq, inArray, sql } from 'drizzle-orm'
 import { db } from '@/lib/db'
-import { addons, BookingStatus, bookings as bookingsTable, bookingAddons, discountCodes, services, workingHours } from '@/db/schema'
+import { addons, BookingStatus, bookingCustomizations, bookings as bookingsTable, bookingAddons, customizationOptions, discountCodes, services, workingHours } from '@/db/schema'
 import { zarinpalRequest } from '@/lib/zarinpal'
 import { validatePromoCode, checkLoyaltyDiscount } from '@/lib/discounts'
-import { getCustomizationAdditionalPrice, validateCustomization } from '@/lib/booking-customization'
+import { CUSTOMIZATION_CATALOG, getCustomizationAdditionalPriceFromCatalog, toCustomizationSnapshot, validateCustomizationAgainstCatalog } from '@/lib/booking-customization'
 import { validateHealthIntake } from '@/lib/health-intake'
 import type { Booking } from '@/db/schema'
 import { randomUUID } from 'crypto'
@@ -69,10 +69,25 @@ export async function POST(req: NextRequest) {
   }
   const serviceMap = new Map(serviceRows.map(s => [s.id, s]))
 
+  const customizationCatalog = await db.select().from(customizationOptions).where(eq(customizationOptions.isActive, true))
+  const catalog = customizationCatalog.length > 0
+    ? customizationCatalog.map(option => ({
+      id: option.id,
+      category: option.category as never,
+      code: option.code,
+      label: option.labelFa,
+      description: option.descriptionFa,
+      additionalPrice: option.additionalPrice,
+      requiresTier: option.requiresTier,
+      isActive: option.isActive,
+      sortOrder: option.sortOrder,
+    }))
+    : CUSTOMIZATION_CATALOG
+
   const validatedCustomizations = new Map<BookingCreateInput, BookingCustomization | null>()
   for (const b of bookings) {
     const svc = serviceMap.get(b.serviceId)!
-    const validation = validateCustomization(b.customization, svc.tier)
+    const validation = validateCustomizationAgainstCatalog(b.customization, svc.tier, catalog)
     if (!validation.valid) {
       return NextResponse.json({ error: validation.error }, { status: 400 })
     }
@@ -129,8 +144,9 @@ export async function POST(req: NextRequest) {
     const endTime = addMinutesToTime(b.startTime, svc.durationMinutes)
     const validatedCustomization = validatedCustomizations.get(b)!
     const validatedHealthIntake = validatedHealthIntakes.get(b)!
-    const customizationPricePaid = getCustomizationAdditionalPrice(validatedCustomization, svc.tier)
-    return { b, svc, selectedAddons, addonsPricePaid, customizationPricePaid, endTime, validatedCustomization, validatedHealthIntake }
+    const customizationPricePaid = getCustomizationAdditionalPriceFromCatalog(validatedCustomization, svc.tier, catalog)
+    const customizationSnapshots = toCustomizationSnapshot(validatedCustomization!, svc.tier, catalog)
+    return { b, svc, selectedAddons, addonsPricePaid, customizationPricePaid, customizationSnapshots, endTime, validatedCustomization, validatedHealthIntake }
   })
 
   const { getAvailableSlots } = await import('@/lib/slots')
@@ -173,7 +189,7 @@ export async function POST(req: NextRequest) {
 
   const createdBookings = await db.transaction(async tx => {
     const created: Booking[] = []
-    for (const { b, selectedAddons, addonsPricePaid, endTime, validatedCustomization, validatedHealthIntake } of bookingData) {
+    for (const { b, selectedAddons, addonsPricePaid, customizationSnapshots, endTime, validatedCustomization, validatedHealthIntake } of bookingData) {
       const [booking] = await tx.insert(bookingsTable).values({
         serviceId: b.serviceId, customerName: b.customerName, customerPhone: b.customerPhone,
         customerNotes: b.customerNotes, date: bookingDate, startTime: b.startTime, endTime,
@@ -185,6 +201,9 @@ export async function POST(req: NextRequest) {
       created.push(booking)
       if (selectedAddons.length) {
         await tx.insert(bookingAddons).values(selectedAddons.map(a => ({ bookingId: booking.id, addonId: a.id, pricePaid: a.price })))
+      }
+      if (customizationSnapshots.length) {
+        await tx.insert(bookingCustomizations).values(customizationSnapshots.map(snapshot => ({ bookingId: booking.id, ...snapshot })))
       }
     }
     if (discountCodeId) await tx.update(discountCodes).set({ usedCount: sql`${discountCodes.usedCount} + 1` }).where(eq(discountCodes.id, discountCodeId))

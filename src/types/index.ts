@@ -27,6 +27,17 @@ export type CustomizationOption<T extends string = string> = {
   additionalPrice?: number
 }
 
+export type CustomizationCatalogDTO = {
+  id: string
+  category: CustomizationKey
+  code: string
+  label: string
+  description: string
+  additionalPrice: number
+  requiresTier: number | null
+  sortOrder: number
+}
+
 
 export type ServiceDTO = {
   id: string
@@ -104,6 +115,7 @@ export type BookingCreateInput = {
 export type BookingSummary = {
   id: string
   token: string
+  bookingCode: string
   customerName: string
   customerPhone: string
   date: string
@@ -129,6 +141,7 @@ export type DiscountCodeDTO = {
 export type CustomerBookingDTO = {
   id: string
   token: string
+  bookingCode: string
   date: string
   startTime: string
   endTime: string

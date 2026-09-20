@@ -65,6 +65,23 @@ export const addons = pgTable(
   table => [unique('addons_nameFa_key').on(table.nameFa)],
 )
 
+export const customizationOptions = pgTable(
+  'customization_options',
+  {
+    id: text('id').primaryKey().$defaultFn(() => randomUUID()),
+    category: text('category').notNull(),
+    code: text('code').notNull(),
+    labelFa: text('labelFa').notNull(),
+    descriptionFa: text('descriptionFa').notNull(),
+    additionalPrice: integer('additionalPrice').notNull().default(0),
+    requiresTier: integer('requiresTier'),
+    isActive: boolean('isActive').notNull().default(true),
+    sortOrder: integer('sortOrder').notNull().default(0),
+    createdAt: timestamp('createdAt', { precision: 3 }).notNull().defaultNow(),
+  },
+  table => [unique('customization_options_category_code_key').on(table.category, table.code)],
+)
+
 export const workingHours = pgTable(
   'working_hours',
   {
@@ -105,6 +122,7 @@ export const bookings = pgTable(
   {
     id: text('id').primaryKey().$defaultFn(() => randomUUID()),
     token: text('token').notNull().unique().$defaultFn(() => randomUUID()),
+    bookingCode: text('bookingCode').notNull().unique().$defaultFn(() => `NS-${randomUUID().replaceAll('-', '').slice(0, 8).toUpperCase()}`),
     serviceId: text('serviceId').notNull().references(() => services.id, { onDelete: 'restrict', onUpdate: 'cascade' }),
     customerName: text('customerName').notNull(),
     customerPhone: text('customerPhone').notNull(),
@@ -142,7 +160,30 @@ export const bookingAddons = pgTable(
     addonId: text('addonId').notNull().references(() => addons.id, { onDelete: 'restrict', onUpdate: 'cascade' }),
     pricePaid: integer('pricePaid').notNull(),
   },
-  table => [index('booking_addons_bookingId_idx').on(table.bookingId), index('booking_addons_addonId_idx').on(table.addonId)],
+  table => [
+    index('booking_addons_bookingId_idx').on(table.bookingId),
+    index('booking_addons_addonId_idx').on(table.addonId),
+    unique('booking_addons_bookingId_addonId_key').on(table.bookingId, table.addonId),
+  ],
+)
+
+export const bookingCustomizations = pgTable(
+  'booking_customizations',
+  {
+    id: text('id').primaryKey().$defaultFn(() => randomUUID()),
+    bookingId: text('bookingId')
+      .notNull()
+      .references(() => bookings.id, { onDelete: 'cascade', onUpdate: 'cascade' }),
+    category: text('category').notNull(),
+    optionId: text('optionId').references(() => customizationOptions.id, { onDelete: 'set null', onUpdate: 'cascade' }),
+    codeSnapshot: text('codeSnapshot').notNull(),
+    labelSnapshot: text('labelSnapshot').notNull(),
+    pricePaid: integer('pricePaid').notNull().default(0),
+  },
+  table => [
+    index('booking_customizations_bookingId_idx').on(table.bookingId),
+    unique('booking_customizations_bookingId_category_key').on(table.bookingId, table.category),
+  ],
 )
 
 export const smsReminders = pgTable(
@@ -220,15 +261,21 @@ export const customerSessions = pgTable(
 
 export const servicesRelations = relations(services, ({ many }) => ({ bookings: many(bookings) }))
 export const addonsRelations = relations(addons, ({ many }) => ({ bookingAddons: many(bookingAddons) }))
+export const customizationOptionsRelations = relations(customizationOptions, ({ many }) => ({ bookingCustomizations: many(bookingCustomizations) }))
 export const bookingsRelations = relations(bookings, ({ one, many }) => ({
   service: one(services, { fields: [bookings.serviceId], references: [services.id] }),
   discountCode: one(discountCodes, { fields: [bookings.discountCodeId], references: [discountCodes.id] }),
   addons: many(bookingAddons),
+  customizations: many(bookingCustomizations),
   smsReminders: many(smsReminders),
 }))
 export const bookingAddonsRelations = relations(bookingAddons, ({ one }) => ({
   booking: one(bookings, { fields: [bookingAddons.bookingId], references: [bookings.id] }),
   addon: one(addons, { fields: [bookingAddons.addonId], references: [addons.id] }),
+}))
+export const bookingCustomizationsRelations = relations(bookingCustomizations, ({ one }) => ({
+  booking: one(bookings, { fields: [bookingCustomizations.bookingId], references: [bookings.id] }),
+  option: one(customizationOptions, { fields: [bookingCustomizations.optionId], references: [customizationOptions.id] }),
 }))
 export const smsRemindersRelations = relations(smsReminders, ({ one }) => ({
   booking: one(bookings, { fields: [smsReminders.bookingId], references: [bookings.id] }),
@@ -242,6 +289,8 @@ export type Service = typeof services.$inferSelect
 export type NewService = typeof services.$inferInsert
 export type Addon = typeof addons.$inferSelect
 export type NewAddon = typeof addons.$inferInsert
+export type CustomizationOptionRow = typeof customizationOptions.$inferSelect
+export type NewCustomizationOption = typeof customizationOptions.$inferInsert
 export type WorkingHours = typeof workingHours.$inferSelect
 export type NewWorkingHours = typeof workingHours.$inferInsert
 export type BlockedSlot = typeof blockedSlots.$inferSelect
@@ -250,6 +299,8 @@ export type Booking = typeof bookings.$inferSelect
 export type NewBooking = typeof bookings.$inferInsert
 export type BookingAddon = typeof bookingAddons.$inferSelect
 export type NewBookingAddon = typeof bookingAddons.$inferInsert
+export type BookingCustomizationRow = typeof bookingCustomizations.$inferSelect
+export type NewBookingCustomization = typeof bookingCustomizations.$inferInsert
 export type SmsReminder = typeof smsReminders.$inferSelect
 export type NewSmsReminder = typeof smsReminders.$inferInsert
 export type User = typeof user.$inferSelect

@@ -10,7 +10,7 @@ import { GhostButton } from '@/components/ui/GhostButton'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import { cn } from '@/lib/utils'
 import { CUSTOMIZATION_FIELD_LABELS, CUSTOMIZATION_OPTIONS, getDefaultCustomization, normalizeCustomization } from '@/lib/booking-customization'
-import type { BookingCustomization, CustomizationKey, ServiceDTO, WizardState } from '@/types'
+import type { BookingCustomization, CustomizationCatalogDTO, CustomizationKey, ServiceDTO, WizardState } from '@/types'
 
 type Props = {
   state: WizardState
@@ -18,6 +18,7 @@ type Props = {
   goNext: () => void
   goBack: () => void
   services: ServiceDTO[]
+  customizationOptions?: CustomizationCatalogDTO[]
   defaultExpanded?: boolean
 }
 
@@ -30,7 +31,7 @@ type ContentProps = Props & {
   toggleExpanded: () => void
 }
 
-function StepCustomizationContent({ state, update, goNext, goBack, services, isExpanded, toggleExpanded }: ContentProps) {
+function StepCustomizationContent({ state, update, goNext, goBack, services, customizationOptions = [], isExpanded, toggleExpanded }: ContentProps) {
   const customizablePersons = state.persons.flatMap((person, personIndex) => {
     const serviceTier = services.find(item => item.id === person.serviceId)?.tier
     return serviceTier !== null && serviceTier !== undefined ? [{ person, personIndex }] : []
@@ -91,6 +92,8 @@ function StepCustomizationContent({ state, update, goNext, goBack, services, isE
             <CardContent className="flex flex-col gap-4">
               {(Object.keys(CUSTOMIZATION_OPTIONS) as CustomizationKey[]).map(key => {
                 const isVipLoofah = key === 'loofah' && tier === 3
+                const options = customizationOptions.filter(option => option.category === key).sort((a, b) => a.sortOrder - b.sortOrder)
+                const displayOptions = options.length > 0 ? options : CUSTOMIZATION_OPTIONS[key].map((option, sortOrder) => ({ id: '', category: key, code: option.value, label: option.label, description: option.description, additionalPrice: option.additionalPrice ?? 0, requiresTier: option.value === 'VIP_FREE_NEW' ? 3 : null, sortOrder }))
                 return (
                   <div key={key} className="flex flex-col gap-4">
                   <FieldSet className="gap-3 rounded-xl border border-border/70 bg-muted/5 p-3">
@@ -103,13 +106,13 @@ function StepCustomizationContent({ state, update, goNext, goBack, services, isE
                       aria-label={CUSTOMIZATION_FIELD_LABELS[key]}
                       className="flex w-full flex-wrap gap-2"
                     >
-                      {CUSTOMIZATION_OPTIONS[key].map(option => {
-                        const selected = customization[key] === option.value
-                        const disabled = (option.value === 'VIP_FREE_NEW' && tier !== 3) || (isVipLoofah && option.value !== 'VIP_FREE_NEW')
+                      {displayOptions.map(option => {
+                        const selected = customization[key] === option.code
+                        const disabled = (option.code === 'VIP_FREE_NEW' && tier !== 3) || (isVipLoofah && option.code !== 'VIP_FREE_NEW')
                         return (
                           <ToggleGroupItem
-                            key={option.value}
-                            value={option.value}
+                            key={option.code}
+                            value={option.code}
                             disabled={disabled}
                             className={cn(
                               'h-auto min-h-9 flex-1 whitespace-normal px-2.5 py-2 text-xs leading-5',

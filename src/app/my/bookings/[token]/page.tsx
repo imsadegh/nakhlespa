@@ -56,6 +56,7 @@ export default async function BookingDetailPage({
           {(
             [
               ['خدمت', booking.service.nameFa],
+              ['کد رزرو', booking.bookingCode],
               ['تاریخ', dateFa],
               ['ساعت', booking.startTime],
               ['وضعیت', STATUS_LABEL[booking.status]],

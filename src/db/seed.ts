@@ -6,12 +6,14 @@ import {
   DiscountType,
   Gender,
   addons,
+  customizationOptions,
   bookings,
   discountCodes,
   services,
   user,
   workingHours,
 } from './schema'
+import { CUSTOMIZATION_CATALOG } from '../lib/booking-customization'
 
 function daysFromNow(days: number): Date {
   const d = new Date()
@@ -76,6 +78,29 @@ async function seedDatabase() {
       target: addons.nameFa,
       set: { price: drink.price, requiresTier: drink.requiresTier },
     })
+
+    for (const option of CUSTOMIZATION_CATALOG) {
+      await tx.insert(customizationOptions).values({
+        category: option.category,
+        code: option.code,
+        labelFa: option.label,
+        descriptionFa: option.description,
+        additionalPrice: option.additionalPrice ?? 0,
+        requiresTier: option.requiresTier ?? null,
+        sortOrder: option.sortOrder ?? 0,
+        isActive: true,
+      }).onConflictDoUpdate({
+        target: [customizationOptions.category, customizationOptions.code],
+        set: {
+          labelFa: option.label,
+          descriptionFa: option.description,
+          additionalPrice: option.additionalPrice ?? 0,
+          requiresTier: option.requiresTier ?? null,
+          sortOrder: option.sortOrder ?? 0,
+          isActive: true,
+        },
+      })
+    }
 
     await tx.insert(discountCodes).values({
       code: 'LOYALTY_AUTO',

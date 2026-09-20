@@ -14,6 +14,7 @@ export type BookingAddonRow = {
 
 export type BookingRow = {
   id: string
+  bookingCode: string
   date: string        // fa-IR formatted
   startTime: string
   endTime: string

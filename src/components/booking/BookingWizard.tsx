@@ -9,7 +9,7 @@ import { Step2DateTime } from './Step2DateTime'
 import { Step3Details } from './Step3Details'
 import { Step4Review } from './Step4Review'
 import { getDefaultCustomization } from '@/lib/booking-customization'
-import type { ServiceDTO, AddonDTO, WizardState } from '@/types'
+import type { ServiceDTO, AddonDTO, CustomizationCatalogDTO, WizardState } from '@/types'
 
 const variants = {
   enter: (dir: number) => ({ x: dir > 0 ? 60 : -60, opacity: 0 }),
@@ -34,16 +34,18 @@ export function BookingWizard({ services }: { services: ServiceDTO[] }) {
   const [dir, setDir] = useState(1)
   const [state, setState] = useState<WizardState>({ persons: [emptyPerson()] })
   const [addons, setAddons] = useState<AddonDTO[]>([])
+  const [customizationOptions, setCustomizationOptions] = useState<CustomizationCatalogDTO[]>([])
 
   useEffect(() => {
     fetch('/api/addons').then(r => r.json()).then(setAddons).catch(() => {})
+    fetch('/api/customizations').then(r => r.json()).then(setCustomizationOptions).catch(() => {})
   }, [])
 
   function goNext() { setDir(1); setStep(s => s + 1) }
   function goBack() { setDir(-1); setStep(s => s - 1) }
   const update = useCallback((patch: Partial<WizardState>) => setState(s => ({ ...s, ...patch })), [])
 
-  const stepProps = { state, update, goNext, goBack, services, addons }
+  const stepProps = { state, update, goNext, goBack, services, addons, customizationOptions }
 
   return (
     <div className="px-4 sm:px-5 pt-4 pb-5">

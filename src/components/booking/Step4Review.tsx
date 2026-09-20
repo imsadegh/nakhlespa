@@ -3,16 +3,17 @@ import { useState, useEffect } from 'react'
 import { GlassCard } from '@/components/ui/GlassCard'
 import { GoldButton } from '@/components/ui/GoldButton'
 import { GhostButton } from '@/components/ui/GhostButton'
-import type { WizardState, ServiceDTO, AddonDTO } from '@/types'
-import { formatCustomization, getCustomizationAdditionalPrice } from '@/lib/booking-customization'
+import type { CustomizationCatalogDTO, WizardState, ServiceDTO, AddonDTO } from '@/types'
+import { CUSTOMIZATION_CATALOG, formatCustomization, getCustomizationAdditionalPriceFromCatalog } from '@/lib/booking-customization'
 
-type Props = { state: WizardState; goBack: () => void; services: ServiceDTO[]; addons: AddonDTO[] }
+type Props = { state: WizardState; goBack: () => void; services: ServiceDTO[]; addons: AddonDTO[]; customizationOptions?: CustomizationCatalogDTO[] }
 
 function toFaTime(t: string) {
   return t.replace(/\d/g, d => '۰۱۲۳۴۵۶۷۸۹'[+d])
 }
 
-export function Step4Review({ state, goBack, services, addons }: Props) {
+export function Step4Review({ state, goBack, services, addons, customizationOptions = [] }: Props) {
+  const catalog = customizationOptions.length > 0 ? customizationOptions : CUSTOMIZATION_CATALOG
   const [loading, setLoading] = useState(false)
   const [promoCode, setPromoCode] = useState('')
   const [promoStatus, setPromoStatus] = useState<'idle' | 'valid' | 'invalid'>('idle')
@@ -25,7 +26,7 @@ export function Step4Review({ state, goBack, services, addons }: Props) {
   const subtotal = state.persons.reduce((sum, person) => {
     const svc = services.find(s => s.id === person.serviceId)
     const addonSum = person.addonIds.reduce((a, id) => a + (addons.find(ad => ad.id === id)?.price ?? 0), 0)
-    const customizationSum = getCustomizationAdditionalPrice(person.customization, svc?.tier)
+    const customizationSum = getCustomizationAdditionalPriceFromCatalog(person.customization, svc?.tier, catalog)
     return sum + (svc?.price ?? 0) + addonSum + customizationSum
   }, 0)
 
@@ -127,7 +128,7 @@ export function Step4Review({ state, goBack, services, addons }: Props) {
         {state.persons.map((person, i) => {
           const svc = services.find(s => s.id === person.serviceId)
           const selectedAddons = addons.filter(a => person.addonIds.includes(a.id))
-          const customizationTotal = getCustomizationAdditionalPrice(person.customization, svc?.tier)
+          const customizationTotal = getCustomizationAdditionalPriceFromCatalog(person.customization, svc?.tier, catalog)
           const personTotal = (svc?.price ?? 0) + selectedAddons.reduce((s, a) => s + a.price, 0) + customizationTotal
           return (
             <GlassCard key={i} className="p-3 space-y-1.5">

@@ -47,7 +47,7 @@ export default async function ConfirmPage({ params }: { params: Promise<{ token:
           {([
             ['تاریخ', dateFa],
             ['ساعت', toFaTime(booking.startTime)],
-            ['کد پیگیری', booking.zarinpalRefId ?? '—'],
+            ['کد رزرو', booking.bookingCode],
           ] as [string, string][]).map(([label, value]) => (
             <div key={label} className="flex justify-between">
               <span className="text-[#F3EFE8]/40 text-xs">{label}</span>

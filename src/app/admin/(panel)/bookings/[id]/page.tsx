@@ -35,13 +35,14 @@ export default async function BookingDetailPage({ params }: { params: Promise<{ 
   const { id } = await params
   const booking = await db.query.bookings.findFirst({
     where: eq(bookings.id, id),
-    with: { service: true, addons: { with: { addon: true } } },
+    with: { service: true, addons: { with: { addon: true } }, customizations: true },
   })
   if (!booking) notFound()
 
   const faDate = new Date(booking.date.toISOString().split('T')[0] + 'T12:00:00').toLocaleDateString('fa-IR')
   const faTime = (t: string) => t.replace(/\d/g, d => '۰۱۲۳۴۵۶۷۸۹'[+d])
-  const totalPrice = booking.service.price + booking.addonsPricePaid
+  const customizationPrice = booking.customizations.reduce((sum, option) => sum + option.pricePaid, 0)
+  const totalPrice = booking.service.price + booking.addonsPricePaid + customizationPrice
 
   // Fetch sibling bookings in the same group
   const groupBookings = booking.groupToken
@@ -68,7 +69,9 @@ export default async function BookingDetailPage({ params }: { params: Promise<{ 
 
         <div className="border-t pt-3 space-y-3" style={{ borderColor: 'var(--border-base)' }}>
           <p className="text-xs font-medium" style={{ color: 'var(--text-muted)' }}>سفارشی‌سازی</p>
-          {formatCustomization(booking.customization).map(row => (
+          {booking.customizations.length > 0 ? booking.customizations.map(option => (
+            <Row key={option.id} label={option.category}>{option.labelSnapshot}{option.pricePaid > 0 ? ` (+${option.pricePaid.toLocaleString('fa-IR')} ت)` : ''}</Row>
+          )) : formatCustomization(booking.customization).map(row => (
             <Row key={row.key} label={row.label}>{row.value}</Row>
           ))}
         </div>
@@ -103,6 +106,7 @@ export default async function BookingDetailPage({ params }: { params: Promise<{ 
         )}
 
         <div className="border-t pt-3 space-y-3" style={{ borderColor: 'var(--border-base)' }}>
+          <Row label="کد رزرو">{booking.bookingCode}</Row>
           <Row label="وضعیت">
             <span className={`text-[10px] px-2.5 py-1 rounded-full ${statusStyle[booking.status]}`}>
               {statusLabel[booking.status]}

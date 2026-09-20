@@ -60,6 +60,31 @@ export const CUSTOMIZATION_OPTIONS: {
   ],
 }
 
+export type CustomizationCatalogOption = {
+  id?: string
+  category: CustomizationKey
+  code: string
+  label: string
+  description: string
+  additionalPrice: number
+  requiresTier?: number | null
+  isActive?: boolean
+  sortOrder?: number
+}
+
+export const CUSTOMIZATION_CATALOG: readonly CustomizationCatalogOption[] =
+  (Object.keys(CUSTOMIZATION_OPTIONS) as CustomizationKey[]).flatMap(category =>
+    CUSTOMIZATION_OPTIONS[category].map((option, sortOrder) => ({
+      category,
+      code: option.value,
+      label: option.label,
+      description: option.description,
+      additionalPrice: option.additionalPrice ?? 0,
+      requiresTier: option.value === 'VIP_FREE_NEW' ? 3 : null,
+      sortOrder,
+    })),
+  )
+
 export const CUSTOMIZATION_FIELD_LABELS: Record<CustomizationKey, string> = {
   musicGenre: 'موسیقی',
   pressureLevel: 'فشار ماساژ',
@@ -106,6 +131,32 @@ export function getCustomizationAdditionalPrice(
   }, 0)
 }
 
+export function getCustomizationAdditionalPriceFromCatalog(
+  customization: BookingCustomization | null | undefined,
+  serviceTier: number | null | undefined,
+  catalog: readonly CustomizationCatalogOption[],
+): number {
+  if (!customization || serviceTier === null || serviceTier === undefined) return 0
+  return (Object.keys(CUSTOMIZATION_OPTIONS) as CustomizationKey[]).reduce((total, category) => {
+    const code = customization[category]
+    const option = catalog.find(item => item.category === category && item.code === code)
+    return total + (option?.additionalPrice ?? 0)
+  }, 0)
+}
+
+export function toCustomizationSnapshot(
+  customization: BookingCustomization,
+  serviceTier: number | null | undefined,
+  catalog: readonly CustomizationCatalogOption[],
+) {
+  if (serviceTier === null || serviceTier === undefined) return []
+  return (Object.keys(CUSTOMIZATION_OPTIONS) as CustomizationKey[]).flatMap(category => {
+    const code = customization[category]
+    const option = catalog.find(item => item.category === category && item.code === code)
+    return option ? [{ category, optionId: option.id ?? null, codeSnapshot: option.code, labelSnapshot: option.label, pricePaid: option.additionalPrice ?? 0 }] : []
+  })
+}
+
 export function normalizeCustomization(
   customization: BookingCustomization,
   serviceTier?: number | null,
@@ -147,4 +198,21 @@ export function validateCustomization(
   }
 
   return { valid: true, value: normalizeCustomization(customization, serviceTier) }
+}
+
+export function validateCustomizationAgainstCatalog(
+  input: unknown,
+  serviceTier: number | null | undefined,
+  catalog: readonly CustomizationCatalogOption[],
+): CustomizationValidation {
+  const legacy = validateCustomization(input, serviceTier)
+  if (!legacy.valid || legacy.value === null) return legacy
+  for (const category of Object.keys(CUSTOMIZATION_DEFAULTS) as CustomizationKey[]) {
+    const option = catalog.find(item => item.category === category && item.code === legacy.value![category])
+    if (!option || option.isActive === false) return { valid: false, error: `Invalid or inactive customization value for ${category}` }
+    if (option.requiresTier !== null && option.requiresTier !== undefined && option.requiresTier !== serviceTier) {
+      return { valid: false, error: `Customization value for ${category} is not available for this service` }
+    }
+  }
+  return legacy
 }

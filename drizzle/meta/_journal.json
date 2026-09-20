@@ -22,6 +22,20 @@
       "when": 1788833394758,
       "tag": "0002_health_intake",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1789341121260,
+      "tag": "0003_wise_nextwave",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1789342961425,
+      "tag": "0004_next_lily_hollister",
+      "breakpoints": true
     }
   ]
 }

@@ -18,6 +18,7 @@ export default async function BookingsPage() {
 
   const rows: BookingRow[] = bookingRows.map(b => ({
     id: b.id,
+    bookingCode: b.bookingCode,
     date: toFaDate(b.date),
     startTime: b.startTime,
     endTime: b.endTime,

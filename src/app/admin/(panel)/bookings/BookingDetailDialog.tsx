@@ -68,6 +68,7 @@ export function BookingDetailDialog({ booking }: { booking: BookingRow }) {
   const genderLabel = booking.gender === 'FEMALE' ? 'خانم' : 'آقا'
 
   const fields: [string, string][] = [
+    ["کد رزرو", booking.bookingCode],
     ["نام", booking.customerName],
     ["جنسیت", genderLabel],
     ["موبایل", booking.customerPhone],
