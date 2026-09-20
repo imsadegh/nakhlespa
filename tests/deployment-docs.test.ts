@@ -9,20 +9,21 @@ describe('deployment documentation contract', () => {
     }
   })
 
-  test('documents Coolify Compose deployment and initialization', () => {
+  test('documents Dokploy Compose deployment and initialization', () => {
     const readme = readFileSync('README.md', 'utf8')
-    expect(readme).toContain('Coolify')
+    expect(readme).toContain('Dokploy')
     expect(readme).toContain('compose.production.yml')
     expect(readme).toContain('bun run db:migrate')
     expect(readme).toContain('worker-sms')
-    expect(readme).toContain('Do not open')
+    expect(readme).toContain('Do not attach domains or publish host ports')
+    expect(readme).toContain('NAKHLESPA_IMAGE=ghcr.io/imsadegh/nakhlespa:latest')
   })
 
   test('documents automatic startup migrations and one-time manual seed', () => {
     const readme = readFileSync('README.md', 'utf8')
-    expect(readme).toContain('automatically runs `bun run db:migrate` before `next start`')
-    expect(readme).toContain('one-time manual seed')
-    expect(readme).toContain('Do not run the seed on every restart')
+    expect(readme).toContain('runs `bun run db:migrate` before `next start`')
+    expect(readme).toContain('one-time seed')
+    expect(readme).toContain('must not run automatically on every restart')
     expect(readme).not.toContain('Repeat the migration command after each release before enabling new application traffic')
   })
 
@@ -33,14 +34,15 @@ describe('deployment documentation contract', () => {
     expect(readme).not.toContain('Create `.env.local`')
   })
 
-  test('documents safe production Zarinpal mode and Coolify URL handling', () => {
+  test('documents safe production Zarinpal mode and Dokploy URL handling', () => {
     const compose = readFileSync('compose.production.yml', 'utf8')
     const readme = readFileSync('README.md', 'utf8')
 
     expect(compose).toContain('ZARINPAL_SANDBOX: ${ZARINPAL_SANDBOX}')
     expect(readme).toContain('ZARINPAL_SANDBOX=false')
-    expect(readme).toContain('Do not add `DATABASE_URL` or `REDIS_URL`')
-    expect(readme).toContain('Compose interpolation and application variables')
+    expect(readme).toContain('Do not add the local `DATABASE_URL` or `REDIS_URL`')
+    expect(readme).toContain('Dokploy environment variables')
+    expect(readme).toContain('DOKPLOY_URL')
     expect(readme).not.toContain('Add every variable from `.env.example`')
   })
 })

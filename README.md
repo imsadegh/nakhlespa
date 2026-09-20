@@ -43,7 +43,13 @@ Next.js and Drizzle read the same root `.env` file. The local Compose file also 
 
 ```bash
 bun run db:migrate
-ADMIN_EMAIL=admin@example.com ADMIN_PASSWORD=DevPassword123 bun run db:seed
+echo -n "Admin email: "
+read ADMIN_EMAIL
+echo -n "Admin password: "
+read -s ADMIN_PASSWORD
+echo
+export ADMIN_EMAIL ADMIN_PASSWORD
+bun run db:seed
 ```
 
 The seed creates services, working hours, add-ons, and the admin user. It is idempotent (safe to run multiple times).
@@ -89,25 +95,28 @@ bun run db:generate    # Generate Drizzle migrations after schema changes
 
 ---
 
-## Coolify Deployment
+## Dokploy Deployment
 
-This is the production runbook for a single Coolify server. Coolify manages the Compose resource, builds the app image, and provides Traefik-only public routing. Do not install or configure PM2, Nginx, a separate Redis container, or a native PostgreSQL service.
+This is the production runbook for a single Dokploy-managed Ubuntu VPS. Dokploy runs the Compose resource and provides the HTTPS reverse proxy; GitHub Actions builds the application image and triggers the Dokploy deployment. Do not install PM2, Nginx, a separate Redis container, or a native PostgreSQL service.
 
-### 1. Install Coolify
+### 1. Install Dokploy and prepare the VPS
 
-Provision a supported Ubuntu VPS, point DNS for the production domain at it, and install Coolify using the official installer from [coolify.io](https://coolify.io). Complete the first-run server and admin setup in the Coolify dashboard. Allow inbound SSH and HTTP/HTTPS; the database, Redis, and worker services remain private to the Compose network.
+Provision a supported Ubuntu VPS, point DNS for the production domain at it, and install Dokploy using the official instructions at [dokploy.com](https://dokploy.com). Complete the first-run server and admin setup. Allow inbound SSH and HTTP/HTTPS; PostgreSQL, Redis, and the worker remain private to the Compose network.
 
-### 2. Create one Compose resource
+### 2. Create one Docker Compose resource
 
-In Coolify, create one resource from this repository and select `compose.production.yml` as its Compose file. Configure the repository, branch, and automatic deploy policy as needed. The resource must contain the four services `web`, `postgres`, `redis`, and `worker-sms`.
+In Dokploy, create one Docker Compose service from this repository. Select the production branch, set the Compose path to `./compose.production.yml`, and use the repository integration only for source synchronization. The resource must contain `web`, `postgres`, `redis`, and `worker-sms`.
 
-Set the public domain only on `web`, targeting its exposed port `3000` through Traefik. Do not open or attach public domains or host ports to `postgres`, `redis`, or `worker-sms`; they communicate through the private service names `postgres:5432` and `redis:6379`.
+Configure Dokploy's domain feature for `web` on container port `3000`. Do not attach domains or publish host ports for `postgres`, `redis`, or `worker-sms`; they communicate through `postgres:5432` and `redis:6379` inside the Compose network. Keep Dokploy's managed HTTPS proxy as the only public reverse proxy.
 
-### 3. Configure Coolify environment variables
+The image is built by GitHub Actions and pulled by Dokploy. Set `NAKHLESPA_IMAGE=ghcr.io/imsadegh/nakhlespa:latest` in Dokploy. If the GHCR package is private, configure the Dokploy registry credentials with read-only package access. Do not enable a second Git push deployment trigger in Dokploy; GitHub Actions is the deployment trigger for this setup.
 
-In the resource's Environment Variables screen, add only the Compose interpolation and application variables listed below. Coolify injects production values separately from the local root `.env`; use real production secrets and approved SMS.ir/Zarinpal values, and never commit them. Compose constructs the container-local database and Redis URLs from the interpolation variables and service names:
+### 3. Configure Dokploy variables and GitHub secrets
+
+Dokploy's Compose environment editor writes the values used for Compose interpolation. Add the following values there using real production secrets; never commit them or a production `.env` file:
 
 ```bash
+NAKHLESPA_IMAGE=ghcr.io/imsadegh/nakhlespa:latest
 DB_USER=your-production-db-user
 DB_PASSWORD=your-production-db-password
 DB_NAME=nakhlespa
@@ -127,43 +136,61 @@ ADMIN_EMAIL=admin@yourdomain.com
 ADMIN_PASSWORD=your-production-admin-password
 ```
 
-Do not add `DATABASE_URL` or `REDIS_URL` from `.env.example` to Coolify: those local `127.0.0.1` values are for local Drizzle/app setup only, and the Compose file supplies `postgresql://${DB_USER}:${DB_PASSWORD}@postgres:5432/${DB_NAME}` and `redis://redis:6379` inside the containers. `ZARINPAL_SANDBOX` should normally be `false` in production; use `true` only for an explicitly configured Zarinpal sandbox environment. Configure all five SMS.ir template IDs, including `SMSIR_TEMPLATE_OTP`. Use `SMSIR_TEMPLATE_REMINDER_24H` and `SMSIR_TEMPLATE_REMINDER_2H` for the `worker-sms` service.
+Do not add the local `DATABASE_URL` or `REDIS_URL` values from `.env.example`; those use `127.0.0.1`. The production Compose file supplies `postgresql://${DB_USER}:${DB_PASSWORD}@postgres:5432/${DB_NAME}` and `redis://redis:6379` inside the containers. `ZARINPAL_SANDBOX` should normally be `false`. Use a URL-safe database password containing only letters and numbers because it is embedded in the connection URL, and do not change it after the PostgreSQL volume is initialized without also changing the database role password.
+
+Add these GitHub Actions repository secrets:
+
+| Secret | Value |
+|--------|-------|
+| `DOKPLOY_URL` | Dokploy base URL, for example `https://deploy.example.com` |
+| `DOKPLOY_API_KEY` | Dokploy API key with permission to deploy the Compose resource |
+| `DOKPLOY_COMPOSE_ID` | The Compose resource ID from Dokploy |
+
+The workflow also uses the built-in `GITHUB_TOKEN` to publish the image to GHCR. If the package is private, grant Dokploy read-only access to GHCR. Keep the API key and registry credentials out of workflow logs and source control.
 
 ### 4. First deployment and initialization
 
-Deploy the Compose resource from Coolify. The `web` service automatically runs `bun run db:migrate` before `next start`; it does not accept traffic until migrations succeed. PostgreSQL and Redis health checks complete before the application services start. Do not add a separate manual migration step before enabling traffic.
+Deploy the Compose resource from Dokploy. The `web` service runs `bun run db:migrate` before `next start`; it does not accept traffic until migrations succeed. PostgreSQL and Redis health checks complete before the application services start.
 
-After the first deployment is healthy, run this one-time manual seed from the `web` container's Coolify terminal (or an equivalent one-off command using the production image):
-
-```bash
-ADMIN_EMAIL=admin@yourdomain.com ADMIN_PASSWORD=your-production-password bun run db:seed
-```
-
-The seed creates services, working hours, add-ons, and the admin user. It is idempotent if it must be rerun intentionally, but it is a one-time manual initialization step. Do not run the seed on every restart.
-
-### 5. Verify before enabling webhooks
-
-Check the public home page, admin login, customer OTP login, booking flow, payment callback, and both reminder queues. Confirm the `worker-sms` logs show a running BullMQ worker and that PostgreSQL/Redis have no public listener. Do not open those services to the internet.
-
-After the health checks pass, enable the Zarinpal webhook/callback configuration for the production domain. If verification fails, disable the webhook until the callback URL, payment credentials, and worker logs have been corrected.
-
-### 6. Maintenance and database access
-
-For a release, push the change and redeploy the same Compose resource in Coolify. Review the deployment logs; the `web` startup command applies any pending Drizzle migrations before `next start`. Do not run a second Compose stack alongside the resource.
-
-For emergency database access, use an SSH tunnel to the VPS/Coolify host and connect through the private database endpoint; do not publish PostgreSQL's port:
+After the first deployment is healthy, run this one-time seed from the `web` container's Dokploy terminal:
 
 ```bash
-ssh -N -L 15432:127.0.0.1:5432 user@your-server
+echo -n "Admin email: "
+read ADMIN_EMAIL
+echo -n "Admin password: "
+read -s ADMIN_PASSWORD
+echo
+export ADMIN_EMAIL ADMIN_PASSWORD
+bun run db:seed
 ```
 
-Use the tunnel only if the Coolify host exposes PostgreSQL locally; otherwise use Coolify's terminal or its supported private-network access path. Keep backups and volume retention enabled for `postgres_data` and `redis_data`.
+The seed creates services, working hours, add-ons, and the admin user. It is idempotent when intentionally rerun, but it must not run automatically on every restart.
+
+### 5. CI/CD release flow and verification
+
+The normal release flow is:
+
+1. Push to `master` or start **Build and deploy** manually in GitHub Actions.
+2. GitHub Actions installs dependencies and runs `bun run build`.
+3. The workflow builds and pushes `ghcr.io/imsadegh/nakhlespa:latest` and the commit SHA tag.
+4. The workflow calls Dokploy's `POST /api/compose.deploy` endpoint with the Compose ID.
+5. Dokploy pulls the new image and recreates the services while retaining named volumes.
+
+Check the public home page, admin login, customer OTP login, booking flow, payment callback, and reminder queue. Confirm `worker-sms` logs show a running BullMQ worker and that PostgreSQL/Redis have no public listener. After verification, enable the Zarinpal callback for the production domain.
+
+If the image publish succeeds but the Dokploy call fails, use Dokploy's manual deploy after checking `DOKPLOY_URL`, `DOKPLOY_API_KEY`, and `DOKPLOY_COMPOSE_ID`. If a deployment fails, keep the previous image tag available and redeploy it by temporarily setting `NAKHLESPA_IMAGE` to its commit SHA tag; restore `latest` after the fix. Never delete the database or Redis volumes as a rollback step.
+
+### 6. Backups and database access
+
+Enable scheduled PostgreSQL backups in Dokploy or on the VPS and copy them to storage outside the server. Retain the `postgres_data` and `redis_data` volumes across redeployments; containers are replaceable, data is not.
+
+For emergency database access, use Dokploy's terminal or an SSH tunnel through the VPS. Never publish PostgreSQL or Redis ports to the public internet. Review the current container/service names after every redeploy rather than relying on an old generated container name.
 
 ---
 
 ### SMS.ir Template Setup
 
-This app uses SMS.ir's **Verify** API (`POST /v1/send/verify`) with five separate templates — one per message type. Each template uses named parameters (`{name}`, `{service}`, etc.). Create and approve the templates in the SMS.ir panel, then copy their numeric IDs into the Coolify environment variables.
+This app uses SMS.ir's **Verify** API (`POST /v1/send/verify`) with five separate templates — one per message type. Each template uses named parameters (`{name}`, `{service}`, etc.). Create and approve the templates in the SMS.ir panel, then copy their numeric IDs into the Dokploy environment variables.
 
 | Env var | Template body |
 |---------|---------------|
