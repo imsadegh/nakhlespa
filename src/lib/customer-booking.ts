@@ -7,6 +7,7 @@ export const CUSTOMER_BOOKING_PROJECTION = {
   columns: {
     id: true,
     token: true,
+    bookingCode: true,
     customerName: true,
     date: true,
     startTime: true,
