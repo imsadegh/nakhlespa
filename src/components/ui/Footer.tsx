@@ -24,7 +24,6 @@ export function Footer() {
               src="https://trustseal.enamad.ir/logo.aspx?id=6385674&Code=xfctZminW2RZMl4eLYMZaoDctkW4fHc6"
               alt=""
               style={{ cursor: 'pointer' }}
-              code="xfctZminW2RZMl4eLYMZaoDctkW4fHc6"
             />
           </a>
         </div>
