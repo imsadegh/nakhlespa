@@ -13,6 +13,21 @@ export function Footer() {
           <p className="text-xs mb-1" style={{ color: 'var(--text-muted)' }}>قم، پردیسان — تلفن: ۰۲۱-XXXXXXXX</p>
           <p className="text-xs" style={{ color: 'var(--text-faint)' }}>© ۱۴۰۵ نخلسپا. تمام حقوق محفوظ است.</p>
         </div>
+        <div className="mt-6 flex justify-center sm:mt-0 sm:justify-start">
+          <a
+            referrerPolicy="origin"
+            target="_blank"
+            href="https://trustseal.enamad.ir/?id=6385674&Code=xfctZminW2RZMl4eLYMZaoDctkW4fHc6"
+          >
+            <img
+              referrerPolicy="origin"
+              src="https://trustseal.enamad.ir/logo.aspx?id=6385674&Code=xfctZminW2RZMl4eLYMZaoDctkW4fHc6"
+              alt=""
+              style={{ cursor: 'pointer' }}
+              code="xfctZminW2RZMl4eLYMZaoDctkW4fHc6"
+            />
+          </a>
+        </div>
       </div>
     </footer>
   )
