@@ -5,7 +5,15 @@ import { GoldButton } from '@/components/ui/GoldButton'
 import { GhostButton } from '@/components/ui/GhostButton'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Label } from '@/components/ui/label'
+import { DatePicker } from '@/components/ui/DatePicker'
+import { TicketPercent } from 'lucide-react'
 import type { DiscountCodeDTO } from '@/types'
+
+const discountTypeItems = [
+  { value: 'PERCENT', label: 'درصدی' },
+  { value: 'FIXED', label: 'مبلغ ثابت (تومان)' },
+]
 
 export function DiscountManager({ initial }: { initial: DiscountCodeDTO[] }) {
   const [codes, setCodes] = useState(initial)
@@ -47,61 +55,87 @@ export function DiscountManager({ initial }: { initial: DiscountCodeDTO[] }) {
 
   return (
     <div className="space-y-6">
-      <GlassCard className="p-5 space-y-3">
-        <h2 className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>کد تخفیف جدید</h2>
-        <div className="grid grid-cols-2 gap-3">
-          <Input
-            placeholder="کد (مثلاً SUMMER10)"
-            value={form.code}
-            onChange={e => setForm(f => ({ ...f, code: e.target.value.toUpperCase() }))}
-            className="col-span-2 text-xs"
-            style={{ color: 'var(--text-primary)', direction: 'ltr' }}
-          />
-          <Select
-            value={form.type}
-            onValueChange={value => {
-              if (value === 'PERCENT' || value === 'FIXED') setForm(f => ({ ...f, type: value }))
-            }}
-          >
-            <SelectTrigger className="w-full text-xs" style={{ color: 'var(--text-primary)' }}>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectGroup>
-                <SelectItem value="PERCENT">درصدی</SelectItem>
-                <SelectItem value="FIXED">مبلغ ثابت (تومان)</SelectItem>
-              </SelectGroup>
-            </SelectContent>
-          </Select>
-          <Input
-            placeholder={form.type === 'PERCENT' ? 'مقدار (مثلاً ۲۰)' : 'مبلغ تومان'}
-            value={form.value}
-            onChange={e => setForm(f => ({ ...f, value: e.target.value }))}
-            type="number"
-            className="text-xs"
-            style={{ color: 'var(--text-primary)' }}
-          />
-          <Input
-            placeholder="حداکثر تعداد استفاده (اختیاری)"
-            value={form.maxUses}
-            onChange={e => setForm(f => ({ ...f, maxUses: e.target.value }))}
-            type="number"
-            className="text-xs"
-            style={{ color: 'var(--text-primary)' }}
-          />
-          <Input
-            placeholder="تاریخ انقضا (اختیاری)"
-            value={form.expiresAt}
-            onChange={e => setForm(f => ({ ...f, expiresAt: e.target.value }))}
-            type="date"
-            className="text-xs"
-            style={{ color: 'var(--text-primary)' }}
-          />
+      <GlassCard className="space-y-5 p-5 sm:p-6">
+        <div className="flex items-center gap-3 border-b border-white/10 pb-4">
+          <div className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-[#d4b368]/25 bg-[#d4b368]/10 text-[#e0c276]">
+            <TicketPercent aria-hidden="true" className="size-5" />
+          </div>
+          <div className="space-y-1">
+            <h2 className="text-base font-semibold" style={{ color: 'var(--text-primary)' }}>کد تخفیف جدید</h2>
+            <p className="text-xs" style={{ color: 'var(--text-muted)' }}>جزئیات کد، میزان تخفیف و زمان اعتبار را وارد کنید.</p>
+          </div>
         </div>
-        {error && <p className="text-xs text-red-400">{error}</p>}
-        <GoldButton onClick={handleCreate} disabled={creating || !form.code || !form.value} className="w-full">
-          {creating ? 'در حال ایجاد...' : 'ایجاد کد تخفیف'}
-        </GoldButton>
+        <div className="grid grid-cols-1 gap-x-4 gap-y-4 sm:grid-cols-2">
+          <div className="flex min-w-0 flex-col gap-2 sm:col-span-2">
+            <Label htmlFor="discount-code">کد تخفیف</Label>
+            <Input
+              id="discount-code"
+              placeholder="مثلاً SUMMER10"
+              value={form.code}
+              onChange={e => setForm(f => ({ ...f, code: e.target.value.toUpperCase() }))}
+              className="text-xs"
+              dir="ltr"
+            />
+          </div>
+          <div className="flex min-w-0 flex-col gap-2">
+            <Label htmlFor="discount-type">نوع تخفیف</Label>
+            <Select
+              items={discountTypeItems}
+              value={form.type}
+              onValueChange={value => {
+                if (value === 'PERCENT' || value === 'FIXED') setForm(f => ({ ...f, type: value }))
+              }}
+            >
+              <SelectTrigger id="discount-type" className="glass data-[size=default]:h-10 w-full rounded-xl border-0 bg-transparent px-4 py-3 text-xs focus-visible:ring-1 focus-visible:ring-ring">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectGroup>
+                  <SelectItem value="PERCENT">درصدی</SelectItem>
+                  <SelectItem value="FIXED">مبلغ ثابت (تومان)</SelectItem>
+                </SelectGroup>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="flex min-w-0 flex-col gap-2">
+            <Label htmlFor="discount-value">مقدار</Label>
+            <Input
+              id="discount-value"
+              placeholder={form.type === 'PERCENT' ? 'مثلاً ۲۰' : 'مبلغ تومان'}
+              value={form.value}
+              onChange={e => setForm(f => ({ ...f, value: e.target.value }))}
+              type="number"
+              className="text-xs"
+            />
+          </div>
+          <div className="flex min-w-0 flex-col gap-2">
+            <Label htmlFor="discount-max-uses">حداکثر تعداد استفاده (اختیاری)</Label>
+            <Input
+              id="discount-max-uses"
+              placeholder="بدون محدودیت"
+              value={form.maxUses}
+              onChange={e => setForm(f => ({ ...f, maxUses: e.target.value }))}
+              type="number"
+              className="text-xs"
+            />
+          </div>
+          <div className="flex min-w-0 flex-col gap-2">
+            <Label htmlFor="discount-expires-at">تاریخ انقضا (اختیاری)</Label>
+            <DatePicker
+              id="discount-expires-at"
+              value={form.expiresAt}
+              onChange={value => setForm(f => ({ ...f, expiresAt: value }))}
+              placeholder="انتخاب تاریخ"
+              className="glass h-10 border-0 bg-transparent px-4 py-3 text-xs"
+            />
+          </div>
+        </div>
+        {error && <p className="text-xs text-red-400" role="alert">{error}</p>}
+        <div className="flex justify-start border-t border-white/10 pt-4">
+          <GoldButton onClick={handleCreate} disabled={creating || !form.code || !form.value} className="w-full sm:w-auto sm:min-w-44">
+            {creating ? 'در حال ایجاد...' : 'ایجاد کد تخفیف'}
+          </GoldButton>
+        </div>
       </GlassCard>
 
       <GlassCard className="p-0 overflow-hidden">

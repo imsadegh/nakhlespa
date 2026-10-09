@@ -17,6 +17,7 @@ interface DatePickerProps {
   onChange: (v: string) => void
   placeholder?: string
   className?: string
+  id?: string
 }
 
 function toFaDate(iso: string) {
@@ -25,12 +26,13 @@ function toFaDate(iso: string) {
   return format(new Date(Date.UTC(y, m - 1, d) + 12 * 3600000), 'yyyy/MM/dd', { locale: faIR })
 }
 
-export function DatePicker({ value, onChange, placeholder = 'انتخاب تاریخ', className }: DatePickerProps) {
+export function DatePicker({ value, onChange, placeholder = 'انتخاب تاریخ', className, id }: DatePickerProps) {
   const selected = value ? new Date(value + 'T12:00:00') : undefined
 
   return (
     <Popover>
       <PopoverTrigger
+        id={id}
         className={cn(
           'flex items-center gap-2 w-full rounded-xl px-3 py-2 text-xs transition-all duration-150 cursor-pointer',
           'bg-white/[0.10] backdrop-blur-sm border border-white/[0.18] hover:bg-white/[0.16] hover:border-[rgba(198,165,91,0.5)]',
