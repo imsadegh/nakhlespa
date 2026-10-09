@@ -5,6 +5,7 @@ import type { BookingStatus } from '@/db/schema'
 export type FullBooking = {
   token: string
   bookingCode: string
+  customerName: string
   date: Date | string
   startTime: string
   status: BookingStatus

@@ -8,6 +8,6 @@ export function NavBookButton() {
   const router = useRouter()
   const handleClick = () => available ? open() : router.push('/book')
   return (
-    <GoldButton onClick={handleClick} className="text-xs px-3 py-2 sm:px-4 sm:py-2">رزرو</GoldButton>
+    <GoldButton onClick={handleClick} className="h-10 px-3 py-0 text-xs sm:px-4">رزرو</GoldButton>
   )
 }

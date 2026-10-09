@@ -2,8 +2,21 @@ import Link from 'next/link'
 import { CustomerBookingsDrawer } from '@/components/customer/CustomerBookingsDrawer'
 import { ThemeToggle } from './ThemeToggle'
 import { NavBookButton } from './NavBookButton'
+import { bookings } from '@/db/schema'
+import { db } from '@/lib/db'
+import { getCustomerSessionFromCookies } from '@/lib/customer-auth'
+import { desc, eq } from 'drizzle-orm'
 
-export function Navbar() {
+export async function Navbar() {
+  const session = await getCustomerSessionFromCookies()
+  const [latestBooking] = session
+    ? await db.select({ customerName: bookings.customerName })
+        .from(bookings)
+        .where(eq(bookings.customerPhone, session.phone))
+        .orderBy(desc(bookings.createdAt))
+        .limit(1)
+    : []
+
   return (
     <>
     <div className="fixed top-0 inset-x-0 h-20 pointer-events-none"
@@ -34,7 +47,7 @@ export function Navbar() {
 
       <div className="flex items-center gap-2">
         <ThemeToggle />
-        <CustomerBookingsDrawer />
+        <CustomerBookingsDrawer customerName={latestBooking?.customerName ?? null} />
         <NavBookButton />
       </div>
     </nav>

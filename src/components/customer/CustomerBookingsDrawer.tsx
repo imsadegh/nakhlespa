@@ -1,6 +1,8 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
+import { UserRound } from 'lucide-react'
 import { BookingHistoryList, type FullBooking } from '@/components/customer/BookingHistoryList'
 import { OtpLoginForm } from '@/components/customer/OtpLoginForm'
 import { Button } from '@/components/ui/button'
@@ -15,12 +17,14 @@ import {
 
 type DrawerBookings = React.ComponentProps<typeof BookingHistoryList>['bookings']
 
-export function CustomerBookingsDrawer() {
+export function CustomerBookingsDrawer({ customerName: initialCustomerName }: { customerName: string | null }) {
+  const router = useRouter()
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
   const [bookings, setBookings] = useState<DrawerBookings | null>(null)
   const [completedCount, setCompletedCount] = useState(0)
   const [selectedBooking, setSelectedBooking] = useState<FullBooking | null>(null)
+  const [customerName, setCustomerName] = useState(initialCustomerName)
 
   async function loadBookings() {
     setLoading(true)
@@ -32,6 +36,7 @@ export function CustomerBookingsDrawer() {
       }
       const data = await response.json() as { bookings: DrawerBookings; completedCount: number }
       setBookings(data.bookings)
+      setCustomerName(data.bookings[0]?.customerName ?? null)
       setCompletedCount(data.completedCount)
       setSelectedBooking(null)
     } finally {
@@ -50,22 +55,35 @@ export function CustomerBookingsDrawer() {
     try {
       await fetch('/api/customer/auth/logout', { method: 'POST' })
       setBookings(null)
+      setCustomerName(null)
       setCompletedCount(0)
       setSelectedBooking(null)
+      router.refresh()
     } finally {
       setLoading(false)
     }
+  }
+
+  async function handleAuthenticated() {
+    await loadBookings()
+    router.refresh()
   }
 
   return (
     <Drawer open={open} onOpenChange={handleOpenChange}>
       <button
         type="button"
-        onClick={() => setOpen(true)}
-        className="hidden text-xs transition-colors hover:text-[#C6A55B] sm:block"
-        style={{ color: 'var(--text-muted)' }}
+        onClick={() => handleOpenChange(true)}
+        aria-label="رزروهای من"
+        className="hidden h-10 items-center gap-2 rounded-xl border border-[#C6A55B]/25 bg-[var(--bg-surface)] px-2.5 text-[var(--text-primary)] shadow-sm transition hover:border-[#C6A55B]/55 hover:bg-[#C6A55B]/[0.08] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C6A55B]/40 sm:inline-flex"
       >
-        رزروهای من
+        <span className="grid size-7 shrink-0 place-items-center rounded-full bg-[#C6A55B]/15 text-[#A8873A]">
+          <UserRound size={14} aria-hidden="true" />
+        </span>
+        <span className="flex min-w-0 flex-col items-start leading-tight">
+          <span className="max-w-24 truncate text-xs">{customerName ?? 'رزروهای من'}</span>
+          {customerName && <span className="text-[9px] text-site-muted">رزروهای من</span>}
+        </span>
       </button>
       <DrawerContent className="max-h-[90dvh]">
         <DrawerHeader className="text-right sm:text-right">
@@ -84,7 +102,7 @@ export function CustomerBookingsDrawer() {
               onBookingSelect={setSelectedBooking}
             />
           ) : (
-            <OtpLoginForm compact onAuthenticated={() => void loadBookings()} />
+            <OtpLoginForm compact onAuthenticated={() => void handleAuthenticated()} />
           )}
           {bookings && (
             <Button type="button" variant="ghost" onClick={handleLogout} className="mt-5 w-full text-xs text-destructive hover:text-destructive">
