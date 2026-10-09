@@ -101,11 +101,17 @@ This is the production runbook for a single Dokploy-managed Ubuntu VPS. Dokploy 
 
 ### 1. Install Dokploy and prepare the VPS
 
-Provision a supported Ubuntu VPS, point DNS for the production domain at it, and install Dokploy using the official instructions at [dokploy.com](https://dokploy.com). Complete the first-run server and admin setup. Allow inbound SSH and HTTP/HTTPS; PostgreSQL, Redis, and the worker remain private to the Compose network.
+Provision a supported Ubuntu VPS and point DNS for the production domain at it. Install Dokploy with:
+
+```bash
+curl -sSL https://dokploy.com/install.sh | sudo sh
+```
+
+Complete the first-run server and admin setup. Allow inbound SSH and HTTP/HTTPS; PostgreSQL, Redis, and the worker remain private to the Compose network.
 
 ### 2. Create one Docker Compose resource
 
-In Dokploy, create one Docker Compose service from this repository. Select the production branch, set the Compose path to `./compose.production.yml`, and use the repository integration only for source synchronization. The resource must contain `web`, `postgres`, `redis`, and `worker-sms`.
+In Dokploy, create one Docker Compose service from this repository. Select the `master` branch, set the Compose path to `./compose.production.yml`, and use the repository integration only for source synchronization. The resource must contain `web`, `postgres`, `redis`, and `worker-sms`.
 
 Configure Dokploy's domain feature for `web` on container port `3000`. Do not attach domains or publish host ports for `postgres`, `redis`, or `worker-sms`; they communicate through `postgres:5432` and `redis:6379` inside the Compose network. Keep Dokploy's managed HTTPS proxy as the only public reverse proxy.
 
@@ -136,6 +142,18 @@ ADMIN_EMAIL=admin@yourdomain.com
 ADMIN_PASSWORD=your-production-admin-password
 ```
 
+Generate separate random values for `DB_PASSWORD`, `BETTER_AUTH_SECRET`, and `ADMIN_PASSWORD` on a trusted computer with OpenSSL:
+
+```bash
+openssl rand -hex 32
+openssl rand -hex 32
+openssl rand -hex 32
+```
+
+Copy each output into its matching Dokploy variable; do not reuse one value for multiple secrets. Hex output contains only URL-safe characters, which is important for `DB_PASSWORD` because Compose embeds it in `DATABASE_URL`. Choose `DB_USER` (for example, `nakhlespa`) and `DB_NAME` yourself. Keep the generated values in a password manager. PostgreSQL initializes its user password when the data volume is first created, so changing `DB_PASSWORD` later also requires changing that PostgreSQL role's password.
+
+Obtain `ZARINPAL_MERCHANT_ID` from your Zarinpal account, `SMSIR_API_KEY` and the five SMS.ir template IDs from SMS.ir, and `DOKPLOY_API_KEY` from Dokploy's API key settings. Use your actual site domain for the callback and public URL, and your own phone/email for the admin contact. Dokploy provides the Compose resource ID; copy it into the GitHub secret `DOKPLOY_COMPOSE_ID`.
+
 Do not add the local `DATABASE_URL` or `REDIS_URL` values from `.env.example`; those use `127.0.0.1`. The production Compose file supplies `postgresql://${DB_USER}:${DB_PASSWORD}@postgres:5432/${DB_NAME}` and `redis://redis:6379` inside the containers. `ZARINPAL_SANDBOX` should normally be `false`. Use a URL-safe database password containing only letters and numbers because it is embedded in the connection URL, and do not change it after the PostgreSQL volume is initialized without also changing the database role password.
 
 Add these GitHub Actions repository secrets:
@@ -146,15 +164,24 @@ Add these GitHub Actions repository secrets:
 | `DOKPLOY_API_KEY` | Dokploy API key with permission to deploy the Compose resource |
 | `DOKPLOY_COMPOSE_ID` | The Compose resource ID from Dokploy |
 
-The workflow also uses the built-in `GITHUB_TOKEN` to publish the image to GHCR. If the package is private, grant Dokploy read-only access to GHCR. Keep the API key and registry credentials out of workflow logs and source control.
+To create them, open the repository on GitHub and go to **Settings → Secrets and variables → Actions → New repository secret**. Add each secret using the exact name in the table and its corresponding value:
+
+- `DOKPLOY_URL`: enter the base URL you use to open Dokploy, with no trailing slash or `/api` (for example, `https://deploy.example.com`).
+- `DOKPLOY_API_KEY`: in Dokploy, open **Profile → API/CLI**, generate a token, and copy it into this secret. Dokploy documents this page at `/settings/profile`.
+- `DOKPLOY_COMPOSE_ID`: open this Compose resource in Dokploy and copy the ID from its browser URL. The Compose page URL has the form `/dashboard/project/<project-id>/environment/<environment-id>/services/compose/<compose-id>`; use only the final `<compose-id>` value.
+
+Save the token when you generate it; treat it like a password. Do not paste it into the README, a workflow file, or a terminal command that may be saved in shell history.
+
+The workflow uses GitHub's built-in `GITHUB_TOKEN` to publish the image to GHCR; do not create a repository secret for it. In Dokploy, turn **Autodeploy** off for this Compose resource so a Git push does not start a second deployment. If the GHCR package is private, configure Dokploy's registry with a GitHub token that has read-only access to that package. Keep API and registry credentials out of workflow logs and source control.
 
 ### 4. First deployment and initialization
 
 Deploy the Compose resource from Dokploy. The `web` service runs `bun run db:migrate` before `next start`; it does not accept traffic until migrations succeed. PostgreSQL and Redis health checks complete before the application services start.
 
-After the first deployment is healthy, run this one-time seed from the `web` container's Dokploy terminal:
+After the first deployment is healthy, run this one-time seed from the `web` container's Dokploy terminal. Dokploy may open the terminal at `/`, so first change to the application directory (`/app`):
 
 ```bash
+cd /app
 echo -n "Admin email: "
 read ADMIN_EMAIL
 echo -n "Admin password: "
@@ -194,11 +221,11 @@ This app uses SMS.ir's **Verify** API (`POST /v1/send/verify`) with five separat
 
 | Env var | Template body |
 |---------|---------------|
-| `SMSIR_TEMPLATE_CONFIRM` | `{name} عزیز، رزرو شما برای {service} در تاریخ {date} ساعت {time} تأیید شد. کد پیگیری: {refId} — نخلسپا` |
+| `SMSIR_TEMPLATE_CONFIRM` | `#NAME# عزیز، رزرو شما برای #SERVICE# در تاریخ #DATE# ساعت #TIME# تأیید شد. کد پیگیری: #ORDER_NUMBER# — نخلسپا` |
 | `SMSIR_TEMPLATE_ADMIN` | `رزرو جدید: {name} — {service} — {date} {time} — تلفن: {phone}` |
-| `SMSIR_TEMPLATE_REMINDER_24H` | `{name} عزیز، یادآوری: نوبت {service} شما فردا ساعت {time} است — نخلسپا` |
-| `SMSIR_TEMPLATE_REMINDER_2H` | `{name} عزیز، یادآوری: نوبت {service} شما ۲ ساعت دیگر ساعت {time} است — نخلسپا` |
-| `SMSIR_TEMPLATE_OTP` | `کد ورود شما به نخلسپا: {code}` |
+| `SMSIR_TEMPLATE_REMINDER_24H` | `#NAME# عزیز، یادآوری: نوبت #SERVICE# شما فردا ساعت #TIME# است — نخلسپا` |
+| `SMSIR_TEMPLATE_REMINDER_2H` | `#NAME# عزیز، یادآوری: نوبت #SERVICE# شما ۲ ساعت دیگر ساعت #TIME# است — نخلسپا` |
+| `SMSIR_TEMPLATE_OTP` | `کد ورود شما به نخلسپا: #CODE#` |
 
 | Template | Trigger | Recipient |
 |----------|---------|-----------|
