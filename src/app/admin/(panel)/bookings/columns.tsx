@@ -3,7 +3,8 @@
 import { ColumnDef } from "@tanstack/react-table"
 import type { BookingStatus, Gender } from '@/db/schema'
 import type { BookingCustomization } from '@/types'
-import { ArrowUpDown } from "lucide-react"
+import type { HealthIntake } from '@/lib/health-intake'
+import { ArrowDown, ArrowUp } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { BookingDetailDialog } from "./BookingDetailDialog"
 
@@ -15,6 +16,7 @@ export type BookingAddonRow = {
 export type BookingRow = {
   id: string
   bookingCode: string
+  bookedAt: number
   date: string        // fa-IR formatted
   startTime: string
   endTime: string
@@ -31,6 +33,7 @@ export type BookingRow = {
   discountAmount: number
   discountCode: { code: string } | null
   customization: BookingCustomization | null
+  healthIntake: HealthIntake | null
 }
 
 const statusLabel: Record<BookingStatus, string> = {
@@ -49,17 +52,37 @@ const statusStyle: Record<BookingStatus, string> = {
 
 export const columns: ColumnDef<BookingRow>[] = [
   {
+    accessorKey: "bookedAt",
+    header: ({ column }) => (
+      <Button
+        variant="ghost"
+        size="sm"
+        className={`rounded-md px-2 font-medium ${column.getIsSorted() ? "bg-[#C6A55B]/10 text-[#C6A55B]" : "px-0"}`}
+        style={{ color: column.getIsSorted() ? "#C6A55B" : "var(--text-muted)" }}
+        onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+      >
+        زمان ثبت
+        {column.getIsSorted() === "asc" ? <ArrowUp className="mr-1 h-3 w-3" /> : column.getIsSorted() === "desc" ? <ArrowDown className="mr-1 h-3 w-3" /> : <ArrowUp className="mr-1 h-3 w-3 opacity-40" />}
+      </Button>
+    ),
+    cell: ({ row }) => (
+      <span className="tabular-nums text-xs" style={{ color: "var(--text-muted)" }}>
+        {new Intl.DateTimeFormat("fa-IR", { dateStyle: "short", timeStyle: "short", timeZone: "Asia/Tehran" }).format(row.original.bookedAt)}
+      </span>
+    ),
+  },
+  {
     accessorKey: "date",
     header: ({ column }) => (
       <Button
         variant="ghost"
         size="sm"
-        className="px-0 font-medium"
-        style={{ color: "var(--text-muted)" }}
+        className={`rounded-md px-2 font-medium ${column.getIsSorted() ? "bg-[#C6A55B]/10 text-[#C6A55B]" : "px-0"}`}
+        style={{ color: column.getIsSorted() ? "#C6A55B" : "var(--text-muted)" }}
         onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
       >
         تاریخ
-        <ArrowUpDown className="mr-1 h-3 w-3" />
+        {column.getIsSorted() === "asc" ? <ArrowUp className="mr-1 h-3 w-3" /> : column.getIsSorted() === "desc" ? <ArrowDown className="mr-1 h-3 w-3" /> : <ArrowUp className="mr-1 h-3 w-3 opacity-40" />}
       </Button>
     ),
     cell: ({ row }) => (
@@ -126,5 +149,6 @@ export const columns: ColumnDef<BookingRow>[] = [
   {
     id: "actions",
     cell: ({ row }) => <BookingDetailDialog booking={row.original} />,
+    enableHiding: false,
   },
 ]

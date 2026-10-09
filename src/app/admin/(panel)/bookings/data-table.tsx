@@ -10,6 +10,7 @@ import {
   useReactTable,
   type ColumnDef,
   type ColumnFiltersState,
+  type ColumnVisibilityState,
   type SortingState,
 } from "@tanstack/react-table"
 import {
@@ -22,41 +23,70 @@ import {
 } from "@/components/ui/table"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
+import { Checkbox } from "@/components/ui/checkbox"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { Columns3 } from "lucide-react"
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[]
   data: TData[]
+  initialColumnVisibility: ColumnVisibilityState
 }
 
 export function BookingsDataTable<TData, TValue>({
   columns,
   data,
+  initialColumnVisibility,
 }: DataTableProps<TData, TValue>) {
-  const [sorting, setSorting] = React.useState<SortingState>([{ id: "date", desc: true }])
+  const [sorting, setSorting] = React.useState<SortingState>([{ id: "bookedAt", desc: true }])
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([])
+  const [columnVisibility, setColumnVisibility] = React.useState<ColumnVisibilityState>(initialColumnVisibility)
+
+  React.useEffect(() => {
+    document.cookie = `admin-bookings-column-visibility=${encodeURIComponent(JSON.stringify(columnVisibility))}; Path=/admin/bookings; Max-Age=31536000; SameSite=Lax${location.protocol === "https:" ? "; Secure" : ""}`
+  }, [columnVisibility])
 
   const table = useReactTable({
     data,
     columns,
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
+    onColumnVisibilityChange: setColumnVisibility,
     getCoreRowModel: getCoreRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
     getSortedRowModel: getSortedRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
-    state: { sorting, columnFilters },
+    state: { sorting, columnFilters, columnVisibility },
     initialState: { pagination: { pageSize: 20 } },
   })
 
   return (
     <div className="flex flex-col gap-4">
-      {/* Search */}
-      <Input
-        placeholder="جستجو بر اساس نام مشتری..."
-        value={(table.getColumn("customerName")?.getFilterValue() as string) ?? ""}
-        onChange={(e) => table.getColumn("customerName")?.setFilterValue(e.target.value)}
-        className="max-w-xs text-sm"
-      />
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <Input
+          placeholder="جستجو بر اساس نام مشتری..."
+          value={(table.getColumn("customerName")?.getFilterValue() as string) ?? ""}
+          onChange={(e) => table.getColumn("customerName")?.setFilterValue(e.target.value)}
+          className="max-w-xs text-sm"
+        />
+        <Popover>
+          <PopoverTrigger render={<Button variant="outline" size="sm" className="gap-2" />}>
+            <Columns3 className="size-4" /> ستون‌ها
+          </PopoverTrigger>
+          <PopoverContent align="end" className="w-48">
+            <p className="px-1 pb-1 text-xs font-medium" style={{ color: "var(--text-muted)" }}>نمایش ستون‌ها</p>
+            {table.getAllLeafColumns().filter(column => column.getCanHide()).map(column => (
+              <label key={column.id} className="flex cursor-pointer items-center gap-2 rounded-md px-1 py-1.5 text-sm hover:bg-white/5">
+                <Checkbox
+                  checked={column.getIsVisible()}
+                  onCheckedChange={value => column.toggleVisibility(!!value)}
+                />
+                <span>{({ bookedAt: "زمان ثبت", date: "تاریخ رزرو", customerName: "مشتری", serviceNameFa: "سرویس", status: "وضعیت" } as Record<string, string>)[column.id] ?? column.id}</span>
+              </label>
+            ))}
+          </PopoverContent>
+        </Popover>
+      </div>
 
       {/* Table */}
       <div className="glass overflow-hidden rounded-xl">
@@ -96,7 +126,7 @@ export function BookingsDataTable<TData, TValue>({
             ) : (
               <TableRow>
                 <TableCell
-                  colSpan={columns.length}
+                  colSpan={table.getVisibleLeafColumns().length}
                   className="h-24 text-xs"
                   style={{ color: "var(--text-faint)" }}
                 >

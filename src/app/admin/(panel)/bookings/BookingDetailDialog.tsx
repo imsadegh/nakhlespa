@@ -19,6 +19,7 @@ import {
 import { Button } from "@/components/ui/button"
 import type { BookingRow, BookingAddonRow } from "./columns"
 import { formatCustomization } from '@/lib/booking-customization'
+import { HEALTH_INTAKE_SECTIONS } from '@/lib/health-intake'
 
 const statusLabel: Record<BookingStatus, string> = {
   PENDING_PAYMENT: "در انتظار پرداخت",
@@ -91,7 +92,7 @@ export function BookingDetailDialog({ booking }: { booking: BookingRow }) {
       >
         جزئیات
       </DialogTrigger>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>جزئیات رزرو</DialogTitle>
         </DialogHeader>
@@ -122,6 +123,28 @@ export function BookingDetailDialog({ booking }: { booking: BookingRow }) {
               ))}
             </div>
           </div>
+          {booking.healthIntake && (
+            <div className="border-t pt-2 mt-1" style={{ borderColor: "var(--border-base)" }}>
+              <p className="text-xs font-medium mb-2" style={{ color: "var(--text-muted)" }}>اطلاعات سلامت</p>
+              <div className="flex flex-col gap-2">
+                <div className="flex justify-between items-start gap-4">
+                  <span className="text-xs flex-shrink-0" style={{ color: "var(--text-faint)" }}>موارد اعلام‌شده</span>
+                  <span className="text-xs text-end" style={{ color: "var(--text-primary)" }}>
+                    {booking.healthIntake.noneOfTheAbove
+                      ? 'هیچ‌کدام از موارد بالا'
+                      : HEALTH_INTAKE_SECTIONS.flatMap(section => section.conditions)
+                        .filter(condition => booking.healthIntake?.conditions[condition.key])
+                        .map(condition => condition.label)
+                        .join('، ') || '—'}
+                  </span>
+                </div>
+                <div className="flex justify-between items-start gap-4">
+                  <span className="text-xs flex-shrink-0" style={{ color: "var(--text-faint)" }}>توضیحات پزشکی</span>
+                  <span className="text-xs text-end whitespace-pre-wrap" style={{ color: "var(--text-primary)" }}>{booking.healthIntake.medicalNotes || '—'}</span>
+                </div>
+              </div>
+            </div>
+          )}
           <div className="flex justify-between items-center gap-4">
             <span className="text-xs flex-shrink-0" style={{ color: "var(--text-faint)" }}>وضعیت</span>
             <span className={`text-[10px] px-2 py-0.5 rounded-full ${statusStyle[status]}`}>

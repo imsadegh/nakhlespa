@@ -1,6 +1,7 @@
 import { db } from '@/lib/db'
 import { bookings } from '@/db/schema'
 import { desc } from 'drizzle-orm'
+import { cookies } from 'next/headers'
 import { columns, type BookingRow } from './columns'
 import { BookingsDataTable } from './data-table'
 
@@ -11,6 +12,20 @@ function toFaDate(date: Date) {
 }
 
 export default async function BookingsPage() {
+  const cookieStore = await cookies()
+  let columnVisibility: Record<string, boolean> = {}
+  try {
+    const savedVisibility = cookieStore.get('admin-bookings-column-visibility')?.value
+    if (savedVisibility) {
+      const parsed = JSON.parse(decodeURIComponent(savedVisibility)) as Record<string, unknown>
+      for (const id of ['bookedAt', 'date', 'customerName', 'serviceNameFa', 'status']) {
+        if (typeof parsed[id] === 'boolean') columnVisibility[id] = parsed[id]
+      }
+    }
+  } catch {
+    // Ignore malformed browser preferences and use the default visible columns.
+  }
+
   const bookingRows = await db.query.bookings.findMany({
     with: { service: true, addons: { with: { addon: true } }, discountCode: true },
     orderBy: desc(bookings.createdAt),
@@ -19,6 +34,7 @@ export default async function BookingsPage() {
   const rows: BookingRow[] = bookingRows.map(b => ({
     id: b.id,
     bookingCode: b.bookingCode,
+    bookedAt: b.createdAt.getTime(),
     date: toFaDate(b.date),
     startTime: b.startTime,
     endTime: b.endTime,
@@ -35,12 +51,13 @@ export default async function BookingsPage() {
     discountAmount: b.discountAmount,
     discountCode: b.discountCode ? { code: b.discountCode.code } : null,
     customization: b.customization,
+    healthIntake: b.healthIntake,
   }))
 
   return (
     <div>
       <h1 className="text-xl font-light mb-6" style={{ color: 'var(--text-primary)' }}>رزروها</h1>
-      <BookingsDataTable columns={columns} data={rows} />
+      <BookingsDataTable columns={columns} data={rows} initialColumnVisibility={columnVisibility} />
     </div>
   )
 }

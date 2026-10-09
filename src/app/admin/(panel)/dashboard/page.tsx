@@ -27,6 +27,12 @@ const statusStyle: Record<BookingStatus, string> = {
   CANCELLED: 'bg-red-400/10 text-red-400',
 }
 
+const genderLabel = { FEMALE: 'خانم', MALE: 'آقا' } as const
+const genderStyle = {
+  FEMALE: 'bg-[#BD6D87]/10 text-[#974B66] dark:text-[#E7A8BC]',
+  MALE: 'bg-[#258273]/10 text-[#176457] dark:text-[#7CC8B7]',
+} as const
+
 export default async function DashboardPage() {
   const todayStr = new Date().toISOString().split('T')[0]
   const today = new Date(todayStr + 'T00:00:00.000Z')
@@ -107,6 +113,9 @@ export default async function DashboardPage() {
                     <span className="text-xs font-medium flex-shrink-0" style={{ color: 'var(--text-primary)' }}>
                       {b.customerName}
                     </span>
+                    <span className={`shrink-0 rounded-full px-2 py-0.5 text-[9px] ${genderStyle[b.gender]}`}>
+                      {genderLabel[b.gender]}
+                    </span>
                     <span className="text-[11px]" style={{ color: 'var(--text-faint)' }}>
                       · {b.service.nameFa}
                     </span>
@@ -145,6 +154,9 @@ export default async function DashboardPage() {
                     </span>
                     <span className="text-xs font-medium flex-shrink-0" style={{ color: 'var(--text-primary)' }}>
                       {b.customerName}
+                    </span>
+                    <span className={`shrink-0 rounded-full px-2 py-0.5 text-[9px] ${genderStyle[b.gender]}`}>
+                      {genderLabel[b.gender]}
                     </span>
                     <span className="text-[11px]" style={{ color: 'var(--text-faint)' }}>
                       · {b.service.nameFa}
