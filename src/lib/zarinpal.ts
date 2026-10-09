@@ -7,10 +7,10 @@ const MOCK = process.env.NODE_ENV !== 'production' && process.env.ZARINPAL_MOCK 
 const HOST = SANDBOX ? 'sandbox.zarinpal.com' : 'payment.zarinpal.com'
 const BASE = `https://${HOST}/pg/v4/payment`
 
-export async function zarinpalRequest(amount: number, description: string, mobile: string) {
+export async function zarinpalRequest(amount: number, description: string, mobile: string, callbackUrl = CALLBACK) {
   if (MOCK) {
     const authority = `mock-${crypto.randomUUID()}`
-    const callback = new URL(CALLBACK)
+    const callback = new URL(callbackUrl)
     callback.searchParams.set('Authority', authority)
     callback.searchParams.set('Status', 'OK')
     return { authority, paymentUrl: callback.toString() }
@@ -22,7 +22,7 @@ export async function zarinpalRequest(amount: number, description: string, mobil
       merchant_id: MERCHANT,
       amount,
       description,
-      callback_url: CALLBACK,
+      callback_url: callbackUrl,
       currency: 'IRT',
       metadata: { mobile },
     })

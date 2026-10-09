@@ -216,7 +216,10 @@ export async function POST(req: NextRequest) {
   const payerBooking = createdBookings[0]
 
   try {
-    const { authority, paymentUrl } = await zarinpalRequest(totalPrice, paymentDescription, payerPhone)
+    const mockCallbackUrl = process.env.NODE_ENV !== 'production' && process.env.ZARINPAL_MOCK === 'true'
+      ? new URL('/api/bookings/verify', req.url).toString()
+      : undefined
+    const { authority, paymentUrl } = await zarinpalRequest(totalPrice, paymentDescription, payerPhone, mockCallbackUrl)
     await db.update(bookingsTable).set({ zarinpalAuthority: authority }).where(eq(bookingsTable.id, payerBooking.id))
     return NextResponse.json({ paymentUrl })
   } catch (err) {

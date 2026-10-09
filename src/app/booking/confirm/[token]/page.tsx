@@ -9,14 +9,27 @@ import { GoldButton } from '@/components/ui/GoldButton'
 import Link from 'next/link'
 import { CUSTOMER_BOOKING_PROJECTION } from '@/lib/customer-booking'
 
+const CONFIRMATION_BOOKING_PROJECTION = {
+  ...CUSTOMER_BOOKING_PROJECTION,
+  columns: { ...CUSTOMER_BOOKING_PROJECTION.columns, customerPhone: true, gender: true },
+  with: {
+    ...CUSTOMER_BOOKING_PROJECTION.with,
+    customizations: { columns: { id: true, pricePaid: true } },
+  },
+} as const
+
 function toFaTime(t: string) {
   return t.replace(/\d/g, d => '۰۱۲۳۴۵۶۷۸۹'[+d])
+}
+
+function honorificName(gender: 'FEMALE' | 'MALE', name: string) {
+  return `${gender === 'FEMALE' ? 'خانم' : 'آقای'} ${name}`
 }
 
 export default async function ConfirmPage({ params }: { params: Promise<{ token: string }> }) {
   const { token } = await params
   const booking = await db.query.bookings.findFirst({
-    ...CUSTOMER_BOOKING_PROJECTION,
+    ...CONFIRMATION_BOOKING_PROJECTION,
     where: eq(bookings.token, token),
   })
   if (!booking || (booking.status !== BookingStatus.PAID && booking.status !== BookingStatus.CONFIRMED)) notFound()
@@ -25,7 +38,7 @@ export default async function ConfirmPage({ params }: { params: Promise<{ token:
   // Filter to only PAID/CONFIRMED to exclude cancelled members from display
   const groupBookings = booking.groupToken
       ? await db.query.bookings.findMany({
-        ...CUSTOMER_BOOKING_PROJECTION,
+        ...CONFIRMATION_BOOKING_PROJECTION,
         where: and(eq(bookings.groupToken, booking.groupToken), inArray(bookings.status, [BookingStatus.PAID, BookingStatus.CONFIRMED])),
         orderBy: asc(bookings.createdAt),
       })
@@ -33,67 +46,79 @@ export default async function ConfirmPage({ params }: { params: Promise<{ token:
 
   const dateFa = new Date(booking.date.toISOString().split('T')[0] + 'T12:00:00').toLocaleDateString('fa-IR')
   const isGroup = groupBookings.length > 1
+  const totalPaid = Math.max(0, groupBookings.reduce(
+    (total, b) => total + b.service.price + b.addonsPricePaid + b.customizations.reduce((sum, item) => sum + item.pricePaid, 0),
+    0,
+  ) - booking.discountAmount)
 
   return (
     <>
       <AmbientBackground />
-      <div className="relative z-10 max-w-lg mx-auto min-h-screen flex flex-col items-center justify-center px-6">
-        <ConfirmCheckmark />
-        <h1 className="text-2xl font-light text-[#F3EFE8] mt-6 mb-2">رزرو تأیید شد</h1>
-        <p className="text-xs text-[#F3EFE8]/40 mb-8 text-center font-light">رسید پرداخت از طریق SMS ارسال شد</p>
+      <div className="relative z-10 mx-auto flex min-h-dvh w-full max-w-xl flex-col justify-center px-4 py-8 sm:px-6">
+        <header className="mb-6 flex flex-col items-center text-center">
+          <ConfirmCheckmark gender={booking.gender} />
+          <span className="mt-4 rounded-full border border-[#258273]/25 bg-[#258273]/10 px-3 py-1 text-[10px] font-medium text-[#176457] dark:text-[#7CC8B7]">
+            پرداخت با موفقیت ثبت شد
+          </span>
+          <h1 className="mt-2 text-2xl font-semibold text-site-primary">رزرو تأیید شد</h1>
+          <p className="mt-1 text-xs leading-relaxed text-site-muted">رسید پرداخت از طریق SMS ارسال شد</p>
+        </header>
 
-        {/* Shared date/time */}
-        <GlassCard className="w-full p-4 mb-4 space-y-2">
-          {([
-            ['تاریخ', dateFa],
-            ['ساعت', toFaTime(booking.startTime)],
-            ['کد رزرو', booking.bookingCode],
-          ] as [string, string][]).map(([label, value]) => (
-            <div key={label} className="flex justify-between">
-              <span className="text-[#F3EFE8]/40 text-xs">{label}</span>
-              <span className="text-[#F3EFE8] text-xs font-medium">{value}</span>
+        <GlassCard className="mb-4 w-full overflow-hidden p-0">
+          <div className="flex items-center justify-between gap-4 border-b border-[var(--border-base)] px-5 py-4">
+            <div>
+              <p className="text-xs text-site-muted">مبلغ پرداخت‌شده</p>
+              <p className="mt-1 text-2xl font-semibold text-[#A8873A]">
+                {totalPaid.toLocaleString('fa-IR')} <span className="text-sm font-medium">تومان</span>
+              </p>
             </div>
-          ))}
-        </GlassCard>
-
-        {/* Per-person room breakdown */}
-        {isGroup ? (
-          <div className="w-full flex flex-col gap-2 mb-8">
-            {groupBookings.map((b, i) => (
-              <GlassCard key={b.id} className="p-3 space-y-1.5">
-                <p className="text-[10px] font-medium" style={{ color: 'rgba(243,239,232,0.4)' }}>
-                  نفر {String(i + 1).replace(/\d/g, d => '۰۱۲۳۴۵۶۷۸۹'[+d])}
-                </p>
-                {([
-                  ['نام', b.customerName],
-                  ['غرفه', b.service.nameFa],
-                ] as [string, string][]).map(([label, value]) => (
-                  <div key={label} className="flex justify-between">
-                    <span className="text-[#F3EFE8]/40 text-xs">{label}</span>
-                    <span className="text-[#F3EFE8] text-xs font-medium">{value}</span>
-                  </div>
-                ))}
-              </GlassCard>
-            ))}
+            <span className="shrink-0 rounded-full bg-[#258273]/10 px-3 py-1.5 text-[10px] font-medium text-[#176457] dark:text-[#7CC8B7]">
+              پرداخت موفق
+            </span>
           </div>
-        ) : (
-          <GlassCard className="w-full p-4 mb-8 space-y-2">
+          <div className="grid grid-cols-2 gap-3 p-4 sm:gap-4 sm:p-5">
             {([
-              ['خدمت', booking.service.nameFa],
-              ['نام', booking.customerName],
+              ['تاریخ', dateFa],
+              ['ساعت', toFaTime(booking.startTime)],
+              ['شماره تماس', booking.customerPhone],
+              ['کد رزرو', booking.bookingCode],
             ] as [string, string][]).map(([label, value]) => (
-              <div key={label} className="flex justify-between">
-                <span className="text-[#F3EFE8]/40 text-xs">{label}</span>
-                <span className="text-[#F3EFE8] text-xs font-medium">{value}</span>
+              <div key={label} className="min-w-0 rounded-xl bg-[var(--bg-surface)] px-3 py-2.5">
+                <p className="text-[10px] text-site-muted">{label}</p>
+                <p className="mt-1 break-all text-xs font-medium text-site-primary">{value}</p>
               </div>
             ))}
-          </GlassCard>
-        )}
+          </div>
+        </GlassCard>
+
+        <section className="mb-6 w-full space-y-3" aria-label="جزئیات مراجعه">
+          <div className="flex items-center justify-between px-1">
+            <h2 className="text-sm font-semibold text-site-primary">جزئیات مراجعه</h2>
+            {isGroup && <span className="text-[10px] text-site-muted">{groupBookings.length.toLocaleString('fa-IR')} نفر</span>}
+          </div>
+          {groupBookings.map((b, i) => (
+            <GlassCard key={b.id} className={`w-full p-4 ${b.gender === 'FEMALE' ? 'border border-[#BD6D87]/30 bg-[#BD6D87]/[0.04]' : 'border border-[#258273]/30 bg-[#258273]/[0.04]'}`}>
+              <div className="flex items-center justify-between gap-3">
+                <span className="text-xs text-site-muted">{isGroup ? `نفر ${String(i + 1).replace(/\d/g, d => '۰۱۲۳۴۵۶۷۸۹'[+d])}` : 'خدمت'}</span>
+                <span className="text-sm font-medium text-site-primary">{b.service.nameFa}</span>
+              </div>
+              <div className="mt-3 flex items-center justify-between gap-3 border-t border-[var(--border-base)] pt-3">
+                <span className="text-xs text-site-muted">مراجع</span>
+                <span dir="rtl" className="flex min-w-0 items-center gap-2 text-sm font-medium text-site-primary">
+                  <span className={`shrink-0 rounded-md px-2 py-1 text-[10px] ${b.gender === 'FEMALE' ? 'bg-[#BD6D87]/10 text-[#974B66] dark:text-[#E7A8BC]' : 'bg-[#258273]/10 text-[#176457] dark:text-[#7CC8B7]'}`}>
+                    {b.gender === 'FEMALE' ? 'خانم' : 'آقای'}
+                  </span>
+                  <bdi dir="auto" className="truncate">{b.customerName}</bdi>
+                </span>
+              </div>
+            </GlassCard>
+          ))}
+        </section>
 
         <Link href="/" className="w-full">
           <GoldButton className="w-full py-4">بازگشت به خانه</GoldButton>
         </Link>
-        <Link href="/my/bookings" className="w-full mt-3 block text-center text-xs underline" style={{ color: 'var(--text-muted)' }}>
+        <Link href="/my/bookings" className="mt-3 block w-full text-center text-xs text-site-muted underline">
           مشاهده همه رزروهای شما ←
         </Link>
       </div>

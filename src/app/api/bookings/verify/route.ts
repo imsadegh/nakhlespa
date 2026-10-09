@@ -11,7 +11,7 @@ const MOCK_PAYMENT = process.env.NODE_ENV !== 'production' && process.env.ZARINP
 export async function GET(req: NextRequest) {
   const authority = req.nextUrl.searchParams.get('Authority')
   const status = req.nextUrl.searchParams.get('Status')
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL!
+  const siteUrl = MOCK_PAYMENT ? req.nextUrl.origin : process.env.NEXT_PUBLIC_SITE_URL!
 
   if (status !== 'OK' || !authority) {
     return NextResponse.redirect(`${siteUrl}/booking/failed`)
