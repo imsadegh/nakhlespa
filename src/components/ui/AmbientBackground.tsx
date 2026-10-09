@@ -7,7 +7,6 @@ type Particle = {
   baseVy: number
   r: number
   alpha: number; alphaDir: number
-  burst: boolean
 }
 
 function ParticleCanvas() {
@@ -24,9 +23,6 @@ function ParticleCanvas() {
     let rafId: number
     let scrollBoost = 0
     let lastScrollY = window.scrollY
-    let mouseX = W / 2
-    let mouseY = H / 2
-    let lastMouseMove = 0
     let lastActivityAt = Date.now()
     let lastFrameAt = 0
     let hidden = document.hidden
@@ -51,26 +47,8 @@ function ParticleCanvas() {
         r: Math.random() * 1.8 + 0.4,
         alpha: Math.random() * 0.35 + 0.08,
         alphaDir: Math.random() > 0.5 ? 1 : -1,
-        burst: false,
       }
     })
-
-    function spawnBurst(cx: number, cy: number) {
-      for (let i = 0; i < 12; i++) {
-        const angle = (i / 12) * Math.PI * 2 + Math.random() * 0.3
-        const speed = Math.random() * 2.5 + 0.8
-        particles.push({
-          x: cx, y: cy,
-          vx: Math.cos(angle) * speed,
-          vy: Math.sin(angle) * speed,
-          baseVy: 0,
-          r: Math.random() * 2.2 + 0.6,
-          alpha: Math.random() * 0.5 + 0.25,
-          alphaDir: -1,
-          burst: true,
-        })
-      }
-    }
 
     const onResize = () => {
       W = window.innerWidth; H = window.innerHeight
@@ -84,23 +62,10 @@ function ParticleCanvas() {
       lastActivityAt = Date.now()
     }
 
-    const onClick = (e: MouseEvent) => { spawnBurst(e.clientX, e.clientY); lastActivityAt = Date.now() }
-
-    const onMouseMove = (e: MouseEvent) => {
-      const now = Date.now()
-      if (now - lastMouseMove < 32) return
-      lastMouseMove = now
-      lastActivityAt = now
-      mouseX = e.clientX
-      mouseY = e.clientY
-    }
-
     const onVisibility = () => { hidden = document.hidden }
 
     window.addEventListener('resize', onResize)
     window.addEventListener('scroll', onScroll, { passive: true })
-    window.addEventListener('click', onClick)
-    window.addEventListener('mousemove', onMouseMove, { passive: true })
     document.addEventListener('visibilitychange', onVisibility)
 
     function isLightTheme() {
@@ -118,8 +83,8 @@ function ParticleCanvas() {
 
       const now = Date.now()
       const idle = now - lastActivityAt > 2000
-      // 30fps idle, 60fps active
-      if (now - lastFrameAt < (idle ? 33 : 16)) return
+      // 20fps idle, 40fps active
+      if (now - lastFrameAt < (idle ? 50 : 25)) return
       lastFrameAt = now
 
       ctx.clearRect(0, 0, W, H)
@@ -130,29 +95,14 @@ function ParticleCanvas() {
       for (let i = particles.length - 1; i >= 0; i--) {
         const p = particles[i]
 
-        if (p.burst) {
-          p.x += p.vx; p.y += p.vy
-          p.vx *= 0.96; p.vy *= 0.96
-          p.alpha -= 0.012
-          if (p.alpha <= 0) { particles.splice(i, 1); continue }
-        } else {
-          const dx = mouseX - p.x
-          const dy = mouseY - p.y
-          const dist = Math.sqrt(dx * dx + dy * dy)
-          if (dist < 180 && dist > 0) {
-            const force = (1 - dist / 180) * 0.045
-            p.vx -= (dx / dist) * force
-            p.vy -= (dy / dist) * force
-          }
-          p.vx *= 0.92
-          p.vy = p.vy * 0.92 + p.baseVy * speedMul * 0.08
-          p.x += p.vx; p.y += p.vy
-          p.alpha += p.alphaDir * 0.0015
-          if (p.alpha > 0.45 || p.alpha < 0.05) p.alphaDir *= -1
-          if (p.y < -10) { p.y = H + 10; p.x = Math.random() * W }
-          if (p.x < -10) p.x = W + 10
-          if (p.x > W + 10) p.x = -10
-        }
+        p.vx *= 0.92
+        p.vy = p.vy * 0.92 + p.baseVy * speedMul * 0.08
+        p.x += p.vx; p.y += p.vy
+        p.alpha += p.alphaDir * 0.0015
+        if (p.alpha > 0.45 || p.alpha < 0.05) p.alphaDir *= -1
+        if (p.y < -10) { p.y = H + 10; p.x = Math.random() * W }
+        if (p.x < -10) p.x = W + 10
+        if (p.x > W + 10) p.x = -10
 
         ctx.beginPath()
         ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2)
@@ -168,8 +118,6 @@ function ParticleCanvas() {
       cancelAnimationFrame(rafId)
       window.removeEventListener('resize', onResize)
       window.removeEventListener('scroll', onScroll)
-      window.removeEventListener('click', onClick)
-      window.removeEventListener('mousemove', onMouseMove)
       document.removeEventListener('visibilitychange', onVisibility)
     }
   }, [])
