@@ -1,4 +1,5 @@
 'use client'
+import { CircleCheck } from 'lucide-react'
 import { GoldButton } from '@/components/ui/GoldButton'
 import { GhostButton } from '@/components/ui/GhostButton'
 import { Input } from '@/components/ui/input'
@@ -77,7 +78,9 @@ function HealthQuestionnaire({
                 در صورت وجود، موارد مربوط به خود را انتخاب کنید.
               </QuestionnaireDescription>
               <QuestionnaireChoices className={cn(
-                section.key === 'illnesses' ? 'grid grid-cols-1 gap-2 sm:grid-cols-2' : 'flex flex-col gap-2',
+                section.key === 'illnesses' || section.key === 'skinAndSensitivity'
+                  ? 'grid grid-cols-1 gap-2 sm:grid-cols-2'
+                  : 'flex flex-col gap-2',
               )}>
                 {conditions.map(condition => {
                   const id = `health-${section.key}-${condition.key}`
@@ -98,14 +101,27 @@ function HealthQuestionnaire({
           </Questionnaire.Root>
         )
       })}
-      <label htmlFor={`health-none-${person.customerName}`} className="flex min-h-11 cursor-pointer items-center gap-2 rounded-xl border px-3 py-2 text-xs" style={{ borderColor: 'var(--border-base)' }}>
+      <label
+        htmlFor={`health-none-${person.customerName}`}
+        className={cn(
+          'flex min-h-14 cursor-pointer items-center gap-3 rounded-2xl border px-3 py-2.5 transition-colors',
+          intake.noneOfTheAbove
+            ? 'border-emerald-500/50 bg-emerald-500/10'
+            : 'border-emerald-500/25 bg-emerald-500/[0.04] hover:bg-emerald-500/[0.08]',
+        )}
+      >
         <Checkbox
           id={`health-none-${person.customerName}`}
           aria-label={noneLabel}
           checked={intake.noneOfTheAbove}
           onCheckedChange={checked => setNone(checked === true)}
+          className="data-checked:border-emerald-600 data-checked:bg-emerald-600 data-checked:text-white"
         />
-        <span>{noneLabel}</span>
+        <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+          <span className="text-xs font-semibold" style={{ color: 'var(--text-primary)' }}>{noneLabel}</span>
+          <span className="text-[11px] leading-relaxed" style={{ color: 'var(--text-muted)' }}>اگر هیچ‌یک از موارد بالا را ندارید، این گزینه را انتخاب کنید.</span>
+        </span>
+        <CircleCheck aria-hidden="true" className={cn('size-5 shrink-0 transition-colors', intake.noneOfTheAbove ? 'text-emerald-600' : 'text-emerald-700/45')} />
       </label>
       {Object.keys(intake.conditions).length > 0 && (
           <Textarea
