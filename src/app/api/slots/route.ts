@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { eq } from 'drizzle-orm'
 import { db } from '@/lib/db'
 import { services } from '@/db/schema'
-import { getAvailableSlots, getSlotsForRooms } from '@/lib/slots'
+import { getAvailableSlots, getSlotsForServices } from '@/lib/slots'
 import type { Gender } from '@/types'
 
 export async function GET(req: NextRequest) {
@@ -21,7 +21,7 @@ export async function GET(req: NextRequest) {
   try {
     if (serviceIdsParam) {
       const serviceIds = serviceIdsParam.split(',').filter(Boolean)
-      const slots = await getSlotsForRooms(date, serviceIds, gender)
+      const slots = await getSlotsForServices(date, serviceIds, gender)
       return NextResponse.json(slots)
     }
 

@@ -9,6 +9,7 @@ export type PressureLevel = 'GENTLE' | 'MEDIUM' | 'FIRM'
 export type Soap = 'TRADITIONAL' | 'LUXURY' | 'GOLNAR' | 'SHAMPOO'
 export type Loofah = 'PUBLIC' | 'BRINGS_OWN' | 'BUYS_FROM_US' | 'VIP_FREE_NEW'
 export type Poultice = 'GENERAL_SEDR_HENNA' | 'PRIVATE_WHEAT_WARM' | 'PRIVATE_BARLEY_COLD'
+export type FanTherapy = 'NONE' | 'FAN_THERAPY'
 
 export type BookingCustomization = {
   musicGenre: MusicGenre
@@ -16,6 +17,7 @@ export type BookingCustomization = {
   soap: Soap
   loofah: Loofah
   poultice: Poultice
+  fanTherapy: FanTherapy
 }
 
 export type CustomizationKey = keyof BookingCustomization

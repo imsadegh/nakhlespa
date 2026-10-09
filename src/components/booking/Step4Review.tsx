@@ -5,6 +5,7 @@ import { GoldButton } from '@/components/ui/GoldButton'
 import { GhostButton } from '@/components/ui/GhostButton'
 import type { CustomizationCatalogDTO, WizardState, ServiceDTO, AddonDTO } from '@/types'
 import { CUSTOMIZATION_CATALOG, formatCustomization, getCustomizationAdditionalPriceFromCatalog } from '@/lib/booking-customization'
+import { SPA_PACKAGE_NAMES } from '@/lib/spa-packages'
 
 type Props = { state: WizardState; goBack: () => void; services: ServiceDTO[]; addons: AddonDTO[]; customizationOptions?: CustomizationCatalogDTO[] }
 
@@ -26,7 +27,7 @@ export function Step4Review({ state, goBack, services, addons, customizationOpti
   const subtotal = state.persons.reduce((sum, person) => {
     const svc = services.find(s => s.id === person.serviceId)
     const addonSum = person.addonIds.reduce((a, id) => a + (addons.find(ad => ad.id === id)?.price ?? 0), 0)
-    const customizationSum = getCustomizationAdditionalPriceFromCatalog(person.customization, svc?.tier, catalog)
+    const customizationSum = getCustomizationAdditionalPriceFromCatalog(person.customization, svc?.tier, catalog, !!svc && SPA_PACKAGE_NAMES.has(svc.nameFa))
     return sum + (svc?.price ?? 0) + addonSum + customizationSum
   }, 0)
 
@@ -75,7 +76,7 @@ export function Step4Review({ state, goBack, services, addons, customizationOpti
           date: state.date!,
           startTime: state.startTime!,
           addonIds: person.addonIds,
-          customization: service?.tier !== null && service?.tier !== undefined ? person.customization : null,
+          customization: service && (service.tier !== null || SPA_PACKAGE_NAMES.has(service.nameFa)) ? person.customization : null,
           healthIntake: person.healthIntake,
           gender: state.gender!,
         }
@@ -128,7 +129,8 @@ export function Step4Review({ state, goBack, services, addons, customizationOpti
         {state.persons.map((person, i) => {
           const svc = services.find(s => s.id === person.serviceId)
           const selectedAddons = addons.filter(a => person.addonIds.includes(a.id))
-          const customizationTotal = getCustomizationAdditionalPriceFromCatalog(person.customization, svc?.tier, catalog)
+          const isCustomizable = !!svc && (svc.tier !== null || SPA_PACKAGE_NAMES.has(svc.nameFa))
+          const customizationTotal = getCustomizationAdditionalPriceFromCatalog(person.customization, svc?.tier, catalog, !!svc && SPA_PACKAGE_NAMES.has(svc.nameFa))
           const personTotal = (svc?.price ?? 0) + selectedAddons.reduce((s, a) => s + a.price, 0) + customizationTotal
           return (
             <GlassCard key={i} className="p-3 space-y-1.5">
@@ -137,7 +139,7 @@ export function Step4Review({ state, goBack, services, addons, customizationOpti
               </p>
               {([
                 ['نام', person.customerName || '—'],
-                ['غرفه', svc?.nameFa ?? '—'],
+                ['خدمت', svc?.nameFa ?? '—'],
               ] as [string, string][]).map(([label, value]) => (
                 <div key={label} className="flex justify-between text-xs">
                   <span style={{ color: 'var(--text-muted)' }}>{label}</span>
@@ -156,7 +158,7 @@ export function Step4Review({ state, goBack, services, addons, customizationOpti
                   <span style={{ color: 'var(--text-primary)' }}>+{customizationTotal.toLocaleString('fa-IR')} ت</span>
                 </div>
               )}
-              {svc?.tier !== null && svc?.tier !== undefined && <div className="border-t border-[rgba(198,165,91,0.15)] pt-1.5 mt-1.5">
+              {isCustomizable && <div className="border-t border-[rgba(198,165,91,0.15)] pt-1.5 mt-1.5">
                 <p className="text-[10px] font-medium mb-1" style={{ color: 'var(--text-faint)' }}>سفارشی‌سازی</p>
                 <div className="space-y-1">
                   {formatCustomization(person.customization).map(row => (

@@ -6,6 +6,8 @@ import { zarinpalRequest } from '@/lib/zarinpal'
 import { validatePromoCode, checkLoyaltyDiscount } from '@/lib/discounts'
 import { CUSTOMIZATION_CATALOG, getCustomizationAdditionalPriceFromCatalog, toCustomizationSnapshot, validateCustomizationAgainstCatalog } from '@/lib/booking-customization'
 import { validateHealthIntake } from '@/lib/health-intake'
+import { getSlotsForServices } from '@/lib/slots'
+import { getCustomizationTier, ONLINE_BOOKABLE_SERVICES, SPA_PACKAGE_NAMES } from '@/lib/spa-packages'
 import type { Booking } from '@/db/schema'
 import { randomUUID } from 'crypto'
 import type { BookingCreateInput, BookingCustomization, Gender } from '@/types'
@@ -67,6 +69,9 @@ export async function POST(req: NextRequest) {
   if (serviceRows.length !== serviceIds.length) {
     return NextResponse.json({ error: 'One or more services not found or inactive' }, { status: 404 })
   }
+  if (serviceRows.some(service => service.tier !== null || !ONLINE_BOOKABLE_SERVICES.has(service.nameFa))) {
+    return NextResponse.json({ error: 'Only packages and consultation can be booked online' }, { status: 400 })
+  }
   const serviceMap = new Map(serviceRows.map(s => [s.id, s]))
 
   const customizationCatalog = await db.select().from(customizationOptions).where(eq(customizationOptions.isActive, true))
@@ -75,8 +80,8 @@ export async function POST(req: NextRequest) {
       id: option.id,
       category: option.category as never,
       code: option.code,
-      label: option.labelFa,
-      description: option.descriptionFa,
+      label: option.code === 'VIP_FREE_NEW' ? 'کیسه و لیف نو رایگان (شاهانه)' : option.labelFa,
+      description: option.code === 'VIP_FREE_NEW' ? 'مخصوص بسته شاهانه، به‌صورت خودکار انتخاب می‌شود.' : option.descriptionFa,
       additionalPrice: option.additionalPrice,
       requiresTier: option.requiresTier,
       isActive: option.isActive,
@@ -87,7 +92,7 @@ export async function POST(req: NextRequest) {
   const validatedCustomizations = new Map<BookingCreateInput, BookingCustomization | null>()
   for (const b of bookings) {
     const svc = serviceMap.get(b.serviceId)!
-    const validation = validateCustomizationAgainstCatalog(b.customization, svc.tier, catalog)
+    const validation = validateCustomizationAgainstCatalog(b.customization, getCustomizationTier(svc.nameFa, svc.tier), catalog, SPA_PACKAGE_NAMES.has(svc.nameFa))
     if (!validation.valid) {
       return NextResponse.json({ error: validation.error }, { status: 400 })
     }
@@ -111,8 +116,10 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  // Prevent booking the same room twice in one group
-  const bookedServiceIds = bookings.map(b => b.serviceId)
+  // Prevent booking the same room twice; package services can repeat.
+  const bookedServiceIds = bookings
+    .filter(booking => serviceMap.get(booking.serviceId)?.tier !== null)
+    .map(booking => booking.serviceId)
   if (new Set(bookedServiceIds).size !== bookedServiceIds.length) {
     return NextResponse.json({ error: 'Each room can only be booked once per group' }, { status: 400 })
   }
@@ -144,18 +151,14 @@ export async function POST(req: NextRequest) {
     const endTime = addMinutesToTime(b.startTime, svc.durationMinutes)
     const validatedCustomization = validatedCustomizations.get(b)!
     const validatedHealthIntake = validatedHealthIntakes.get(b)!
-    const customizationPricePaid = getCustomizationAdditionalPriceFromCatalog(validatedCustomization, svc.tier, catalog)
-    const customizationSnapshots = toCustomizationSnapshot(validatedCustomization!, svc.tier, catalog)
+    const isSpaPackage = SPA_PACKAGE_NAMES.has(svc.nameFa)
+    const customizationTier = getCustomizationTier(svc.nameFa, svc.tier)
+    const customizationPricePaid = getCustomizationAdditionalPriceFromCatalog(validatedCustomization, customizationTier, catalog, isSpaPackage)
+    const customizationSnapshots = toCustomizationSnapshot(validatedCustomization!, customizationTier, catalog, isSpaPackage)
     return { b, svc, selectedAddons, addonsPricePaid, customizationPricePaid, customizationSnapshots, endTime, validatedCustomization, validatedHealthIntake }
   })
 
-  const { getAvailableSlots } = await import('@/lib/slots')
-  const slotsForDate = await getAvailableSlots(
-    bookings[0].date,
-    Math.max(...bookingData.map(({ svc }) => svc.durationMinutes)),
-    bookings.length,
-    gender,
-  )
+  const slotsForDate = await getSlotsForServices(bookings[0].date, bookingData.map(({ svc }) => svc.id), gender)
   const requestedSlot = slotsForDate.find(s => s.startTime === bookings[0].startTime)
   if (!requestedSlot || requestedSlot.taken) {
     return NextResponse.json({ error: 'Requested time slot is no longer available' }, { status: 409 })

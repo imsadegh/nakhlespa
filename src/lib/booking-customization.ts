@@ -10,6 +10,7 @@ export const CUSTOMIZATION_DEFAULTS: BookingCustomization = {
   soap: 'TRADITIONAL',
   loofah: 'PUBLIC',
   poultice: 'GENERAL_SEDR_HENNA',
+  fanTherapy: 'NONE',
 }
 
 export const CUSTOMIZATION_OPTIONS: {
@@ -37,7 +38,7 @@ export const CUSTOMIZATION_OPTIONS: {
     { value: 'PUBLIC', label: 'کیسه و لیف پشمی عمومی', description: 'کیسه و لیف عمومی مجموعه' },
     { value: 'BRINGS_OWN', label: 'همراه داشتن کیسه و لیف شخصی', description: 'مشتری کیسه و لیف شخصی خود را همراه دارد.' },
     { value: 'BUYS_FROM_US', label: 'خرید کیسه و لیف جدید', description: 'کیسه و لیف جدید از مجموعه خریداری می‌شود.', additionalPrice: 300000 },
-    { value: 'VIP_FREE_NEW', label: 'کیسه و لیف نو رایگان (VIP ارغوان)', description: 'مخصوص VIP ارغوان، به‌صورت خودکار انتخاب می‌شود.' },
+    { value: 'VIP_FREE_NEW', label: 'کیسه و لیف نو رایگان (شاهانه)', description: 'مخصوص بسته شاهانه، به‌صورت خودکار انتخاب می‌شود.' },
   ],
   poultice: [
     {
@@ -57,6 +58,10 @@ export const CUSTOMIZATION_OPTIONS: {
       description: 'ضماد سرد با آرد جو سبوس‌دار و سرکه سیب طبیعی',
       additionalPrice: 600000,
     },
+  ],
+  fanTherapy: [
+    { value: 'NONE', label: 'بدون بادکش', description: 'بدون استفاده از بادکش' },
+    { value: 'FAN_THERAPY', label: 'بادکش', description: 'پس از بادکش ممکن است کبودی و تغییر رنگ پوست ایجاد شود و تا ۱۰ روز باقی بماند.' },
   ],
 }
 
@@ -91,6 +96,7 @@ export const CUSTOMIZATION_FIELD_LABELS: Record<CustomizationKey, string> = {
   soap: 'صابون حمام',
   loofah: 'کیسه و لیف',
   poultice: 'ضماد',
+  fanTherapy: 'بادکش',
 }
 
 export type CustomizationDisplayRow = {
@@ -123,8 +129,9 @@ export function getDefaultCustomization(): BookingCustomization {
 export function getCustomizationAdditionalPrice(
   customization: BookingCustomization | null | undefined,
   serviceTier?: number | null,
+  isSpaPackage = false,
 ): number {
-  if (!customization || serviceTier === null || serviceTier === undefined) return 0
+  if (!customization || (!isSpaPackage && (serviceTier === null || serviceTier === undefined))) return 0
   return (Object.keys(CUSTOMIZATION_OPTIONS) as CustomizationKey[]).reduce((total, key) => {
     const option = CUSTOMIZATION_OPTIONS[key].find(item => item.value === customization[key])
     return total + (option?.additionalPrice ?? 0)
@@ -135,8 +142,9 @@ export function getCustomizationAdditionalPriceFromCatalog(
   customization: BookingCustomization | null | undefined,
   serviceTier: number | null | undefined,
   catalog: readonly CustomizationCatalogOption[],
+  isSpaPackage = false,
 ): number {
-  if (!customization || serviceTier === null || serviceTier === undefined) return 0
+  if (!customization || (!isSpaPackage && (serviceTier === null || serviceTier === undefined))) return 0
   return (Object.keys(CUSTOMIZATION_OPTIONS) as CustomizationKey[]).reduce((total, category) => {
     const code = customization[category]
     const option = catalog.find(item => item.category === category && item.code === code)
@@ -148,8 +156,9 @@ export function toCustomizationSnapshot(
   customization: BookingCustomization,
   serviceTier: number | null | undefined,
   catalog: readonly CustomizationCatalogOption[],
+  isSpaPackage = false,
 ) {
-  if (serviceTier === null || serviceTier === undefined) return []
+  if (!isSpaPackage && (serviceTier === null || serviceTier === undefined)) return []
   return (Object.keys(CUSTOMIZATION_OPTIONS) as CustomizationKey[]).flatMap(category => {
     const code = customization[category]
     const option = catalog.find(item => item.category === category && item.code === code)
@@ -204,8 +213,9 @@ export function validateCustomizationAgainstCatalog(
   input: unknown,
   serviceTier: number | null | undefined,
   catalog: readonly CustomizationCatalogOption[],
+  isSpaPackage = false,
 ): CustomizationValidation {
-  const legacy = validateCustomization(input, serviceTier)
+  const legacy = validateCustomization(input, isSpaPackage && serviceTier === null ? undefined : serviceTier)
   if (!legacy.valid || legacy.value === null) return legacy
   for (const category of Object.keys(CUSTOMIZATION_DEFAULTS) as CustomizationKey[]) {
     const option = catalog.find(item => item.category === category && item.code === legacy.value![category])

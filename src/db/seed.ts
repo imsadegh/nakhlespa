@@ -25,16 +25,31 @@ function daysFromNow(days: number): Date {
 async function seedDatabase() {
   await db.transaction(async tx => {
     const tiers = [
-      { nameFa: 'نسیم', descriptionFa: 'غرفه بهار', durationMinutes: 45, price: 700000, color: 'red', symbol: 'circle', tier: 1 },
-      { nameFa: 'آفتاب', descriptionFa: 'غرفه تابستان', durationMinutes: 60, price: 850000, color: 'yellow', symbol: 'triangle', tier: 2 },
-      { nameFa: 'ارغوان', descriptionFa: 'غرفه پاییز — VIP', durationMinutes: 120, price: 1000000, color: 'purple', symbol: 'quadrilateral', tier: 3 },
-      { nameFa: 'باران', descriptionFa: 'غرفه زمستان', durationMinutes: 90, price: 950000, color: 'blue', symbol: 'octagon', tier: 4 },
+      { nameFa: 'نسیم', descriptionFa: 'لحظه‌ای از آرامش؛ سبک، لطیف و رهایی‌بخش. مناسب برای اولین تجربه یا وقتی فقط به یک نفس عمیق نیاز دارید.', durationMinutes: 45, price: 700000, color: 'red', symbol: 'circle', tier: 1 },
+      { nameFa: 'آفتاب', descriptionFa: 'گرمای دلنشین یک ساعت ماساژ تخصصی که انرژی را به جریان می‌اندازد و تنش‌های روزمره را می‌زداید.', durationMinutes: 60, price: 850000, color: 'yellow', symbol: 'triangle', tier: 2 },
+      { nameFa: 'ارغوان', descriptionFa: 'تجربه VIP دو ساعته با بالاترین سطح توجه و مراقبت. اتاق اختصاصی، روغن‌های ممتاز و سکوتی کامل.', durationMinutes: 120, price: 1000000, color: 'purple', symbol: 'quadrilateral', tier: 3 },
+      { nameFa: 'باران', descriptionFa: 'نود دقیقه غرق شدن در سکوت و آرامش. ماساژ عمیق‌تر برای آن‌هایی که بدنشان استراحتی جدی‌تر می‌طلبد.', durationMinutes: 90, price: 950000, color: 'blue', symbol: 'octagon', tier: 4 },
     ]
 
     for (const tier of tiers) {
       await tx.insert(services).values(tier).onConflictDoUpdate({
         target: services.nameFa,
         set: tier,
+      })
+    }
+
+    const packages = [
+      { nameFa: 'نفس تازه', descriptionFa: 'کیسه‌کشی در حمام، ۲۰ دقیقه ماساژ ریلکسی، لیف پایانی و پذیرایی متناسب با مزاج.', durationMinutes: 20, price: 800000 },
+      { nameFa: 'احیاگر', descriptionFa: 'پذیرایی، کیسه‌کشی بدن و حوله‌آتشین، ۵۰ دقیقه ماساژ حرفه‌ای، عصب‌گیری عمومی، سدر و حنا و لیف نهایی.', durationMinutes: 50, price: 2050000 },
+      { nameFa: 'دریای آرامش', descriptionFa: 'پذیرایی متناسب با مزاج، کیسه‌کشی و سنگ‌پا، ۴۰ دقیقه ماساژ ریلکسی؛ مناسب رفع خستگی عمیق.', durationMinutes: 40, price: 1100000 },
+      { nameFa: 'سبک بال', descriptionFa: 'پذیرایی، پاکسازی بدن با لوفا، روغن‌مالی با روغن گل بنفشه، ۲۰ دقیقه ماساژ ریلکسی و لیف پایانی.', durationMinutes: 20, price: 1300000 },
+      { nameFa: 'شاهانه', descriptionFa: 'پذیرایی، کیسه‌کشی بدن، ۹۰ دقیقه ماساژ حرفه‌ای، عصب‌گیری عمومی، مشت‌ومال، سدر و حنا و لیف نهایی.', durationMinutes: 90, price: 3900000 },
+    ]
+
+    for (const pkg of packages) {
+      await tx.insert(services).values({ ...pkg, color: null, symbol: null, tier: null }).onConflictDoUpdate({
+        target: services.nameFa,
+        set: { ...pkg, color: null, symbol: null, tier: null, isActive: true },
       })
     }
 
@@ -57,20 +72,12 @@ async function seedDatabase() {
       .set({ isActive: false })
       .where(inArray(services.nameFa, ['ماساژ درمانی', 'ماساژ آرامش‌بخش']))
 
-    await tx.update(addons).set({ isActive: false }).where(eq(addons.nameFa, 'حمام طهورا'))
+    await tx.update(services).set({ isActive: false }).where(eq(services.nameFa, 'حمام طهورا'))
 
-    const bath = {
-      nameFa: 'حمام طهورا',
-      descriptionFa: 'حمام طهورا',
-      durationMinutes: 180,
-      price: 200000,
-      color: null,
-      symbol: null,
-      tier: null,
-    }
-    await tx.insert(services).values(bath).onConflictDoUpdate({
-      target: services.nameFa,
-      set: bath,
+    const bathAddon = { nameFa: 'حمام طهورا', price: 1200000, requiresTier: false }
+    await tx.insert(addons).values(bathAddon).onConflictDoUpdate({
+      target: addons.nameFa,
+      set: { price: bathAddon.price, requiresTier: bathAddon.requiresTier, isActive: true },
     })
 
     const drink = { nameFa: 'نوشیدنی ایوان گلاب', price: 150000, requiresTier: false }
@@ -194,7 +201,7 @@ async function seedAdmin() {
 async function main() {
   await seedDatabase()
   await seedAdmin()
-  console.log('Seeded 4 room tiers, مشاوره, حمام طهورا, 1 add-on, 14 gender-separated working hours, admin user, 8 sample bookings, LOYALTY_AUTO discount code')
+  console.log('Seeded 4 room tiers, 5 packages, مشاوره, حمام طهورا add-on, 1 drink add-on, 14 gender-separated working hours, admin user, 8 sample bookings, LOYALTY_AUTO discount code')
 }
 
 main().catch(error => {

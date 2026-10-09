@@ -19,7 +19,9 @@ export async function GET() {
     }).from(customizationOptions)
       .where(eq(customizationOptions.isActive, true))
       .orderBy(asc(customizationOptions.category), asc(customizationOptions.sortOrder))
-    return NextResponse.json(rows)
+    return NextResponse.json(rows.map(option => option.code === 'VIP_FREE_NEW'
+      ? { ...option, label: 'کیسه و لیف نو رایگان (شاهانه)', description: 'مخصوص بسته شاهانه، به‌صورت خودکار انتخاب می‌شود.' }
+      : option))
   } catch (error) {
     console.error('Customization options fetch error', error)
     return NextResponse.json({ error: 'Internal error' }, { status: 500 })

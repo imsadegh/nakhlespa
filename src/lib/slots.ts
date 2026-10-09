@@ -83,7 +83,7 @@ export async function getAvailableSlots(
   return slots
 }
 
-export async function getSlotsForRooms(
+export async function getSlotsForServices(
   date: string,
   serviceIds: string[],
   gender: 'FEMALE' | 'MALE',
@@ -97,14 +97,15 @@ export async function getSlotsForRooms(
   const open = timeToMinutes(workingDay.openTime)
   const close = timeToMinutes(workingDay.closeTime)
 
-  const serviceRows = await db.select({ id: services.id, durationMinutes: services.durationMinutes }).from(services).where(and(inArray(services.id, serviceIds), eq(services.isActive, true)))
+  const serviceRows = await db.select({ id: services.id, durationMinutes: services.durationMinutes, tier: services.tier }).from(services).where(and(inArray(services.id, serviceIds), eq(services.isActive, true)))
   if (serviceRows.length === 0) return []
   const durationMinutes = Math.max(...serviceRows.map(s => s.durationMinutes))
+  const roomServiceIds = serviceRows.filter(service => service.tier !== null).map(service => service.id)
 
-  const bookingsByRoom = await db.select({ serviceId: bookings.serviceId, startTime: bookings.startTime, endTime: bookings.endTime }).from(bookings).where(and(inArray(bookings.serviceId, serviceIds), eq(bookings.date, jsDate), ne(bookings.status, BookingStatus.CANCELLED), eq(bookings.gender, gender)))
+  const bookingsByRoom = roomServiceIds.length === 0 ? [] : await db.select({ serviceId: bookings.serviceId, startTime: bookings.startTime, endTime: bookings.endTime }).from(bookings).where(and(inArray(bookings.serviceId, roomServiceIds), eq(bookings.date, jsDate), ne(bookings.status, BookingStatus.CANCELLED), eq(bookings.gender, gender)))
 
   const roomRanges = new Map<string, { start: number; end: number }[]>()
-  for (const id of serviceIds) roomRanges.set(id, [])
+  for (const id of roomServiceIds) roomRanges.set(id, [])
   for (const b of bookingsByRoom) {
     roomRanges.get(b.serviceId)!.push({
       start: timeToMinutes(b.startTime),
@@ -135,7 +136,7 @@ export async function getSlotsForRooms(
       continue
     }
 
-    const hasConflict = serviceIds.some(id =>
+    const hasConflict = roomServiceIds.some(id =>
       roomRanges.get(id)!.some(r => r.start < slotEnd && r.end > cursor)
     )
 
@@ -145,7 +146,7 @@ export async function getSlotsForRooms(
     slots.push({
       startTime: slotStartStr,
       endTime: minutesToTime(slotEnd),
-      taken: hasConflict,
+      taken: hasConflict || availableCount < serviceIds.length,
       availableCount,
     })
     cursor += 30

@@ -37,9 +37,9 @@ export function Step2DateTime({ state, update, goNext, goBack }: Props) {
 
   const firstServiceId = state.persons[0]?.serviceId
   const personCount = state.persons.length
-  // All serviceIds chosen — use per-room conflict detection; falls back to count-based
+  // Check specific room conflicts and shared package capacity once everyone has a service.
   const allServiceIds = state.persons.map(p => p.serviceId).filter(Boolean)
-  const allRoomsChosen = allServiceIds.length === personCount && personCount > 0
+  const allServicesChosen = allServiceIds.length === personCount && personCount > 0
   const serviceIdsKey = allServiceIds.join(',')
 
   useEffect(() => {
@@ -57,14 +57,14 @@ export function Step2DateTime({ state, update, goNext, goBack }: Props) {
     if (!state.date || !firstServiceId || !state.gender) return
     setSlots([]); update({ startTime: undefined, endTime: undefined })
     setLoading(true)
-    const url = allRoomsChosen
+    const url = allServicesChosen
       ? `/api/slots?date=${state.date}&serviceId=${firstServiceId}&serviceIds=${serviceIdsKey}&gender=${state.gender}`
       : `/api/slots?date=${state.date}&serviceId=${firstServiceId}&count=${personCount}&gender=${state.gender}`
     fetch(url)
       .then(r => r.json())
       .then((data: SlotDTO[]) => setSlots(data))
       .finally(() => setLoading(false))
-  }, [state.date, firstServiceId, allRoomsChosen, serviceIdsKey, personCount, state.gender, update])
+  }, [state.date, firstServiceId, allServicesChosen, serviceIdsKey, personCount, state.gender, update])
 
   return (
     <div>
@@ -133,7 +133,7 @@ export function Step2DateTime({ state, update, goNext, goBack }: Props) {
                 const selected = state.startTime === slot.startTime
                 if (slot.taken) {
                   return (
-                    <motion.div key={slot.startTime} title={allRoomsChosen ? 'یکی از غرفه‌های انتخابی در این ساعت رزرو است' : 'این ساعت رزرو شده است'}
+                    <motion.div key={slot.startTime} title="این ساعت برای خدمات انتخابی در دسترس نیست"
                       variants={{ hidden: { opacity: 0, scale: 0.85 }, show: { opacity: 1, scale: 1 } }}
                       className="relative px-4 py-2 rounded-xl text-xs select-none cursor-not-allowed overflow-hidden"
                       style={{ color: 'var(--text-faint)', background: 'var(--bg-surface)', border: '1px solid var(--border-base)', opacity: 0.5 }}>

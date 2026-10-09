@@ -10,6 +10,7 @@ import { GhostButton } from '@/components/ui/GhostButton'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import { cn } from '@/lib/utils'
 import { CUSTOMIZATION_FIELD_LABELS, CUSTOMIZATION_OPTIONS, getDefaultCustomization, normalizeCustomization } from '@/lib/booking-customization'
+import { getCustomizationTier, SPA_PACKAGE_NAMES } from '@/lib/spa-packages'
 import type { BookingCustomization, CustomizationCatalogDTO, CustomizationKey, ServiceDTO, WizardState } from '@/types'
 
 type Props = {
@@ -33,13 +34,14 @@ type ContentProps = Props & {
 
 function StepCustomizationContent({ state, update, goNext, goBack, services, customizationOptions = [], isExpanded, toggleExpanded }: ContentProps) {
   const customizablePersons = state.persons.flatMap((person, personIndex) => {
-    const serviceTier = services.find(item => item.id === person.serviceId)?.tier
-    return serviceTier !== null && serviceTier !== undefined ? [{ person, personIndex }] : []
+    const service = services.find(item => item.id === person.serviceId)
+    return service && (service.tier !== null || SPA_PACKAGE_NAMES.has(service.nameFa)) ? [{ person, personIndex }] : []
   })
 
   function setCustomization(index: number, key: CustomizationKey, value: string) {
     const person = state.persons[index]
-    const serviceTier = services.find(service => service.id === person.serviceId)?.tier
+    const service = services.find(service => service.id === person.serviceId)
+    const serviceTier = service ? getCustomizationTier(service.nameFa, service.tier) : undefined
     if (key === 'loofah' && serviceTier === 3) return
     const customization = normalizeCustomization(
       { ...(person.customization ?? getDefaultCustomization()), [key]: value } as BookingCustomization,
@@ -80,7 +82,7 @@ function StepCustomizationContent({ state, update, goNext, goBack, services, cus
       {isExpanded && <div id="booking-customization-panel" className="flex flex-col gap-4">
       {customizablePersons.map(({ person, personIndex }) => {
         const service = services.find(item => item.id === person.serviceId)
-        const tier = service?.tier
+        const tier = service ? getCustomizationTier(service.nameFa, service.tier) : undefined
         const customization = normalizeCustomization(person.customization ?? getDefaultCustomization(), tier)
 
         return (
@@ -126,7 +128,7 @@ function StepCustomizationContent({ state, update, goNext, goBack, services, cus
                                   {option.additionalPrice ? `+${option.additionalPrice.toLocaleString('fa-IR')} تومان` : 'رایگان'}
                                 </span>
                               )}
-                              {key === 'poultice' && <span className={cn('text-[10px]', selected ? 'text-primary-foreground/85' : 'text-muted-foreground')}>{option.description}</span>}
+                              {(key === 'poultice' || key === 'fanTherapy') && <span className={cn('text-[10px]', key === 'fanTherapy' && option.code === 'FAN_THERAPY' && selected ? 'w-full rounded-lg border border-amber-200/70 bg-amber-50/80 px-2 py-1 text-amber-900 dark:border-amber-200/20 dark:bg-amber-200/10 dark:text-amber-100' : selected ? 'text-primary-foreground/85' : 'text-muted-foreground')}>{option.description}</span>}
                             </span>
                           </ToggleGroupItem>
                         )
@@ -151,7 +153,11 @@ function StepCustomizationContent({ state, update, goNext, goBack, services, cus
 }
 
 function InteractiveStepCustomization(props: Props) {
-  const [isExpanded, setIsExpanded] = useState(false)
+  const hasPackage = props.state.persons.some(person => {
+    const service = props.services.find(item => item.id === person.serviceId)
+    return service !== undefined && SPA_PACKAGE_NAMES.has(service.nameFa)
+  })
+  const [isExpanded, setIsExpanded] = useState(hasPackage)
   return <StepCustomizationContent {...props} isExpanded={isExpanded} toggleExpanded={() => setIsExpanded(value => !value)} />
 }
 

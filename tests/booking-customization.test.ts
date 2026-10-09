@@ -9,13 +9,14 @@ import {
 } from '../src/lib/booking-customization'
 
 describe('booking customization contract', () => {
-  test('defines the exact five option sets with stable values', () => {
+  test('defines the six customization option sets with stable values', () => {
     expect(Object.keys(CUSTOMIZATION_OPTIONS)).toEqual([
       'musicGenre',
       'pressureLevel',
       'soap',
       'loofah',
       'poultice',
+      'fanTherapy',
     ])
     expect(CUSTOMIZATION_OPTIONS.musicGenre.map(option => option.value)).toEqual([
       'TRADITIONAL',
@@ -49,6 +50,12 @@ describe('booking customization contract', () => {
     expect(CUSTOMIZATION_OPTIONS.poultice.every(option => option.label && option.description)).toBe(true)
   })
 
+  test('includes optional fan therapy with a bruising warning', () => {
+    expect(CUSTOMIZATION_OPTIONS.fanTherapy.map(option => option.value)).toEqual(['NONE', 'FAN_THERAPY'])
+    expect(CUSTOMIZATION_OPTIONS.fanTherapy[1].label).toBe('بادکش')
+    expect(CUSTOMIZATION_OPTIONS.fanTherapy[1].description).toContain('۱۰ روز')
+  })
+
   test('exposes the documented defaults and returns fresh default objects', () => {
     expect(CUSTOMIZATION_DEFAULTS).toEqual({
       musicGenre: 'INSTRUMENTAL',
@@ -56,6 +63,7 @@ describe('booking customization contract', () => {
       soap: 'TRADITIONAL',
       loofah: 'PUBLIC',
       poultice: 'GENERAL_SEDR_HENNA',
+      fanTherapy: 'NONE',
     })
 
     const first = getDefaultCustomization()

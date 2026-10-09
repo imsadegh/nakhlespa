@@ -20,7 +20,7 @@ mock.module('@/lib/db', () => ({
 const { GET: getAdminBooking } = await import('../src/app/api/admin/bookings/[id]/route')
 
 describe('booking customization display', () => {
-  test('formats each of the five persisted choices with its label, value, and description', () => {
+  test('formats each of the six persisted choices with its label, value, and description', () => {
     expect(formatCustomization({
       ...CUSTOMIZATION_DEFAULTS,
       musicGenre: 'POP',
@@ -28,12 +28,14 @@ describe('booking customization display', () => {
       soap: 'LUXURY',
       loofah: 'BRINGS_OWN',
       poultice: 'PRIVATE_BARLEY_COLD',
+      fanTherapy: 'FAN_THERAPY',
     })).toEqual([
       { key: 'musicGenre', label: 'موسیقی', value: 'پاپ', description: 'موسیقی پاپ' },
       { key: 'pressureLevel', label: 'فشار ماساژ', value: 'قوی', description: 'فشار قوی' },
       { key: 'soap', label: 'صابون حمام', value: 'لوکس', description: 'صابون لوکس' },
       { key: 'loofah', label: 'کیسه و لیف', value: 'همراه داشتن کیسه و لیف شخصی', description: 'مشتری کیسه و لیف شخصی خود را همراه دارد.' },
       { key: 'poultice', label: 'ضماد', value: 'خصوصی با آرد جو سبوس‌دار و سرکه سیب طبیعی', description: 'ضماد سرد با آرد جو سبوس‌دار و سرکه سیب طبیعی' },
+      { key: 'fanTherapy', label: 'بادکش', value: 'بادکش', description: 'پس از بادکش ممکن است کبودی و تغییر رنگ پوست ایجاد شود و تا ۱۰ روز باقی بماند.' },
     ])
   })
 
@@ -44,6 +46,7 @@ describe('booking customization display', () => {
       { key: 'soap', label: 'صابون حمام', value: 'ثبت نشده', description: '' },
       { key: 'loofah', label: 'کیسه و لیف', value: 'ثبت نشده', description: '' },
       { key: 'poultice', label: 'ضماد', value: 'ثبت نشده', description: '' },
+      { key: 'fanTherapy', label: 'بادکش', value: 'ثبت نشده', description: '' },
     ])
   })
 

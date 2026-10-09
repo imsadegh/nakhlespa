@@ -57,15 +57,15 @@ describe('booking customization step', () => {
   test('updates each customization field independently for only the selected person', () => {
     const state = { persons: [person('tier-2'), person('tier-2')] }
     const updates: Partial<WizardState>[] = []
-    const selections = ['POP', 'FIRM', 'LUXURY', 'BRINGS_OWN', 'PRIVATE_BARLEY_COLD']
-    const fields = ['musicGenre', 'pressureLevel', 'soap', 'loofah', 'poultice'] as const
+    const selections = ['POP', 'FIRM', 'LUXURY', 'BRINGS_OWN', 'PRIVATE_BARLEY_COLD', 'FAN_THERAPY']
+    const fields = ['musicGenre', 'pressureLevel', 'soap', 'loofah', 'poultice', 'fanTherapy'] as const
 
     const secondPerson = <StepCustomization {...props(state, patch => updates.push(patch))} defaultExpanded />
-    findToggleGroups(StepCustomization(secondPerson.props)).slice(5, 10).forEach((group, index) => {
+    findToggleGroups(StepCustomization(secondPerson.props)).slice(6, 12).forEach((group, index) => {
       group.props.onValueChange([selections[index]])
     })
 
-    expect(updates).toHaveLength(5)
+    expect(updates).toHaveLength(6)
     updates.forEach((patch, index) => {
       expect(patch.persons?.[0].customization).toEqual(getDefaultCustomization())
       expect(patch.persons?.[0].addonIds).toEqual(['addon-1'])
@@ -103,7 +103,7 @@ describe('booking customization step', () => {
     expect(html).not.toContain('مخصوص VIP ارغوان، به‌صورت خودکار انتخاب می‌شود.')
     expect(html).not.toContain('موسیقی سنتی رایگان')
     expect(html).not.toContain('فشار ملایم رایگان')
-    expect(html.match(/data-slot="field-set"/g)?.length).toBe(5)
+    expect(html.match(/data-slot="field-set"/g)?.length).toBe(6)
     expect(html).toContain('rounded-xl border border-border/70')
     expect(html).toContain('!bg-foreground')
     expect(html).not.toContain('lucide-check')

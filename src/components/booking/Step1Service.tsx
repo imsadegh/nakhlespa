@@ -1,9 +1,9 @@
 'use client'
-import { motion } from 'framer-motion'
+import { Crown, Feather, MessageCircle, Sparkles, Waves, Wind, type LucideIcon } from 'lucide-react'
 import { GlassCard } from '@/components/ui/GlassCard'
 import { GoldButton } from '@/components/ui/GoldButton'
-import { TierIcon } from '@/components/ui/TierIcon'
 import { getCustomizationAdditionalPrice, getDefaultCustomization, normalizeCustomization } from '@/lib/booking-customization'
+import { getCustomizationTier, ONLINE_BOOKABLE_SERVICES, SPA_PACKAGE_NAMES } from '@/lib/spa-packages'
 import type { ServiceDTO, AddonDTO, WizardState, Person } from '@/types'
 
 type Props = {
@@ -14,11 +14,13 @@ type Props = {
   addons: AddonDTO[]
 }
 
-const TIER_COLORS: Record<string, string> = {
-  red: '#E05C5C',
-  yellow: '#D4A929',
-  purple: '#9B59B6',
-  blue: '#4A90D9',
+const SERVICE_ICONS: Record<string, { icon: LucideIcon; color: string }> = {
+  'نفس تازه': { icon: Wind, color: '#38BDF8' },
+  'احیاگر': { icon: Sparkles, color: '#A78BFA' },
+  'دریای آرامش': { icon: Waves, color: '#60A5FA' },
+  'سبک بال': { icon: Feather, color: '#34D399' },
+  'شاهانه': { icon: Crown, color: '#FBBF24' },
+  'مشاوره': { icon: MessageCircle, color: '#F472B6' },
 }
 
 function emptyPerson(): Person {
@@ -39,17 +41,12 @@ function updatePerson(persons: Person[], index: number, patch: Partial<Person>):
 
 export function Step1Service({ state, update, goNext, services, addons }: Props) {
   const persons = state.persons
-  const tierServices = services.filter(s => s.tier !== null).sort((a, b) => (a.tier ?? 0) - (b.tier ?? 0))
-  const otherServices = services.filter(s => s.tier === null)
-
-  // Services already claimed by other persons — each room has capacity 1
-  const takenServiceIds = (personIndex: number) =>
-    new Set(persons.filter((_, i) => i !== personIndex && persons[i].serviceId !== '').map(p => p.serviceId))
+  const bookableServices = services.filter(service => ONLINE_BOOKABLE_SERVICES.has(service.nameFa))
 
   const totalPrice = persons.reduce((sum, person) => {
     const svc = services.find(s => s.id === person.serviceId)
     const addonSum = person.addonIds.reduce((a, id) => a + (addons.find(ad => ad.id === id)?.price ?? 0), 0)
-    const customizationSum = getCustomizationAdditionalPrice(person.customization, svc?.tier)
+    const customizationSum = getCustomizationAdditionalPrice(person.customization, svc?.tier, !!svc && SPA_PACKAGE_NAMES.has(svc.nameFa))
     return sum + (svc?.price ?? 0) + addonSum + customizationSum
   }, 0)
 
@@ -72,11 +69,12 @@ export function Step1Service({ state, update, goNext, services, addons }: Props)
     const cleanedAddonIds = svc.tier === null
       ? person.addonIds.filter(id => !addons.find(a => a.id === id)?.requiresTier)
       : person.addonIds
-    const customization = svc.tier === null
+    const isPackage = SPA_PACKAGE_NAMES.has(svc.nameFa)
+    const customization = svc.tier === null && !isPackage
       ? null
       : normalizeCustomization(
         person.customization ?? getDefaultCustomization(),
-        svc.tier,
+        getCustomizationTier(svc.nameFa, svc.tier),
       )
     setPerson(index, { serviceId: svc.id, addonIds: cleanedAddonIds, customization })
   }
@@ -91,14 +89,13 @@ export function Step1Service({ state, update, goNext, services, addons }: Props)
 
   return (
     <div>
-      <h2 className="text-base font-light mb-0.5" style={{ color: 'var(--text-primary)' }}>انتخاب غرفه</h2>
-      <p className="text-xs mb-3 font-light" style={{ color: 'var(--text-muted)' }}>برای هر نفر یک غرفه انتخاب کنید</p>
+      <h2 className="text-base font-light mb-0.5" style={{ color: 'var(--text-primary)' }}>انتخاب خدمت</h2>
+      <p className="text-xs mb-3 font-light" style={{ color: 'var(--text-muted)' }}>برای هر نفر یک بسته یا مشاوره انتخاب کنید</p>
 
       <div className="flex flex-col gap-3">
         {persons.map((person, personIndex) => {
           const selectedService = services.find(s => s.id === person.serviceId)
           const availableAddons = addons.filter(a => !a.requiresTier || (selectedService?.tier ?? null) !== null)
-          const taken = takenServiceIds(personIndex)
 
           return (
             <div key={personIndex} className="rounded-2xl border p-2.5" style={{ borderColor: 'var(--border-base)', background: 'var(--bg-surface)' }}>
@@ -115,70 +112,35 @@ export function Step1Service({ state, update, goNext, services, addons }: Props)
                 )}
               </div>
 
-              {/* Tier service grid */}
-              <div className="grid grid-cols-2 gap-1.5 mb-1.5">
-                {tierServices.map((svc, i) => {
+              {/* Packages and consultation; room tiers stay hidden from customers. */}
+              <div className="mb-2 grid grid-cols-1 gap-2 sm:grid-cols-2">
+                {bookableServices.map(svc => {
                   const selected = person.serviceId === svc.id
-                  const isTaken = taken.has(svc.id)
-                  const tierColor = svc.color ? TIER_COLORS[svc.color] ?? '#C6A55B' : '#C6A55B'
-                  return (
-                    <motion.div key={svc.id} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.04 }}>
-                      <button
-                        type="button"
-                        className={`w-full text-right h-full ${isTaken ? 'cursor-not-allowed' : ''}`}
-                        onClick={() => !isTaken && selectService(personIndex, svc)}
-                        title={isTaken ? 'این غرفه توسط نفر دیگری انتخاب شده' : undefined}
-                      >
-                        <GlassCard gold={selected}
-                          className={`relative flex flex-col items-center gap-1 p-2 transition-all h-full overflow-hidden ${selected ? 'shadow-[0_0_0_2px_#C6A55B,0_8px_32px_rgba(198,165,91,0.3)]' : ''} ${isTaken ? 'opacity-40' : 'cursor-pointer'}`}>
-                          {isTaken && (
-                            <span className="pointer-events-none absolute inset-0 rounded-xl"
-                              style={{ backgroundImage: 'repeating-linear-gradient(135deg, transparent, transparent 4px, rgba(255,255,255,0.06) 4px, rgba(255,255,255,0.06) 5px)' }} />
-                          )}
-                          <div className="w-8 h-8 rounded-xl flex items-center justify-center bg-[rgba(198,165,91,0.08)] border border-[rgba(198,165,91,0.2)]">
-                            <TierIcon symbol={svc.symbol} color={svc.color} size={18} />
-                          </div>
-                          <div className="text-center">
-                            <h3 className="text-[11px] font-semibold mb-0.5" style={{ color: 'var(--text-primary)' }}>
-                              {svc.descriptionFa}
-                              {svc.tier === 3 && <span className="mr-1 text-[9px] font-medium" style={{ color: tierColor }}>VIP</span>}
-                            </h3>
-                            <p className="text-sm font-bold text-[#C6A55B]">{svc.price.toLocaleString('fa-IR')} ت</p>
-                          </div>
-                        </GlassCard>
-                      </button>
-                    </motion.div>
-                  )
-                })}
-              </div>
-
-              {/* Non-tier services */}
-              <div className="grid grid-cols-2 gap-1.5 mb-1.5">
-                {otherServices.map(svc => {
-                  const selected = person.serviceId === svc.id
-                  const isTaken = taken.has(svc.id)
+                  const { icon: Icon, color } = SERVICE_ICONS[svc.nameFa]
                   return (
                     <button
                       key={svc.id}
                       type="button"
-                      className={`w-full text-right ${isTaken ? 'cursor-not-allowed' : ''}`}
-                      onClick={() => !isTaken && selectService(personIndex, svc)}
-                      title={isTaken ? 'این غرفه توسط نفر دیگری انتخاب شده' : undefined}
+                      aria-pressed={selected}
+                      className="w-full rounded-2xl text-right focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C6A55B] focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                      onClick={() => selectService(personIndex, svc)}
                     >
                       <GlassCard gold={selected}
-                        className={`relative flex h-full flex-col items-center gap-1 p-2 text-center transition-all overflow-hidden ${selected ? 'shadow-[0_0_0_2px_#C6A55B,0_8px_32px_rgba(198,165,91,0.3)]' : ''} ${isTaken ? 'opacity-40' : 'cursor-pointer'}`}>
-                        {isTaken && (
-                          <span className="pointer-events-none absolute inset-0 rounded-xl"
-                            style={{ backgroundImage: 'repeating-linear-gradient(135deg, transparent, transparent 4px, rgba(255,255,255,0.06) 4px, rgba(255,255,255,0.06) 5px)' }} />
-                        )}
-                        <div className="flex size-7 shrink-0 items-center justify-center rounded-lg border border-[rgba(198,165,91,0.2)] bg-[rgba(198,165,91,0.08)]">
-                          <TierIcon symbol={svc.symbol} color={svc.color} size={16} />
+                        className={`flex min-h-36 h-full flex-col gap-2 p-3 text-right transition-all ${selected ? 'shadow-[0_0_0_2px_#C6A55B,0_8px_24px_rgba(198,165,91,0.22)]' : 'hover:border-[rgba(198,165,91,0.35)]'}`}>
+                        <div className="flex w-full items-center gap-2">
+                          <div className="flex size-9 shrink-0 items-center justify-center rounded-xl border" style={{ color, borderColor: `${color}55`, backgroundColor: `${color}18` }}>
+                            <Icon size={18} strokeWidth={1.8} />
+                          </div>
+                          <h3 className="min-w-0 flex-1 text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>{svc.nameFa}</h3>
+                          <span className="shrink-0 rounded-full border px-2 py-1 text-[10px]" style={{ borderColor: `${color}40`, color }}>
+                            {svc.durationMinutes.toLocaleString('fa-IR')} دقیقه
+                          </span>
                         </div>
-                        <div className="min-w-0">
-                          <h3 className="text-xs font-semibold" style={{ color: 'var(--text-primary)' }}>{svc.nameFa}</h3>
-                          <p className="truncate text-[10px]" style={{ color: 'var(--text-muted)' }}>{svc.descriptionFa} — {svc.durationMinutes} دقیقه</p>
+                        <p className="line-clamp-2 min-h-8 w-full text-xs leading-5" style={{ color: 'var(--text-muted)' }}>{svc.descriptionFa}</p>
+                        <div className="mt-auto flex w-full items-center justify-between border-t pt-2" style={{ borderColor: 'var(--border-base)' }}>
+                          <span className="text-[10px]" style={{ color: 'var(--text-faint)' }}>{selected ? 'انتخاب شده' : 'انتخاب بسته'}</span>
+                          <span className="text-sm font-bold text-[#C6A55B]">{svc.price.toLocaleString('fa-IR')} تومان</span>
                         </div>
-                        <span className="text-sm font-bold text-[#C6A55B]">{svc.price.toLocaleString('fa-IR')} ت</span>
                       </GlassCard>
                     </button>
                   )
@@ -187,20 +149,23 @@ export function Step1Service({ state, update, goNext, services, addons }: Props)
 
               {/* Add-ons for this person */}
               {selectedService && availableAddons.length > 0 && (
-                <div className="mt-1.5">
-                  <p className="text-[10px] font-medium mb-1" style={{ color: 'var(--text-muted)' }}>افزودنی‌ها</p>
-                  <div className="flex flex-col gap-1">
+                <div className="mt-3 border-t pt-3" style={{ borderColor: 'var(--border-base)' }}>
+                  <div className="mb-2 flex items-center justify-between">
+                    <p className="text-xs font-semibold" style={{ color: 'var(--text-primary)' }}>افزودنی‌ها</p>
+                    <span className="text-[10px]" style={{ color: 'var(--text-faint)' }}>اختیاری</span>
+                  </div>
+                  <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                     {availableAddons.map(addon => {
                       const checked = person.addonIds.includes(addon.id)
                       return (
                         <button key={addon.id} type="button" aria-pressed={checked} className="w-full text-right"
                           onClick={() => toggleAddon(personIndex, addon.id)}>
-                          <GlassCard className={`flex items-center gap-2 p-1.5 cursor-pointer transition-all ${checked ? 'shadow-[0_0_0_1.5px_#C6A55B]' : ''}`}>
-                            <div className={`w-4 h-4 rounded-md border flex items-center justify-center flex-shrink-0 transition-colors ${checked ? 'bg-[#C6A55B] border-[#C6A55B]' : 'border-[rgba(198,165,91,0.4)]'}`}>
+                          <GlassCard className={`flex min-h-12 items-center gap-2 rounded-xl p-2 transition-all ${checked ? 'border-[#C6A55B]/60 shadow-[0_0_0_1.5px_#C6A55B]' : 'hover:border-[rgba(198,165,91,0.35)]'}`}>
+                            <div className={`flex size-4 shrink-0 items-center justify-center rounded-md border transition-colors ${checked ? 'border-[#C6A55B] bg-[#C6A55B]' : 'border-[rgba(198,165,91,0.4)]'}`}>
                               {checked && <span aria-hidden="true" className="text-black text-[9px] font-bold">✓</span>}
                             </div>
-                            <span className="flex-1 text-xs" style={{ color: 'var(--text-primary)' }}>{addon.nameFa}</span>
-                            <span className="text-xs text-[#C6A55B]">+{addon.price.toLocaleString('fa-IR')} ت</span>
+                            <span className="min-w-0 flex-1 text-xs font-medium" style={{ color: 'var(--text-primary)' }}>{addon.nameFa}</span>
+                            <span className="shrink-0 text-xs font-semibold text-[#C6A55B]">+{addon.price.toLocaleString('fa-IR')} تومان</span>
                           </GlassCard>
                         </button>
                       )
