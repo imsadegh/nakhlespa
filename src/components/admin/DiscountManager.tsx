@@ -3,6 +3,8 @@ import { useState } from 'react'
 import { GlassCard } from '@/components/ui/GlassCard'
 import { GoldButton } from '@/components/ui/GoldButton'
 import { GhostButton } from '@/components/ui/GhostButton'
+import { Input } from '@/components/ui/input'
+import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import type { DiscountCodeDTO } from '@/types'
 
 export function DiscountManager({ initial }: { initial: DiscountCodeDTO[] }) {
@@ -48,44 +50,51 @@ export function DiscountManager({ initial }: { initial: DiscountCodeDTO[] }) {
       <GlassCard className="p-5 space-y-3">
         <h2 className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>کد تخفیف جدید</h2>
         <div className="grid grid-cols-2 gap-3">
-          <input
+          <Input
             placeholder="کد (مثلاً SUMMER10)"
             value={form.code}
             onChange={e => setForm(f => ({ ...f, code: e.target.value.toUpperCase() }))}
-            className="col-span-2 text-xs px-3 py-2 rounded-lg bg-white/5 border border-white/10 outline-none"
+            className="col-span-2 text-xs"
             style={{ color: 'var(--text-primary)', direction: 'ltr' }}
           />
-          <select
+          <Select
             value={form.type}
-            onChange={e => setForm(f => ({ ...f, type: e.target.value as 'PERCENT' | 'FIXED' }))}
-            className="text-xs px-3 py-2 rounded-lg bg-white/5 border border-white/10 outline-none"
-            style={{ color: 'var(--text-primary)' }}
+            onValueChange={value => {
+              if (value === 'PERCENT' || value === 'FIXED') setForm(f => ({ ...f, type: value }))
+            }}
           >
-            <option value="PERCENT">درصدی</option>
-            <option value="FIXED">مبلغ ثابت (تومان)</option>
-          </select>
-          <input
+            <SelectTrigger className="w-full text-xs" style={{ color: 'var(--text-primary)' }}>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectGroup>
+                <SelectItem value="PERCENT">درصدی</SelectItem>
+                <SelectItem value="FIXED">مبلغ ثابت (تومان)</SelectItem>
+              </SelectGroup>
+            </SelectContent>
+          </Select>
+          <Input
             placeholder={form.type === 'PERCENT' ? 'مقدار (مثلاً ۲۰)' : 'مبلغ تومان'}
             value={form.value}
             onChange={e => setForm(f => ({ ...f, value: e.target.value }))}
             type="number"
-            className="text-xs px-3 py-2 rounded-lg bg-white/5 border border-white/10 outline-none"
+            className="text-xs"
             style={{ color: 'var(--text-primary)' }}
           />
-          <input
+          <Input
             placeholder="حداکثر تعداد استفاده (اختیاری)"
             value={form.maxUses}
             onChange={e => setForm(f => ({ ...f, maxUses: e.target.value }))}
             type="number"
-            className="text-xs px-3 py-2 rounded-lg bg-white/5 border border-white/10 outline-none"
+            className="text-xs"
             style={{ color: 'var(--text-primary)' }}
           />
-          <input
+          <Input
             placeholder="تاریخ انقضا (اختیاری)"
             value={form.expiresAt}
             onChange={e => setForm(f => ({ ...f, expiresAt: e.target.value }))}
             type="date"
-            className="text-xs px-3 py-2 rounded-lg bg-white/5 border border-white/10 outline-none"
+            className="text-xs"
             style={{ color: 'var(--text-primary)' }}
           />
         </div>
@@ -109,7 +118,7 @@ export function DiscountManager({ initial }: { initial: DiscountCodeDTO[] }) {
               const isLoyalty = c.code === 'LOYALTY_AUTO'
               return (
                 <tr key={c.id} className="border-b border-white/5">
-                  <td className="px-4 py-3 font-mono" style={{ color: 'var(--text-primary)' }}>
+                  <td className={`px-4 py-3 ${isLoyalty ? '' : 'font-mono'}`} style={{ color: 'var(--text-primary)' }}>
                     {isLoyalty ? 'تخفیف وفاداری (خودکار)' : c.code}
                   </td>
                   <td className="px-4 py-3" style={{ color: 'var(--text-muted)' }}>
