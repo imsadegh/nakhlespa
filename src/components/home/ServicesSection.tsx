@@ -1,9 +1,9 @@
 'use client'
 import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
+import { Crown, Droplets, Feather, Sparkles, Waves, Wind, type LucideIcon } from 'lucide-react'
 import { useBookingDialog } from '@/components/booking/BookingDialogProvider'
 import { GlassCard } from '@/components/ui/GlassCard'
-import { TierIcon } from '@/components/ui/TierIcon'
 
 const PRODUCT_STEPS: Record<string, string[]> = {
   'نفس تازه': ['کیسه‌کشی در حمام', '۲۰ دقیقه ماساژ ریلکسی', 'لیف پایانی', 'پذیرایی متناسب با مزاج'],
@@ -22,6 +22,15 @@ const PRODUCTS = [
   { nameFa: 'شاهانه', category: 'ویژه و اختصاصی', price: 3_900_000 },
   { nameFa: 'حمام طهورا', category: 'افزودنی حمام', price: 1_200_000 },
 ]
+
+const PRODUCT_ICONS: Record<string, { icon: LucideIcon; color: string }> = {
+  'نفس تازه': { icon: Wind, color: '#38BDF8' },
+  'احیاگر': { icon: Sparkles, color: '#A78BFA' },
+  'دریای آرامش': { icon: Waves, color: '#60A5FA' },
+  'سبک بال': { icon: Feather, color: '#34D399' },
+  'شاهانه': { icon: Crown, color: '#FBBF24' },
+  'حمام طهورا': { icon: Droplets, color: '#2DD4BF' },
+}
 
 export function ServicesSection() {
   const { open, available } = useBookingDialog()
@@ -42,6 +51,7 @@ export function ServicesSection() {
         {PRODUCTS.map((product, i) => {
           const price = product.price
           const isGold = product.nameFa === 'شاهانه'
+          const { icon: Icon, color } = PRODUCT_ICONS[product.nameFa]
           return (
             <motion.div
               key={product.nameFa}
@@ -53,26 +63,28 @@ export function ServicesSection() {
             >
               <button onClick={handleBook} className="w-full text-right h-full">
                 <GlassCard gold={isGold} className="relative flex h-full min-h-[350px] cursor-pointer flex-col gap-4 overflow-hidden p-4 transition-shadow group hover:shadow-xl sm:p-5">
+                  <div aria-hidden="true" className="pointer-events-none absolute -right-16 -top-16 size-44 rounded-full opacity-[0.08] blur-3xl" style={{ backgroundColor: color }} />
 
                   {/* header row */}
                   <div className="flex items-start justify-between gap-3">
                     <div
                       className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-[13px] sm:h-11 sm:w-11"
                       style={{
-                        background: 'rgba(198,165,91,0.12)',
-                        border: '1px solid rgba(198,165,91,0.25)',
+                        color,
+                        background: `${color}18`,
+                        border: `1px solid ${color}55`,
                       }}
                     >
-                      <TierIcon symbol={null} color="yellow" size={22} />
+                      <Icon size={22} strokeWidth={1.8} />
                     </div>
 
                     {/* duration pill */}
                     <span
                       className="flex-shrink-0 rounded-full px-2.5 py-1 text-[10px] font-medium"
                       style={{
-                        color: '#C6A55B',
-                        background: 'rgba(198,165,91,0.10)',
-                        border: '1px solid rgba(198,165,91,0.20)',
+                        color,
+                        background: `${color}12`,
+                        border: `1px solid ${color}40`,
                         letterSpacing: '0.04em',
                       }}
                     >
@@ -85,8 +97,13 @@ export function ServicesSection() {
                     <h3 className="text-base font-bold leading-snug" style={{ color: 'var(--text-primary)' }}>
                       {product.nameFa}
                     </h3>
-                    <ul className="list-inside list-disc space-y-1.5 text-[11px] leading-6 marker:text-[#C6A55B] sm:text-xs">
-                      {PRODUCT_STEPS[product.nameFa].map(step => <li key={step}>{step}</li>)}
+                    <ul className="space-y-1.5 text-[11px] leading-6 sm:text-xs">
+                      {PRODUCT_STEPS[product.nameFa].map(step => (
+                        <li key={step} className="flex items-start gap-2">
+                          <span aria-hidden="true" className="mt-[0.65rem] size-1.5 shrink-0 rounded-full" style={{ backgroundColor: color }} />
+                          <span>{step}</span>
+                        </li>
+                      ))}
                     </ul>
                   </div>
 
@@ -99,7 +116,7 @@ export function ServicesSection() {
                     )}
                     <span
                       className="flex items-center gap-1 text-[11px] opacity-60 transition-all duration-300 group-hover:gap-2 group-hover:opacity-100"
-                      style={{ color: 'var(--text-muted)' }}
+                      style={{ color }}
                     >
                       رزرو
                       <span>←</span>
