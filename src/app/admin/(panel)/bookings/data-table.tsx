@@ -10,8 +10,8 @@ import {
   useReactTable,
   type ColumnDef,
   type ColumnFiltersState,
-  type ColumnVisibilityState,
   type SortingState,
+  type VisibilityState,
 } from "@tanstack/react-table"
 import {
   Table,
@@ -30,7 +30,7 @@ import { Columns3 } from "lucide-react"
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[]
   data: TData[]
-  initialColumnVisibility: ColumnVisibilityState
+  initialColumnVisibility: VisibilityState
 }
 
 export function BookingsDataTable<TData, TValue>({
@@ -40,7 +40,7 @@ export function BookingsDataTable<TData, TValue>({
 }: DataTableProps<TData, TValue>) {
   const [sorting, setSorting] = React.useState<SortingState>([{ id: "bookedAt", desc: true }])
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([])
-  const [columnVisibility, setColumnVisibility] = React.useState<ColumnVisibilityState>(initialColumnVisibility)
+  const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>(initialColumnVisibility)
 
   React.useEffect(() => {
     document.cookie = `admin-bookings-column-visibility=${encodeURIComponent(JSON.stringify(columnVisibility))}; Path=/admin/bookings; Max-Age=31536000; SameSite=Lax${location.protocol === "https:" ? "; Secure" : ""}`

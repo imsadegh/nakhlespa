@@ -129,12 +129,12 @@ export const columns: ColumnDef<BookingRow>[] = [
       <Button
         variant="ghost"
         size="sm"
-        className="px-0 font-medium"
-        style={{ color: "var(--text-muted)" }}
+        className={`rounded-md px-2 font-medium ${column.getIsSorted() ? "bg-[#C6A55B]/10 text-[#C6A55B]" : "px-0"}`}
+        style={{ color: column.getIsSorted() ? "#C6A55B" : "var(--text-muted)" }}
         onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
       >
         وضعیت
-        <ArrowUpDown className="mr-1 h-3 w-3" />
+        {column.getIsSorted() === "asc" ? <ArrowUp className="mr-1 h-3 w-3" /> : column.getIsSorted() === "desc" ? <ArrowDown className="mr-1 h-3 w-3" /> : <ArrowUp className="mr-1 h-3 w-3 opacity-40" />}
       </Button>
     ),
     cell: ({ row }) => {
