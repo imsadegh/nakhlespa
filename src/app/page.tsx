@@ -31,7 +31,7 @@ export default async function HomePage() {
         <Navbar />
         <main className="mx-auto w-full max-w-screen-xl pt-20">
           <HeroSection />
-          <ServicesSection services={serviceDTOs} />
+          <ServicesSection />
           <HowItWorksSection />
           <BookingCtaSection />
         </main>
