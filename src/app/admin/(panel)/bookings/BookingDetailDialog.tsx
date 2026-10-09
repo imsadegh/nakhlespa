@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import type { ReactNode } from "react"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 import { BookingStatus } from "@/db/schema"
@@ -17,7 +18,8 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover"
 import { Button } from "@/components/ui/button"
-import type { BookingRow, BookingAddonRow } from "./columns"
+import { PrintHealthFormButton } from "@/components/admin/PrintHealthFormButton"
+import type { BookingRow, BookingAddonRow, BookingCustomizationPriceRow } from "./columns"
 import { formatCustomization } from '@/lib/booking-customization'
 import { HEALTH_INTAKE_SECTIONS } from '@/lib/health-intake'
 
@@ -35,7 +37,15 @@ const statusStyle: Record<BookingStatus, string> = {
   CANCELLED: "bg-red-400/10 text-red-400",
 }
 
-export function BookingDetailDialog({ booking }: { booking: BookingRow }) {
+export function BookingDetailDialog({
+  booking,
+  triggerContent,
+  triggerClassName,
+}: {
+  booking: BookingRow
+  triggerContent?: ReactNode
+  triggerClassName?: string
+}) {
   const router = useRouter()
   const [open, setOpen] = useState(false)
   const [cancelOpen, setCancelOpen] = useState(false)
@@ -63,8 +73,9 @@ export function BookingDetailDialog({ booking }: { booking: BookingRow }) {
     }
   }
 
-  const subtotal = booking.servicePrice + booking.addonsPricePaid
-  const totalPrice = subtotal - booking.discountAmount
+  const customizationPrice = booking.customizations.reduce((sum: number, item: BookingCustomizationPriceRow) => sum + item.pricePaid, 0)
+  const subtotal = booking.servicePrice + booking.addonsPricePaid + customizationPrice
+  const totalPrice = Math.max(0, subtotal - booking.discountAmount)
 
   const genderLabel = booking.gender === 'FEMALE' ? 'خانم' : 'آقا'
 
@@ -85,12 +96,13 @@ export function BookingDetailDialog({ booking }: { booking: BookingRow }) {
       <DialogTrigger
         render={
           <button
-            className="text-xs px-3 py-1.5 rounded-md transition-colors hover:bg-white/10 cursor-pointer"
+            type="button"
+            className={triggerClassName ?? "text-xs px-3 py-1.5 rounded-md transition-colors hover:bg-white/10 cursor-pointer"}
             style={{ color: "var(--text-muted)" }}
           />
         }
       >
-        جزئیات
+        {triggerContent ?? "جزئیات"}
       </DialogTrigger>
       <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
@@ -155,28 +167,46 @@ export function BookingDetailDialog({ booking }: { booking: BookingRow }) {
 
         {/* Price breakdown */}
         <div className="flex flex-col gap-1.5 py-2 border-t" style={{ borderColor: "var(--border-base)" }}>
-          <div className="flex justify-between text-xs">
-            <span style={{ color: "var(--text-faint)" }}>خدمت اصلی</span>
-            <span style={{ color: "var(--text-primary)" }}>{booking.servicePrice.toLocaleString('fa-IR')} ت</span>
-          </div>
-          {booking.addons.map((a: BookingAddonRow) => (
-            <div key={a.nameFa} className="flex justify-between text-xs">
-              <span style={{ color: "var(--text-faint)" }}>{a.nameFa}</span>
-              <span style={{ color: "var(--text-primary)" }}>+{a.pricePaid.toLocaleString('fa-IR')} ت</span>
-            </div>
-          ))}
-          {booking.discountAmount > 0 && (
+          {booking.servicePrice > 0 && (
             <div className="flex justify-between text-xs">
-              <span style={{ color: "var(--text-faint)" }}>
-                تخفیف{booking.discountCode ? ` (${booking.discountCode.code})` : ''}
-              </span>
-              <span className="text-emerald-400">−{booking.discountAmount.toLocaleString('fa-IR')} ت</span>
+              <span style={{ color: "var(--text-faint)" }}>خدمت اصلی</span>
+              <span style={{ color: "var(--text-primary)" }}>{booking.servicePrice.toLocaleString('fa-IR')} ت</span>
             </div>
           )}
-          <div className="flex justify-between text-xs font-semibold pt-1 border-t" style={{ borderColor: "var(--border-base)" }}>
-            <span style={{ color: "var(--text-primary)" }}>جمع کل</span>
-            <span className="text-[#C6A55B]">{totalPrice.toLocaleString('fa-IR')} تومان</span>
+          {booking.addons.map((a: BookingAddonRow) => (
+            a.pricePaid > 0 && (
+              <div key={a.nameFa} className="flex justify-between text-xs">
+                <span style={{ color: "var(--text-faint)" }}>{a.nameFa}</span>
+                <span style={{ color: "var(--text-primary)" }}>+{a.pricePaid.toLocaleString('fa-IR')} ت</span>
+              </div>
+            )
+          ))}
+          {booking.customizations.map((item: BookingCustomizationPriceRow) => (
+            item.pricePaid > 0 && (
+              <div key={item.labelSnapshot} className="flex justify-between text-xs">
+                <span style={{ color: "var(--text-faint)" }}>{item.labelSnapshot}</span>
+                <span style={{ color: "var(--text-primary)" }}>+{item.pricePaid.toLocaleString('fa-IR')} ت</span>
+              </div>
+            )
+          ))}
+          {subtotal > 0 && (
+            <div className="flex justify-between text-xs border-t pt-1" style={{ borderColor: "var(--border-base)" }}>
+              <span style={{ color: "var(--text-muted)" }}>جمع جزء</span>
+              <span style={{ color: "var(--text-primary)" }}>{subtotal.toLocaleString('fa-IR')} ت</span>
+            </div>
+          )}
+          <div className="flex justify-between text-xs">
+            <span style={{ color: "var(--text-faint)" }}>
+              تخفیف{booking.discountCode ? ` (${booking.discountCode.code})` : ''}
+            </span>
+            <span className="text-emerald-400">−{booking.discountAmount.toLocaleString('fa-IR')} ت</span>
           </div>
+          {totalPrice > 0 && (
+            <div className="flex justify-between text-xs font-semibold pt-1 border-t" style={{ borderColor: "var(--border-base)" }}>
+              <span style={{ color: "var(--text-primary)" }}>مبلغ نهایی</span>
+              <span className="text-[#C6A55B]">{totalPrice.toLocaleString('fa-IR')} تومان</span>
+            </div>
+          )}
         </div>
 
         <div className="flex flex-col gap-2 pt-2 border-t" style={{ borderColor: "var(--border-base)" }}>
@@ -224,6 +254,7 @@ export function BookingDetailDialog({ booking }: { booking: BookingRow }) {
               </Popover>
             )}
           </div>
+          <PrintHealthFormButton bookingId={booking.id} className="w-full" />
         </div>
       </DialogContent>
     </Dialog>

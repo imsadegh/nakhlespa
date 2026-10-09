@@ -27,7 +27,7 @@ export default async function BookingsPage() {
   }
 
   const bookingRows = await db.query.bookings.findMany({
-    with: { service: true, addons: { with: { addon: true } }, discountCode: true },
+    with: { service: true, addons: { with: { addon: true } }, customizations: true, discountCode: true },
     orderBy: desc(bookings.createdAt),
   })
 
@@ -44,6 +44,7 @@ export default async function BookingsPage() {
     servicePrice: b.service.price,
     addonsPricePaid: b.addonsPricePaid,
     addons: b.addons.map(ba => ({ nameFa: ba.addon.nameFa, pricePaid: ba.pricePaid })),
+    customizations: b.customizations.map(item => ({ labelSnapshot: item.labelSnapshot, pricePaid: item.pricePaid })),
     status: b.status,
     notes: b.customerNotes,
     refId: b.zarinpalRefId,

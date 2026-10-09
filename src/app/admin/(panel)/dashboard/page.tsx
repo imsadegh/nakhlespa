@@ -2,7 +2,8 @@ import { BookingStatus, bookings } from '@/db/schema'
 import { db } from '@/lib/db'
 import { and, asc, count, desc, eq, gte, gt, lt, ne } from 'drizzle-orm'
 import { GlassCard } from '@/components/ui/GlassCard'
-import Link from 'next/link'
+import { BookingDetailDialog } from '../bookings/BookingDetailDialog'
+import type { BookingRow } from '../bookings/columns'
 
 export const dynamic = 'force-dynamic'
 
@@ -48,14 +49,14 @@ export default async function DashboardPage() {
 
   const upcoming = await db.query.bookings.findMany({
     where: and(gte(bookings.date, today), ne(bookings.status, BookingStatus.CANCELLED)),
-    with: { service: true },
+    with: { service: true, addons: { with: { addon: true } }, customizations: true, discountCode: true },
     orderBy: [asc(bookings.date), asc(bookings.startTime)],
     limit: 10,
   })
 
   const past = await db.query.bookings.findMany({
     where: and(lt(bookings.date, today), ne(bookings.status, BookingStatus.CANCELLED)),
-    with: { service: true },
+    with: { service: true, addons: { with: { addon: true } }, customizations: true, discountCode: true },
     orderBy: [desc(bookings.date), desc(bookings.startTime)],
     limit: 10,
   })
@@ -74,6 +75,30 @@ export default async function DashboardPage() {
     acc[key].push(b)
     return acc
   }, {})
+
+  const toBookingRow = (b: typeof upcoming[number]): BookingRow => ({
+    id: b.id,
+    bookingCode: b.bookingCode,
+    bookedAt: b.createdAt.getTime(),
+    date: new Date(b.date.toISOString().split('T')[0] + 'T12:00:00').toLocaleDateString('fa-IR'),
+    startTime: b.startTime,
+    endTime: b.endTime,
+    customerName: b.customerName,
+    customerPhone: b.customerPhone,
+    serviceNameFa: b.service.nameFa,
+    servicePrice: b.service.price,
+    addonsPricePaid: b.addonsPricePaid,
+    addons: b.addons.map(item => ({ nameFa: item.addon.nameFa, pricePaid: item.pricePaid })),
+    customizations: b.customizations.map(item => ({ labelSnapshot: item.labelSnapshot, pricePaid: item.pricePaid })),
+    status: b.status,
+    notes: b.customerNotes,
+    refId: b.zarinpalRefId,
+    gender: b.gender,
+    discountAmount: b.discountAmount,
+    discountCode: b.discountCode ? { code: b.discountCode.code } : null,
+    customization: b.customization,
+    healthIntake: b.healthIntake,
+  })
 
   return (
     <div>
@@ -105,8 +130,12 @@ export default async function DashboardPage() {
             </div>
             <div className="flex flex-col gap-1.5">
               {bookings.map(b => (
-                <Link key={b.id} href={`/admin/bookings/${b.id}`}>
-                  <div className="flex items-center gap-4 px-4 py-2.5 rounded-lg transition-colors hover:bg-white/5 cursor-pointer">
+                <BookingDetailDialog
+                  key={b.id}
+                  booking={toBookingRow(b)}
+                  triggerClassName="w-full flex items-center gap-4 px-4 py-2.5 rounded-lg text-right transition-colors hover:bg-white/5 cursor-pointer"
+                  triggerContent={
+                    <>
                     <span className="text-xs tabular-nums w-12 flex-shrink-0 text-[#C6A55B]">
                       {b.startTime}
                     </span>
@@ -122,8 +151,9 @@ export default async function DashboardPage() {
                     <span className={`mr-auto text-[10px] px-2 py-0.5 rounded-full ${statusStyle[b.status]}`}>
                       {statusLabel[b.status]}
                     </span>
-                  </div>
-                </Link>
+                    </>
+                  }
+                />
               ))}
             </div>
           </div>
@@ -147,8 +177,12 @@ export default async function DashboardPage() {
             </div>
             <div className="flex flex-col gap-1.5">
               {bookings.map(b => (
-                <Link key={b.id} href={`/admin/bookings/${b.id}`}>
-                  <div className="flex items-center gap-4 px-4 py-2.5 rounded-lg transition-colors hover:bg-white/5 cursor-pointer opacity-60">
+                <BookingDetailDialog
+                  key={b.id}
+                  booking={toBookingRow(b)}
+                  triggerClassName="w-full flex items-center gap-4 px-4 py-2.5 rounded-lg text-right transition-colors hover:bg-white/5 cursor-pointer opacity-60"
+                  triggerContent={
+                    <>
                     <span className="text-xs tabular-nums w-12 flex-shrink-0" style={{ color: 'var(--text-faint)' }}>
                       {b.startTime}
                     </span>
@@ -164,8 +198,9 @@ export default async function DashboardPage() {
                     <span className={`mr-auto text-[10px] px-2 py-0.5 rounded-full ${statusStyle[b.status]}`}>
                       {statusLabel[b.status]}
                     </span>
-                  </div>
-                </Link>
+                    </>
+                  }
+                />
               ))}
             </div>
           </div>

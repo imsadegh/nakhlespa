@@ -13,6 +13,11 @@ export type BookingAddonRow = {
   pricePaid: number
 }
 
+export type BookingCustomizationPriceRow = {
+  labelSnapshot: string
+  pricePaid: number
+}
+
 export type BookingRow = {
   id: string
   bookingCode: string
@@ -26,6 +31,7 @@ export type BookingRow = {
   servicePrice: number
   addonsPricePaid: number
   addons: BookingAddonRow[]
+  customizations: BookingCustomizationPriceRow[]
   status: BookingStatus
   notes: string | null
   refId: string | null
