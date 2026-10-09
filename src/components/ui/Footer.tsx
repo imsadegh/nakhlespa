@@ -13,7 +13,10 @@ export function Footer() {
           <p className="text-xs mb-1" style={{ color: 'var(--text-muted)' }}>قم، پردیسان — تلفن: ۰۲۱-XXXXXXXX</p>
           <p className="text-xs" style={{ color: 'var(--text-faint)' }}>© ۱۴۰۵ نخلسپا. تمام حقوق محفوظ است.</p>
         </div>
-        <div className="mt-6 flex justify-center sm:mt-0 sm:justify-start">
+        <div
+          className="mt-6 flex justify-center rounded-lg border p-2 sm:mt-0 sm:justify-start"
+          style={{ borderColor: 'var(--border-base)' }}
+        >
           <a
             referrerPolicy="origin"
             target="_blank"
