@@ -158,14 +158,14 @@ export function Step1Service({ state, update, goNext, services, addons }: Props)
                     {availableAddons.map(addon => {
                       const checked = person.addonIds.includes(addon.id)
                       return (
-                        <button key={addon.id} type="button" aria-pressed={checked} className="w-full text-right"
+                        <button key={addon.id} type="button" aria-pressed={checked} className="h-full w-full text-right"
                           onClick={() => toggleAddon(personIndex, addon.id)}>
-                          <GlassCard className={`flex min-h-12 items-center gap-2 rounded-xl p-2 transition-all ${checked ? 'border-[#C6A55B]/60 shadow-[0_0_0_1.5px_#C6A55B]' : 'hover:border-[rgba(198,165,91,0.35)]'}`}>
+                          <GlassCard className={`flex h-full min-h-12 items-center gap-2 rounded-xl p-2 transition-all ${checked ? 'border-[#C6A55B]/60 shadow-[0_0_0_1.5px_#C6A55B]' : 'hover:border-[rgba(198,165,91,0.35)]'}`}>
                             <div className={`flex size-4 shrink-0 items-center justify-center rounded-md border transition-colors ${checked ? 'border-[#C6A55B] bg-[#C6A55B]' : 'border-[rgba(198,165,91,0.4)]'}`}>
                               {checked && <span aria-hidden="true" className="text-black text-[9px] font-bold">✓</span>}
                             </div>
                             <span className="min-w-0 flex-1 text-xs font-medium" style={{ color: 'var(--text-primary)' }}>{addon.nameFa}</span>
-                            {addon.durationMinutes > 0 && <span className="shrink-0 text-[10px]" style={{ color: 'var(--text-muted)' }}>+{addon.durationMinutes.toLocaleString('fa-IR')} دقیقه</span>}
+                            {addon.durationMinutes > 0 && <span className="shrink-0 rounded-full border px-2 py-1 text-[10px]" style={{ borderColor: 'rgba(198,165,91,0.4)', color: '#C6A55B' }}>+{addon.durationMinutes.toLocaleString('fa-IR')} دقیقه</span>}
                             <span className="shrink-0 text-xs font-semibold text-[#C6A55B]">+{addon.price.toLocaleString('fa-IR')} تومان</span>
                           </GlassCard>
                         </button>
