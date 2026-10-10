@@ -1,6 +1,7 @@
 services:
   web:
     image: ${NAKHLESPA_IMAGE:-nakhlespa-app:production}
+    pull_policy: always
     restart: unless-stopped
     expose:
       - "3000"
@@ -58,6 +59,7 @@ services:
 
   worker-sms:
     image: ${NAKHLESPA_IMAGE:-nakhlespa-app:production}
+    pull_policy: always
     restart: unless-stopped
     command: ["bun", "run", "worker:sms"]
     environment:
