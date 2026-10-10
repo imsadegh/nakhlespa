@@ -7,7 +7,7 @@ export const dynamic = 'force-dynamic'
 
 export async function GET() {
   try {
-    const rows = await db.select({ id: addons.id, nameFa: addons.nameFa, price: addons.price, requiresTier: addons.requiresTier })
+    const rows = await db.select({ id: addons.id, nameFa: addons.nameFa, price: addons.price, durationMinutes: addons.durationMinutes, requiresTier: addons.requiresTier })
       .from(addons).where(eq(addons.isActive, true)).orderBy(asc(addons.requiresTier))
     return NextResponse.json(rows)
   } catch (err) {

@@ -58,6 +58,7 @@ export const addons = pgTable(
     id: text('id').primaryKey().$defaultFn(() => randomUUID()),
     nameFa: text('nameFa').notNull(),
     price: integer('price').notNull(),
+    durationMinutes: integer('durationMinutes').notNull().default(0),
     isActive: boolean('isActive').notNull().default(true),
     requiresTier: boolean('requiresTier').notNull().default(false),
     createdAt: timestamp('createdAt', { precision: 3 }).notNull().defaultNow(),

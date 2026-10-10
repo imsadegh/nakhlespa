@@ -1,6 +1,6 @@
 import { and, eq, inArray, isNotNull, ne } from 'drizzle-orm'
 import { db } from '@/lib/db'
-import { BookingStatus, blockedSlots, bookings, services, workingHours } from '@/db/schema'
+import { BookingStatus, addons, blockedSlots, bookings, services, workingHours } from '@/db/schema'
 import type { SlotDTO } from '@/types'
 
 function timeToMinutes(t: string): number {
@@ -85,10 +85,10 @@ export async function getAvailableSlots(
 
 export async function getSlotsForServices(
   date: string,
-  serviceIds: string[],
+  bookingPlans: { serviceId: string; addonIds: string[] }[],
   gender: 'FEMALE' | 'MALE',
 ): Promise<SlotDTO[]> {
-  if (serviceIds.length === 0) return []
+  if (bookingPlans.length === 0) return []
 
   const jsDate = parseDateUTC(date)
   const workingDay = await getWorkingDay(jsDate, gender)
@@ -97,10 +97,20 @@ export async function getSlotsForServices(
   const open = timeToMinutes(workingDay.openTime)
   const close = timeToMinutes(workingDay.closeTime)
 
+  const serviceIds = [...new Set(bookingPlans.map(plan => plan.serviceId))]
   const serviceRows = await db.select({ id: services.id, durationMinutes: services.durationMinutes, tier: services.tier }).from(services).where(and(inArray(services.id, serviceIds), eq(services.isActive, true)))
-  if (serviceRows.length === 0) return []
-  const durationMinutes = Math.max(...serviceRows.map(s => s.durationMinutes))
-  const roomServiceIds = serviceRows.filter(service => service.tier !== null).map(service => service.id)
+  if (serviceRows.length !== serviceIds.length) return []
+  const serviceMap = new Map(serviceRows.map(service => [service.id, service]))
+  const addonIds = [...new Set(bookingPlans.flatMap(plan => plan.addonIds))]
+  const addonRows = addonIds.length
+    ? await db.select({ id: addons.id, durationMinutes: addons.durationMinutes }).from(addons).where(and(inArray(addons.id, addonIds), eq(addons.isActive, true)))
+    : []
+  if (addonRows.length !== addonIds.length) return []
+  const addonDurationMap = new Map(addonRows.map(addon => [addon.id, addon.durationMinutes]))
+  const durationMinutes = Math.max(...bookingPlans.map(plan =>
+    serviceMap.get(plan.serviceId)!.durationMinutes + [...new Set(plan.addonIds)].reduce((sum, id) => sum + addonDurationMap.get(id)!, 0)
+  ))
+  const roomServiceIds = [...new Set(bookingPlans.filter(plan => serviceMap.get(plan.serviceId)!.tier !== null).map(plan => plan.serviceId))]
 
   const bookingsByRoom = roomServiceIds.length === 0 ? [] : await db.select({ serviceId: bookings.serviceId, startTime: bookings.startTime, endTime: bookings.endTime }).from(bookings).where(and(inArray(bookings.serviceId, roomServiceIds), eq(bookings.date, jsDate), ne(bookings.status, BookingStatus.CANCELLED), eq(bookings.gender, gender)))
 
@@ -146,7 +156,7 @@ export async function getSlotsForServices(
     slots.push({
       startTime: slotStartStr,
       endTime: minutesToTime(slotEnd),
-      taken: hasConflict || availableCount < serviceIds.length,
+      taken: hasConflict || availableCount < bookingPlans.length,
       availableCount,
     })
     cursor += 30

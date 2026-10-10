@@ -101,7 +101,7 @@ export async function POST(req: NextRequest) {
 
   const allAddonIds = [...new Set(bookings.flatMap(b => b.addonIds ?? []))]
   const fetchedAddons = allAddonIds.length > 0
-    ? await db.select({ id: addons.id, price: addons.price, requiresTier: addons.requiresTier }).from(addons).where(and(inArray(addons.id, allAddonIds), eq(addons.isActive, true)))
+    ? await db.select({ id: addons.id, price: addons.price, durationMinutes: addons.durationMinutes, requiresTier: addons.requiresTier }).from(addons).where(and(inArray(addons.id, allAddonIds), eq(addons.isActive, true)))
     : []
   if (fetchedAddons.length !== allAddonIds.length) {
     return NextResponse.json({ error: 'One or more add-ons are invalid' }, { status: 400 })
@@ -148,7 +148,8 @@ export async function POST(req: NextRequest) {
     const addonIds = [...new Set(b.addonIds ?? [])]
     const selectedAddons = addonIds.map(id => addonMap.get(id)!)
     const addonsPricePaid = selectedAddons.reduce((s, a) => s + a.price, 0)
-    const endTime = addMinutesToTime(b.startTime, svc.durationMinutes)
+    const durationMinutes = svc.durationMinutes + selectedAddons.reduce((sum, addon) => sum + addon.durationMinutes, 0)
+    const endTime = addMinutesToTime(b.startTime, durationMinutes)
     const validatedCustomization = validatedCustomizations.get(b)!
     const validatedHealthIntake = validatedHealthIntakes.get(b)!
     const isSpaPackage = SPA_PACKAGE_NAMES.has(svc.nameFa)
@@ -158,7 +159,7 @@ export async function POST(req: NextRequest) {
     return { b, svc, selectedAddons, addonsPricePaid, customizationPricePaid, customizationSnapshots, endTime, validatedCustomization, validatedHealthIntake }
   })
 
-  const slotsForDate = await getSlotsForServices(bookings[0].date, bookingData.map(({ svc }) => svc.id), gender)
+  const slotsForDate = await getSlotsForServices(bookings[0].date, bookingData.map(({ b, svc }) => ({ serviceId: svc.id, addonIds: b.addonIds ?? [] })), gender)
   const requestedSlot = slotsForDate.find(s => s.startTime === bookings[0].startTime)
   if (!requestedSlot || requestedSlot.taken) {
     return NextResponse.json({ error: 'Requested time slot is no longer available' }, { status: 409 })

@@ -165,6 +165,7 @@ export function Step1Service({ state, update, goNext, services, addons }: Props)
                               {checked && <span aria-hidden="true" className="text-black text-[9px] font-bold">✓</span>}
                             </div>
                             <span className="min-w-0 flex-1 text-xs font-medium" style={{ color: 'var(--text-primary)' }}>{addon.nameFa}</span>
+                            {addon.durationMinutes > 0 && <span className="shrink-0 text-[10px]" style={{ color: 'var(--text-muted)' }}>+{addon.durationMinutes.toLocaleString('fa-IR')} دقیقه</span>}
                             <span className="shrink-0 text-xs font-semibold text-[#C6A55B]">+{addon.price.toLocaleString('fa-IR')} تومان</span>
                           </GlassCard>
                         </button>

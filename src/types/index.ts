@@ -56,6 +56,7 @@ export type AddonDTO = {
   id: string
   nameFa: string
   price: number
+  durationMinutes: number
   requiresTier: boolean
 }
 

@@ -14,6 +14,7 @@ import {
   workingHours,
 } from './schema'
 import { CUSTOMIZATION_CATALOG } from '../lib/booking-customization'
+import { BATH_ADDON_DURATION_MINUTES, PACKAGE_DURATION_MINUTES } from './seed-durations-data'
 
 function daysFromNow(days: number): Date {
   const d = new Date()
@@ -39,11 +40,11 @@ async function seedDatabase() {
     }
 
     const packages = [
-      { nameFa: 'نفس تازه', descriptionFa: 'کیسه‌کشی در حمام، ۲۰ دقیقه ماساژ ریلکسی، لیف پایانی و پذیرایی متناسب با مزاج.', durationMinutes: 20, price: 800000 },
-      { nameFa: 'احیاگر', descriptionFa: 'پذیرایی، کیسه‌کشی بدن و حوله‌آتشین، ۵۰ دقیقه ماساژ حرفه‌ای، عصب‌گیری عمومی، سدر و حنا و لیف نهایی.', durationMinutes: 50, price: 2050000 },
-      { nameFa: 'دریای آرامش', descriptionFa: 'پذیرایی متناسب با مزاج، کیسه‌کشی و سنگ‌پا، ۴۰ دقیقه ماساژ ریلکسی؛ مناسب رفع خستگی عمیق.', durationMinutes: 40, price: 1100000 },
-      { nameFa: 'سبک بال', descriptionFa: 'پذیرایی، پاکسازی بدن با لوفا، روغن‌مالی با روغن گل بنفشه، ۲۰ دقیقه ماساژ ریلکسی و لیف پایانی.', durationMinutes: 20, price: 1300000 },
-      { nameFa: 'شاهانه', descriptionFa: 'پذیرایی، کیسه‌کشی بدن، ۹۰ دقیقه ماساژ حرفه‌ای، عصب‌گیری عمومی، مشت‌ومال، سدر و حنا و لیف نهایی.', durationMinutes: 90, price: 3900000 },
+      { nameFa: 'نفس تازه', descriptionFa: 'کیسه‌کشی در حمام، ۲۰ دقیقه ماساژ ریلکسی، لیف پایانی و پذیرایی متناسب با مزاج.', durationMinutes: PACKAGE_DURATION_MINUTES['نفس تازه'], price: 800000 },
+      { nameFa: 'احیاگر', descriptionFa: 'پذیرایی، کیسه‌کشی بدن و حوله‌آتشین، ۵۰ دقیقه ماساژ حرفه‌ای، عصب‌گیری عمومی، سدر و حنا و لیف نهایی.', durationMinutes: PACKAGE_DURATION_MINUTES['احیاگر'], price: 2050000 },
+      { nameFa: 'دریای آرامش', descriptionFa: 'پذیرایی متناسب با مزاج، کیسه‌کشی و سنگ‌پا، ۴۰ دقیقه ماساژ ریلکسی؛ مناسب رفع خستگی عمیق.', durationMinutes: PACKAGE_DURATION_MINUTES['دریای آرامش'], price: 1100000 },
+      { nameFa: 'سبک بال', descriptionFa: 'پذیرایی، پاکسازی بدن با لوفا، روغن‌مالی با روغن گل بنفشه، ۲۰ دقیقه ماساژ ریلکسی و لیف پایانی.', durationMinutes: PACKAGE_DURATION_MINUTES['سبک بال'], price: 1300000 },
+      { nameFa: 'شاهانه', descriptionFa: 'پذیرایی، کیسه‌کشی بدن، ۹۰ دقیقه ماساژ حرفه‌ای، عصب‌گیری عمومی، مشت‌ومال، سدر و حنا و لیف نهایی.', durationMinutes: PACKAGE_DURATION_MINUTES['شاهانه'], price: 3900000 },
     ]
 
     for (const pkg of packages) {
@@ -74,10 +75,10 @@ async function seedDatabase() {
 
     await tx.update(services).set({ isActive: false }).where(eq(services.nameFa, 'حمام طهورا'))
 
-    const bathAddon = { nameFa: 'حمام طهورا', price: 1200000, requiresTier: false }
+    const bathAddon = { nameFa: 'حمام طهورا', price: 1200000, durationMinutes: BATH_ADDON_DURATION_MINUTES, requiresTier: false }
     await tx.insert(addons).values(bathAddon).onConflictDoUpdate({
       target: addons.nameFa,
-      set: { price: bathAddon.price, requiresTier: bathAddon.requiresTier, isActive: true },
+      set: { price: bathAddon.price, durationMinutes: bathAddon.durationMinutes, requiresTier: bathAddon.requiresTier, isActive: true },
     })
 
     const drink = { nameFa: 'نوشیدنی ایوان گلاب', price: 150000, requiresTier: false }

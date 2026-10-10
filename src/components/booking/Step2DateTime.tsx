@@ -40,7 +40,7 @@ export function Step2DateTime({ state, update, goNext, goBack }: Props) {
   // Check specific room conflicts and shared package capacity once everyone has a service.
   const allServiceIds = state.persons.map(p => p.serviceId).filter(Boolean)
   const allServicesChosen = allServiceIds.length === personCount && personCount > 0
-  const serviceIdsKey = allServiceIds.join(',')
+  const bookingPlansKey = JSON.stringify(state.persons.map(person => ({ serviceId: person.serviceId, addonIds: person.addonIds })))
 
   useEffect(() => {
     if (!state.gender) return
@@ -57,14 +57,15 @@ export function Step2DateTime({ state, update, goNext, goBack }: Props) {
     if (!state.date || !firstServiceId || !state.gender) return
     setSlots([]); update({ startTime: undefined, endTime: undefined })
     setLoading(true)
-    const url = allServicesChosen
-      ? `/api/slots?date=${state.date}&serviceId=${firstServiceId}&serviceIds=${serviceIdsKey}&gender=${state.gender}`
-      : `/api/slots?date=${state.date}&serviceId=${firstServiceId}&count=${personCount}&gender=${state.gender}`
+    const params = new URLSearchParams({ date: state.date, serviceId: firstServiceId, gender: state.gender })
+    if (allServicesChosen) params.set('bookingPlans', bookingPlansKey)
+    else params.set('count', String(personCount))
+    const url = `/api/slots?${params}`
     fetch(url)
       .then(r => r.json())
       .then((data: SlotDTO[]) => setSlots(data))
       .finally(() => setLoading(false))
-  }, [state.date, firstServiceId, allServicesChosen, serviceIdsKey, personCount, state.gender, update])
+  }, [state.date, firstServiceId, allServicesChosen, bookingPlansKey, personCount, state.gender, update])
 
   return (
     <div>
