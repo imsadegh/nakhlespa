@@ -13,13 +13,14 @@ function toFaTime(t: string) {
 }
 
 interface TimePickerProps {
+  id?: string
   value: string        // HH:mm
   onChange: (v: string) => void
   placeholder?: string
   className?: string
 }
 
-export function TimePicker({ value, onChange, placeholder, className }: TimePickerProps) {
+export function TimePicker({ id, value, onChange, placeholder, className }: TimePickerProps) {
   const [open, setOpen] = React.useState(false)
   const [hh, mm] = value ? value.split(':') : ['', '']
 
@@ -31,6 +32,7 @@ export function TimePicker({ value, onChange, placeholder, className }: TimePick
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger
+        id={id}
         className={cn(
           'flex items-center gap-2 w-full rounded-xl px-3 py-2 text-xs transition-all duration-150 cursor-pointer',
           'bg-white/[0.10] backdrop-blur-sm border border-white/[0.18] hover:bg-white/[0.16] hover:border-[rgba(198,165,91,0.5)]',
