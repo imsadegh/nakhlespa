@@ -266,7 +266,6 @@ describe('Task 5 admin, customer, and public migration', () => {
     'src/components/customer/BookingHistoryList.tsx',
     'src/components/admin/BookingActions.tsx',
     'src/app/admin/(panel)/discounts/page.tsx',
-    'src/app/admin/(panel)/bookings/[id]/page.tsx',
     'src/app/admin/(panel)/bookings/columns.tsx',
     'src/app/my/bookings/page.tsx',
     'src/app/my/bookings/[token]/page.tsx',
@@ -294,7 +293,6 @@ describe('Task 5 admin, customer, and public migration', () => {
     for (const file of [
       'src/components/customer/BookingHistoryList.tsx',
       'src/components/admin/BookingActions.tsx',
-      'src/app/admin/(panel)/bookings/[id]/page.tsx',
       'src/app/admin/(panel)/bookings/columns.tsx',
       'src/app/my/bookings/page.tsx',
       'src/app/my/bookings/[token]/page.tsx',

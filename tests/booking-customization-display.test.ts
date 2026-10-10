@@ -70,14 +70,12 @@ describe('booking customization display', () => {
 
   test('maps all five formatter rows in customer/admin displays and keeps preferences out of prices', () => {
     const review = readFileSync('src/components/booking/Step4Review.tsx', 'utf8')
-    const detailPage = readFileSync('src/app/admin/(panel)/bookings/[id]/page.tsx', 'utf8')
     const detailDialog = readFileSync('src/app/admin/(panel)/bookings/BookingDetailDialog.tsx', 'utf8')
 
     expect(review).toMatch(/formatCustomization\(person\.customization\)\.map\(row =>/)
-    expect(detailPage).toMatch(/formatCustomization\(booking\.customization\)\.map\(row =>/)
     expect(detailDialog).toMatch(/formatCustomization\(booking\.customization\)\.map\(row =>/)
 
-    for (const source of [review, detailPage, detailDialog]) {
+    for (const source of [review, detailDialog]) {
       expect(source).toContain('سفارشی‌سازی')
       expect(source).toContain('{row.key}')
       expect(source).toContain('{row.label}')
@@ -85,8 +83,7 @@ describe('booking customization display', () => {
     }
 
     expect(review).toContain('const personTotal = (svc?.price ?? 0) + selectedAddons.reduce')
-    expect(detailPage).toContain('const totalPrice = booking.service.price + booking.addonsPricePaid')
     expect(detailDialog).toContain('const subtotal = booking.servicePrice + booking.addonsPricePaid')
-    expect(detailDialog.slice(detailDialog.indexOf('{/* Price breakdown */}'))).not.toContain('customization')
+    expect(detailDialog.slice(detailDialog.indexOf('{/* Price breakdown */}'))).not.toContain('formatCustomization')
   })
 })

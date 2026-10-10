@@ -2,6 +2,7 @@ import { db } from '@/lib/db'
 import { bookings } from '@/db/schema'
 import { desc } from 'drizzle-orm'
 import { cookies } from 'next/headers'
+import { CalendarCheck2 } from 'lucide-react'
 import { columns, type BookingRow } from './columns'
 import { BookingsDataTable } from './data-table'
 
@@ -56,8 +57,16 @@ export default async function BookingsPage() {
   }))
 
   return (
-    <div>
-      <h1 className="text-xl font-light mb-6" style={{ color: 'var(--text-primary)' }}>رزروها</h1>
+    <div className="space-y-6">
+      <header className="flex items-center gap-3">
+        <div className="flex size-11 shrink-0 items-center justify-center rounded-xl border border-[#d4b368]/25 bg-[#d4b368]/10 text-[#e0c276]">
+          <CalendarCheck2 aria-hidden="true" className="size-5" />
+        </div>
+        <div className="space-y-1">
+          <h1 className="text-2xl font-semibold" style={{ color: 'var(--text-primary)' }}>رزروها</h1>
+          <p className="text-sm" style={{ color: 'var(--text-muted)' }}>رزروهای ثبت‌شده را جستجو و جزئیات آن‌ها را بررسی کنید.</p>
+        </div>
+      </header>
       <BookingsDataTable columns={columns} data={rows} initialColumnVisibility={columnVisibility} />
     </div>
   )

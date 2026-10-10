@@ -63,7 +63,7 @@ export const columns: ColumnDef<BookingRow>[] = [
       <Button
         variant="ghost"
         size="sm"
-        className={`rounded-md px-2 font-medium ${column.getIsSorted() ? "bg-[#C6A55B]/10 text-[#C6A55B]" : "px-0"}`}
+        className={`h-9 rounded-md px-2 text-sm font-medium ${column.getIsSorted() ? "bg-[#C6A55B]/10 text-[#C6A55B]" : "px-0"}`}
         style={{ color: column.getIsSorted() ? "#C6A55B" : "var(--text-muted)" }}
         onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
       >
@@ -72,7 +72,7 @@ export const columns: ColumnDef<BookingRow>[] = [
       </Button>
     ),
     cell: ({ row }) => (
-      <span className="tabular-nums text-xs" style={{ color: "var(--text-muted)" }}>
+      <span className="whitespace-nowrap tabular-nums text-sm" style={{ color: "var(--text-muted)" }}>
         {new Intl.DateTimeFormat("fa-IR", { dateStyle: "short", timeStyle: "short", timeZone: "Asia/Tehran" }).format(row.original.bookedAt)}
       </span>
     ),
@@ -83,7 +83,7 @@ export const columns: ColumnDef<BookingRow>[] = [
       <Button
         variant="ghost"
         size="sm"
-        className={`rounded-md px-2 font-medium ${column.getIsSorted() ? "bg-[#C6A55B]/10 text-[#C6A55B]" : "px-0"}`}
+        className={`h-9 rounded-md px-2 text-sm font-medium ${column.getIsSorted() ? "bg-[#C6A55B]/10 text-[#C6A55B]" : "px-0"}`}
         style={{ color: column.getIsSorted() ? "#C6A55B" : "var(--text-muted)" }}
         onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
       >
@@ -92,7 +92,7 @@ export const columns: ColumnDef<BookingRow>[] = [
       </Button>
     ),
     cell: ({ row }) => (
-      <span className="tabular-nums text-[#C6A55B]">
+      <span className="whitespace-nowrap tabular-nums text-sm text-[#C6A55B]">
         {row.getValue("date")} {row.original.startTime.replace(/\d/g, d => '۰۱۲۳۴۵۶۷۸۹'[+d])}
       </span>
     ),
@@ -103,10 +103,10 @@ export const columns: ColumnDef<BookingRow>[] = [
     cell: ({ row }) => (
       <div>
         <div className="flex items-center gap-1.5 mb-0.5">
-          <span className="text-xs font-medium" style={{ color: "var(--text-primary)" }}>
+          <span className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>
             {row.getValue("customerName")}
           </span>
-          <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${
+          <span className={`text-xs px-2 py-0.5 rounded-full ${
             row.original.gender === 'FEMALE'
               ? 'bg-pink-400/10 text-pink-400'
               : 'bg-blue-400/10 text-blue-400'
@@ -114,7 +114,7 @@ export const columns: ColumnDef<BookingRow>[] = [
             {row.original.gender === 'FEMALE' ? 'خانم' : 'آقا'}
           </span>
         </div>
-        <div className="text-[11px]" style={{ color: "var(--text-faint)" }}>
+        <div className="text-xs" style={{ color: "var(--text-faint)" }}>
           {row.original.customerPhone}
         </div>
       </div>
@@ -124,7 +124,7 @@ export const columns: ColumnDef<BookingRow>[] = [
     accessorKey: "serviceNameFa",
     header: () => <span style={{ color: "var(--text-muted)" }}>سرویس</span>,
     cell: ({ row }) => (
-      <span className="text-xs" style={{ color: "var(--text-muted)" }}>
+      <span className="text-sm" style={{ color: "var(--text-muted)" }}>
         {row.getValue("serviceNameFa")}
       </span>
     ),
@@ -135,7 +135,7 @@ export const columns: ColumnDef<BookingRow>[] = [
       <Button
         variant="ghost"
         size="sm"
-        className={`rounded-md px-2 font-medium ${column.getIsSorted() ? "bg-[#C6A55B]/10 text-[#C6A55B]" : "px-0"}`}
+        className={`h-9 rounded-md px-2 text-sm font-medium ${column.getIsSorted() ? "bg-[#C6A55B]/10 text-[#C6A55B]" : "px-0"}`}
         style={{ color: column.getIsSorted() ? "#C6A55B" : "var(--text-muted)" }}
         onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
       >
@@ -146,7 +146,7 @@ export const columns: ColumnDef<BookingRow>[] = [
     cell: ({ row }) => {
       const status = row.getValue("status") as BookingStatus
       return (
-        <span className={`text-xs px-2.5 py-1 rounded-full ${statusStyle[status]}`}>
+        <span className={`whitespace-nowrap text-sm px-3 py-1.5 rounded-full ${statusStyle[status]}`}>
           {statusLabel[status]}
         </span>
       )
@@ -154,7 +154,12 @@ export const columns: ColumnDef<BookingRow>[] = [
   },
   {
     id: "actions",
-    cell: ({ row }) => <BookingDetailDialog booking={row.original} />,
+    cell: ({ row }) => (
+      <BookingDetailDialog
+        booking={row.original}
+        triggerClassName="inline-flex h-9 items-center justify-center rounded-lg border border-white/10 bg-white/[0.04] px-3 text-sm font-medium transition-colors hover:border-[#d4b368]/30 hover:bg-[#d4b368]/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d4b368]"
+      />
+    ),
     enableHiding: false,
   },
 ]

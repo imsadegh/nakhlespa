@@ -14,10 +14,10 @@ function query(value: QueryValue) {
 }
 
 const serviceRows = [
-  { id: 'service-one', nameFa: 'Service One', descriptionFa: null, durationMinutes: 60, price: 100, color: null, symbol: null, tier: 1, isActive: true },
-  { id: 'service-two', nameFa: 'Service Two', descriptionFa: null, durationMinutes: 90, price: 200, color: null, symbol: null, tier: 2, isActive: true },
-  { id: 'service-vip', nameFa: 'VIP Service', descriptionFa: null, durationMinutes: 60, price: 500, color: null, symbol: null, tier: 3, isActive: true },
-  { id: 'service-consultation', nameFa: 'Consultation', descriptionFa: null, durationMinutes: 30, price: 75, color: null, symbol: null, tier: null, isActive: true },
+  { id: 'service-one', nameFa: 'نفس تازه', descriptionFa: null, durationMinutes: 60, price: 100, color: null, symbol: null, tier: null, isActive: true },
+  { id: 'service-two', nameFa: 'احیاگر', descriptionFa: null, durationMinutes: 90, price: 200, color: null, symbol: null, tier: null, isActive: true },
+  { id: 'service-vip', nameFa: 'شاهانه', descriptionFa: null, durationMinutes: 60, price: 500, color: null, symbol: null, tier: null, isActive: true },
+  { id: 'service-consultation', nameFa: 'مشاوره', descriptionFa: null, durationMinutes: 30, price: 75, color: null, symbol: null, tier: null, isActive: true },
 ]
 const addonRows = [
   { id: 'addon-one', price: 10, requiresTier: false },
@@ -73,6 +73,10 @@ const db = {
 
 mock.module('@/lib/db', () => ({ db }))
 mock.module('@/lib/slots', () => ({
+  getSlotsForServices: async () => {
+    calls.slotLookup++
+    return [{ startTime: '10:00', endTime: '11:30', taken: false, availableCount: 2 }]
+  },
   getAvailableSlots: async () => {
     calls.slotLookup++
     return [{ startTime: '10:00', endTime: '11:30', taken: false, availableCount: 2 }]
