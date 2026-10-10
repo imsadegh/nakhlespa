@@ -142,9 +142,6 @@ export function HealthFormPage({ booking }: { booking: PrintableBooking }) {
         <p>تاریخ: <span className="signature-line" data-print-date /></p>
       </div>
 
-      <p className="mt-6 rounded-lg bg-[#f6f1e6] p-3 text-sm font-medium">
-        نکته: لطفاً ۱۵ دقیقه قبل از زمان رزرو در مجموعه حضور داشته باشید تا خدمات بهتری دریافت کنید.
-      </p>
     </section>
   )
 }

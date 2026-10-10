@@ -36,6 +36,7 @@ function booking(overrides: Record<string, unknown> = {}) {
       medicalNotes: 'حساسیت به فشار زیاد',
     },
     service: { nameFa: 'ماساژ آرامش', durationMinutes: 60 },
+    customizations: [],
     ...overrides,
   }
 }
@@ -46,7 +47,7 @@ async function renderPage(id = 'booking-1') {
 }
 
 describe('admin health intake print page', () => {
-  test('prints identity, booking details, reminder, answers, notes, and physical signature lines', async () => {
+  test('prints identity, booking details, answers, notes, and physical signature lines without the arrival reminder', async () => {
     sampleBookings.clear()
     sampleBookings.set('booking-1', booking())
 
@@ -57,14 +58,14 @@ describe('admin health intake print page', () => {
     expect(html).toContain('ماساژ آرامش')
     expect(html).toContain('۱۴۰۵')
     expect(html).toContain('۱۴:۰۰')
-    expect(html).toContain('لطفاً ۱۵ دقیقه قبل از زمان رزرو در مجموعه حضور داشته باشید تا خدمات بهتری دریافت کنید.')
+    expect(html).not.toContain('لطفاً ۱۵ دقیقه قبل از زمان رزرو در مجموعه حضور داشته باشید تا خدمات بهتری دریافت کنید.')
     expect(html).toContain('بیماری‌ها')
-    expect(html).toContain('پوست و حساسیت')
-    expect(html).toContain('دارو و درمان')
     expect(html).toContain('وضعیت فعلی بدن')
+    expect(html).not.toContain('پوست و حساسیت')
+    expect(html).not.toContain('دارو و درمان')
     expect(html).toContain('دیابت')
-    expect(html).toContain('بله')
-    expect(html).toContain('خیر')
+    expect(html).not.toContain('بله')
+    expect(html).not.toContain('خیر')
     expect(html).toContain('حساسیت به فشار زیاد')
     expect(html).toContain('امضاء متقاضی')
     expect(html).toContain('تاریخ')
