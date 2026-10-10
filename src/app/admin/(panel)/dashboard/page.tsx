@@ -142,13 +142,13 @@ export default async function DashboardPage() {
                     <span className="text-xs font-medium flex-shrink-0" style={{ color: 'var(--text-primary)' }}>
                       {b.customerName}
                     </span>
-                    <span className={`shrink-0 rounded-full px-2 py-0.5 text-[9px] ${genderStyle[b.gender]}`}>
+                    <span className={`shrink-0 rounded-full px-2 py-0.5 text-xs ${genderStyle[b.gender]}`}>
                       {genderLabel[b.gender]}
                     </span>
-                    <span className="text-[11px]" style={{ color: 'var(--text-faint)' }}>
+                    <span className="text-[13px]" style={{ color: 'var(--text-faint)' }}>
                       · {b.service.nameFa}
                     </span>
-                    <span className={`mr-auto text-[10px] px-2 py-0.5 rounded-full ${statusStyle[b.status]}`}>
+                    <span className={`mr-auto text-xs px-2 py-0.5 rounded-full ${statusStyle[b.status]}`}>
                       {statusLabel[b.status]}
                     </span>
                     </>
@@ -189,13 +189,13 @@ export default async function DashboardPage() {
                     <span className="text-xs font-medium flex-shrink-0" style={{ color: 'var(--text-primary)' }}>
                       {b.customerName}
                     </span>
-                    <span className={`shrink-0 rounded-full px-2 py-0.5 text-[9px] ${genderStyle[b.gender]}`}>
+                    <span className={`shrink-0 rounded-full px-2 py-0.5 text-xs ${genderStyle[b.gender]}`}>
                       {genderLabel[b.gender]}
                     </span>
-                    <span className="text-[11px]" style={{ color: 'var(--text-faint)' }}>
+                    <span className="text-[13px]" style={{ color: 'var(--text-faint)' }}>
                       · {b.service.nameFa}
                     </span>
-                    <span className={`mr-auto text-[10px] px-2 py-0.5 rounded-full ${statusStyle[b.status]}`}>
+                    <span className={`mr-auto text-xs px-2 py-0.5 rounded-full ${statusStyle[b.status]}`}>
                       {statusLabel[b.status]}
                     </span>
                     </>

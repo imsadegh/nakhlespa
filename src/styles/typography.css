@@ -19,7 +19,7 @@
      Increase --font-base to scale everything up proportionally.
      Current value: 1.2rem = 19.2px (20% larger than browser 16px default)
      ──────────────────────────────────────────────────────────────── */
-  --font-base: 1.2rem;
+  --font-base: 1.07rem;
 
   /* ── Type scale ─────────────────────────────────────────────────
      Named steps — use these as CSS vars throughout the app.
