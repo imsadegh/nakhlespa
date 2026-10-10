@@ -17,6 +17,7 @@ function ParticleCanvas() {
     if (!canvas) return
     const ctx = canvas.getContext('2d')
     if (!ctx) return
+    const context = ctx
 
     let W = window.innerWidth
     let H = window.innerHeight
@@ -83,7 +84,7 @@ function ParticleCanvas() {
       if (now - lastFrameAt < (idle ? 50 : 25)) return
       lastFrameAt = now
 
-      ctx.clearRect(0, 0, W, H)
+      context.clearRect(0, 0, W, H)
       scrollBoost = Math.max(0, scrollBoost - 0.018)
       const speedMul = 1 + scrollBoost * 3.5
       const light = isLightTheme()
@@ -98,12 +99,12 @@ function ParticleCanvas() {
         if (p.x < -10) p.x = W + 10
         if (p.x > W + 10) p.x = -10
 
-        ctx.beginPath()
-        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2)
-        ctx.fillStyle = light
+        context.beginPath()
+        context.arc(p.x, p.y, p.r, 0, Math.PI * 2)
+        context.fillStyle = light
           ? `rgba(139,100,40,${p.alpha})`
           : `rgba(198,165,91,${p.alpha})`
-        ctx.fill()
+        context.fill()
       }
     }
 
