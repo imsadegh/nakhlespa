@@ -33,8 +33,8 @@ function ParticleCanvas() {
 
     const isMobileDevice = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)
     const COUNT = isMobileDevice
-      ? Math.min(Math.floor((W * H) / 20000), 20)
-      : Math.min(Math.floor((W * H) / 18000), 80)
+      ? Math.min(Math.floor((W * H) / 40000), 12)
+      : Math.min(Math.floor((W * H) / 30000), 40)
 
     const particles: Particle[] = Array.from({ length: COUNT }, () => {
       const baseVy = -(Math.random() * 0.3 + 0.08)
@@ -81,7 +81,7 @@ function ParticleCanvas() {
 
       const now = Date.now()
       const idle = now - lastActivityAt > 2000
-      if (now - lastFrameAt < (idle ? 50 : 25)) return
+      if (now - lastFrameAt < (idle ? 100 : 50)) return
       lastFrameAt = now
 
       context.clearRect(0, 0, W, H)

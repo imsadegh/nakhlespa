@@ -1,6 +1,7 @@
 'use client'
 import { createContext, useContext, useState, useCallback } from 'react'
 import { BookingDialog } from './BookingDialog'
+import { AmbientBackground } from '@/components/ui/AmbientBackground'
 import type { ServiceDTO } from '@/types'
 
 type CtxValue = { open: () => void; available: boolean }
@@ -17,6 +18,7 @@ export function BookingDialogProvider({ services, children }: { services: Servic
 
   return (
     <Ctx.Provider value={{ open, available: true }}>
+      <AmbientBackground particles={!isOpen} />
       {children}
       <BookingDialog open={isOpen} onClose={close} services={services} />
     </Ctx.Provider>
