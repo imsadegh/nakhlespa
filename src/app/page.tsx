@@ -26,7 +26,7 @@ export default async function HomePage() {
   }))
   return (
     <BookingDialogProvider services={serviceDTOs}>
-      <AmbientBackground />
+      <AmbientBackground particles />
       <div className="relative z-10 min-h-screen">
         <Navbar />
         <main className="mx-auto w-full max-w-screen-xl pt-20">

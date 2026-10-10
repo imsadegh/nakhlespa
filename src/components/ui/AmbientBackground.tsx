@@ -120,7 +120,7 @@ function ParticleCanvas() {
   return <canvas ref={canvasRef} className="absolute inset-0 h-full w-full pointer-events-none" />
 }
 
-export function AmbientBackground() {
+export function AmbientBackground({ particles = false }: { particles?: boolean }) {
   return (
     <div className="fixed inset-0 z-0 overflow-hidden" aria-hidden>
       <div
@@ -137,7 +137,7 @@ export function AmbientBackground() {
           opacity: 0.2,
         }}
       />
-      <ParticleCanvas />
+      {particles && <ParticleCanvas />}
     </div>
   )
 }
