@@ -9,8 +9,9 @@ export default function PanelLayout({ children }: { children: ReactNode }) {
     <SidebarProvider
       style={
         {
-          '--sidebar-width': '11rem',
+          '--sidebar-width': '13rem',
           '--sidebar-width-mobile': '13rem',
+          '--sidebar-width-icon': '4rem',
         } as React.CSSProperties
       }
     >

@@ -40,6 +40,16 @@ type SidebarContextProps = {
   setOpenMobile: (open: boolean) => void
   isMobile: boolean
   toggleSidebar: () => void
+  setPointerOpen: (open: boolean) => void
+  setFocusOpen: (open: boolean) => void
+}
+
+export function resolveSidebarState(
+  pinnedOpen: boolean,
+  pointerOpen: boolean,
+  focusOpen: boolean
+): "expanded" | "collapsed" {
+  return pinnedOpen || pointerOpen || focusOpen ? "expanded" : "collapsed"
 }
 
 const SidebarContext = React.createContext<SidebarContextProps | null>(null)
@@ -68,6 +78,8 @@ function SidebarProvider({
 }) {
   const isMobile = useIsMobile()
   const [openMobile, setOpenMobile] = React.useState(false)
+  const [pointerOpen, setPointerOpen] = React.useState(false)
+  const [focusOpen, setFocusOpen] = React.useState(false)
 
   // This is the internal state of the sidebar.
   // We use openProp and setOpenProp for control from outside the component.
@@ -111,7 +123,7 @@ function SidebarProvider({
 
   // We add a state so that we can do data-state="expanded" or "collapsed".
   // This makes it easier to style the sidebar with Tailwind classes.
-  const state = open ? "expanded" : "collapsed"
+  const state = resolveSidebarState(open, pointerOpen, focusOpen)
 
   const contextValue = React.useMemo<SidebarContextProps>(
     () => ({
@@ -122,8 +134,10 @@ function SidebarProvider({
       openMobile,
       setOpenMobile,
       toggleSidebar,
+      setPointerOpen,
+      setFocusOpen,
     }),
-    [state, open, setOpen, isMobile, openMobile, setOpenMobile, toggleSidebar]
+    [state, open, setOpen, isMobile, openMobile, setOpenMobile, toggleSidebar, setPointerOpen, setFocusOpen]
   )
 
   return (
@@ -162,7 +176,7 @@ function Sidebar({
   variant?: "sidebar" | "floating" | "inset"
   collapsible?: "offcanvas" | "icon" | "none"
 }) {
-  const { isMobile, state, openMobile, setOpenMobile } = useSidebar()
+  const { isMobile, state, openMobile, setOpenMobile, setPointerOpen, setFocusOpen } = useSidebar()
 
   if (collapsible === "none") {
     return (
@@ -213,6 +227,14 @@ function Sidebar({
       data-variant={variant}
       data-side={side}
       data-slot="sidebar"
+      onPointerEnter={() => setPointerOpen(true)}
+      onPointerLeave={() => setPointerOpen(false)}
+      onFocusCapture={() => setFocusOpen(true)}
+      onBlurCapture={(event) => {
+        if (!event.currentTarget.contains(event.relatedTarget as Node | null)) {
+          setFocusOpen(false)
+        }
+      }}
     >
       {/* This is what handles the sidebar gap on desktop */}
       <div

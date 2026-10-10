@@ -2,18 +2,21 @@
 
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { LayoutDashboard, CalendarDays, Clock, LogOut, Tag } from 'lucide-react'
+import { LayoutDashboard, CalendarDays, Clock, Leaf, LogOut, PanelRightClose, PanelRightOpen, Tag } from 'lucide-react'
 import {
   Sidebar,
   SidebarContent,
   SidebarFooter,
   SidebarGroup,
   SidebarGroupContent,
+  SidebarGroupLabel,
   SidebarHeader,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  useSidebar,
 } from '@/components/ui/sidebar'
+import { Button } from '@/components/ui/button'
 import { ThemeToggle } from '@/components/ui/ThemeToggle'
 import { authClient } from '@/lib/auth-client'
 
@@ -27,6 +30,7 @@ const links = [
 export function AdminSidebar() {
   const path = usePathname()
   const router = useRouter()
+  const { open, toggleSidebar } = useSidebar()
 
   async function handleLogout() {
     await authClient.signOut()
@@ -34,17 +38,37 @@ export function AdminSidebar() {
   }
 
   return (
-    <Sidebar side="right" dir="rtl" collapsible="offcanvas">
-      <SidebarHeader className="px-4 py-4">
-        <span className="text-lg font-bold tracking-wide" style={{ color: 'var(--text-primary)' }}>
-          نخل<span className="text-[#C6A55B]">سپا</span>
-        </span>
+    <Sidebar side="right" dir="rtl" collapsible="icon">
+      <SidebarHeader className="border-b border-sidebar-border px-3 py-4">
+        <div className="flex items-center gap-2">
+          <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-sidebar-primary/15 text-sidebar-primary group-data-[collapsible=icon]:hidden">
+            <Leaf className="size-[18px]" />
+          </span>
+          <div className="min-w-0 flex-1 group-data-[collapsible=icon]:hidden">
+            <div className="text-base font-bold tracking-wide text-sidebar-foreground">
+              نخل<span className="text-sidebar-primary">سپا</span>
+            </div>
+            <div className="text-[11px] text-sidebar-foreground/55">پنل مدیریت</div>
+          </div>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            onClick={toggleSidebar}
+            aria-label={open ? 'جمع کردن نوار کناری' : 'باز نگه داشتن نوار کناری'}
+            title={open ? 'جمع کردن نوار کناری' : 'باز نگه داشتن نوار کناری'}
+            className="hidden size-8 shrink-0 rounded-lg text-sidebar-foreground/65 hover:bg-sidebar-accent hover:text-sidebar-primary md:inline-flex group-data-[collapsible=icon]:mx-auto"
+          >
+            {open ? <PanelRightClose /> : <PanelRightOpen />}
+          </Button>
+        </div>
       </SidebarHeader>
 
       <SidebarContent>
         <SidebarGroup>
+          <SidebarGroupLabel className="px-2 text-[11px] tracking-wide text-sidebar-foreground/45">ناوبری</SidebarGroupLabel>
           <SidebarGroupContent>
-            <SidebarMenu className="gap-1">
+            <SidebarMenu className="gap-1.5">
               {links.map(({ href, label, icon: Icon }) => {
                 const active = path === href || path.startsWith(href + '/')
                 return (
@@ -52,7 +76,9 @@ export function AdminSidebar() {
                     <SidebarMenuButton
                       render={<Link href={href} />}
                       isActive={active}
-                      tooltip={label}
+                      size="lg"
+                      tooltip={{ children: label, side: 'left' }}
+                      className="h-11 rounded-xl px-3 text-[0.9rem] font-medium transition-colors data-[active=true]:border-r-2 data-[active=true]:border-sidebar-primary data-[active=true]:bg-sidebar-primary/12 data-[active=true]:font-semibold data-[active=true]:text-sidebar-primary"
                     >
                       <Icon />
                       <span>{label}</span>
@@ -65,9 +91,9 @@ export function AdminSidebar() {
         </SidebarGroup>
       </SidebarContent>
 
-      <SidebarFooter className="px-2 pb-4 flex flex-col gap-1">
-        <ThemeToggle />
-        <SidebarMenuButton onClick={handleLogout} className="w-full text-destructive hover:text-destructive">
+      <SidebarFooter className="gap-2 border-t border-sidebar-border px-2 pb-4 pt-3">
+        <ThemeToggle className="group-data-[collapsible=icon]:size-8 group-data-[collapsible=icon]:p-0 group-data-[collapsible=icon]:[&_span]:hidden" />
+        <SidebarMenuButton onClick={handleLogout} size="lg" className="h-11 rounded-xl px-3 text-destructive hover:bg-destructive/10 hover:text-destructive group-data-[collapsible=icon]:[&>span:last-child]:hidden">
           <LogOut />
           <span>خروج</span>
         </SidebarMenuButton>

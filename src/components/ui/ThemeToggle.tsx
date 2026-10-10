@@ -1,5 +1,6 @@
 'use client'
 import { useEffect, useState } from 'react'
+import { cn } from '@/lib/utils'
 
 type Theme = 'dark' | 'light' | 'auto'
 
@@ -48,7 +49,7 @@ function applyTheme(t: Theme) {
   document.documentElement.classList.toggle('dark', isDark)
 }
 
-export function ThemeToggle() {
+export function ThemeToggle({ className }: { className?: string }) {
   const [theme, setTheme] = useState<Theme>('auto')
 
   useEffect(() => {
@@ -68,9 +69,9 @@ export function ThemeToggle() {
     <button
       onClick={cycle}
       title={`تم: ${LABEL[theme]}`}
-      className="flex h-10 items-center justify-center gap-1.5 rounded-lg px-2.5 text-xs transition-colors
+      className={cn(`flex h-10 w-full items-center justify-center gap-1.5 rounded-lg px-2.5 text-xs transition-colors
         bg-white/[0.07] border border-white/[0.12] hover:bg-white/[0.13]
-        text-[color:var(--text-muted)] hover:text-[color:var(--text-primary)]"
+        text-[color:var(--text-muted)] hover:text-[color:var(--text-primary)]`, className)}
     >
       <ThemeIcon theme={theme} />
       <span>{LABEL[theme]}</span>
