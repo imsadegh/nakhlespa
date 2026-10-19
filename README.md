@@ -54,6 +54,14 @@ bun run db:seed
 
 The seed creates services, working hours, add-ons, and the admin user. It is idempotent (safe to run multiple times).
 
+For local demo data, run the main seed first, then explicitly add the eight fake bookings:
+
+```bash
+bun run db:seed:fake
+```
+
+The fake seed refuses to run with `NODE_ENV=production`. The main `db:seed` never inserts fake bookings. Existing fake bookings from earlier seed runs are not automatically deleted.
+
 ### 5. Run the dev server
 
 ```bash
@@ -191,7 +199,7 @@ export ADMIN_EMAIL ADMIN_PASSWORD
 bun run db:seed
 ```
 
-The seed creates services, working hours, add-ons, and the admin user. It is idempotent when intentionally rerun, but it must not run automatically on every restart.
+The seed creates services, working hours, add-ons, and the admin user, without fake bookings. It is idempotent when intentionally rerun, but it must not run automatically on every restart.
 
 ### 5. CI/CD release flow and verification
 

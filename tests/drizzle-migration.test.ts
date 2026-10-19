@@ -81,12 +81,25 @@ describe('Task 3 auth and seed migration', () => {
     expect(db).toContain('drizzle(pool, { schema })')
   })
 
-  test('restores the original seed booking token values and upsert target', () => {
-    const seed = readFileSync('src/db/seed.ts', 'utf8')
+  test('preserves fake booking tokens in the separate fake seed', () => {
+    const seed = readFileSync('src/db/seed-fake.ts', 'utf8')
 
     expect(seed).toContain('const token = `seed-token-${booking.customerPhone}`')
     expect(seed).toContain('target: bookings.token')
     expect(seed).not.toContain("createHash('sha1')")
+  })
+
+  test('keeps fake bookings out of the production seed and guards the fake command', () => {
+    const seed = readFileSync('src/db/seed.ts', 'utf8')
+    const fakeSeed = readFileSync('src/db/seed-fake.ts', 'utf8')
+    const { scripts } = JSON.parse(readFileSync('package.json', 'utf8'))
+
+    expect(seed).not.toContain('sampleBookings')
+    expect(seed).not.toContain('bookings')
+    expect(seed).not.toContain('seed-fake')
+    expect(scripts['db:seed:fake']).toBe('bun src/db/seed-fake.ts')
+    expect(fakeSeed).toContain("process.env.NODE_ENV === 'production'")
+    expect(fakeSeed.indexOf("throw new Error")).toBeLessThan(fakeSeed.indexOf('db.transaction'))
   })
 
   test('removes the obsolete Prisma seed configuration', () => {
