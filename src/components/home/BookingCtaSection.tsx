@@ -28,7 +28,7 @@ export function BookingCtaSection() {
             <span className="mb-3 inline-flex rounded-full border border-[#C6A55B]/30 bg-[#C6A55B]/10 px-3 py-1 text-[10px] font-medium text-[#E4C474]">رزرو آنلاین</span>
             <h2 className="text-xl sm:text-2xl font-semibold mb-2" style={{ color: 'var(--text-primary)' }}>آماده رزرو هستید؟</h2>
             <p className="text-xs sm:text-sm leading-loose font-light" style={{ color: 'var(--text-muted)' }}>
-              همین الان نوبت بگیرید — بعد از تأیید، پرداخت آنلاین از طریق زرین‌پال انجام می‌شود.
+              همین الان نوبت بگیرید — بعد از تأیید، پرداخت آنلاین از طریق زیبال انجام می‌شود.
             </p>
           </div>
           <motion.div whileHover={reducedMotion ? undefined : { y: -2 }} whileTap={reducedMotion ? undefined : { scale: 0.98 }} transition={{ duration: 0.16 }} className="shrink-0">

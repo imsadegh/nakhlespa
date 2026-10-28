@@ -5,7 +5,7 @@ import { GlassCard } from '@/components/ui/GlassCard'
 const steps = [
   { n: '۱', title: 'انتخاب خدمت', desc: 'ماساژ درمانی یا آرامش‌بخش را انتخاب کنید', color: '#38BDF8' },
   { n: '۲', title: 'انتخاب زمان', desc: 'تاریخ و ساعت مناسب را از تقویم شمسی انتخاب کنید', color: '#A78BFA' },
-  { n: '۳', title: 'پرداخت آنلاین', desc: 'پرداخت امن از طریق زرین‌پال و دریافت تأییدیه SMS', color: '#34D399' },
+  { n: '۳', title: 'پرداخت آنلاین', desc: 'پرداخت امن از طریق زیبال و دریافت تأییدیه SMS', color: '#34D399' },
 ]
 
 export function HowItWorksSection() {

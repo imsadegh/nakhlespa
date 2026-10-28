@@ -92,11 +92,11 @@ mock.module('@/lib/discounts', () => ({
     return { eligible: false, discountAmount: 0, codeId: '' }
   },
 }))
-mock.module('@/lib/zarinpal', () => ({
-  zarinpalRequest: async (amount: number) => {
+mock.module('@/lib/zibal', () => ({
+  zibalRequest: async (amount: number) => {
     calls.payment++
     calls.paymentAmount = amount
-    return { authority: 'authority', paymentUrl: 'https://payment.test/authority' }
+    return { trackId: '12345', paymentUrl: 'https://payment.test/authority' }
   },
 }))
 

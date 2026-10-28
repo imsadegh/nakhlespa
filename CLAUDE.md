@@ -20,7 +20,7 @@ No lint or test commands are configured.
 
 ## Environment Files
 
-Use one root `.env` file for local CLI commands and application runtime. It contains `DATABASE_URL`, `BETTER_AUTH_SECRET`, `REDIS_URL`, `NEXT_PUBLIC_SITE_URL`, `ZARINPAL_MERCHANT_ID`, `ZARINPAL_CALLBACK_URL`, `SMSIR_API_KEY`, `SMSIR_TEMPLATE_CONFIRM`, `SMSIR_TEMPLATE_ADMIN`, `SMSIR_TEMPLATE_REMINDER_24H`, `SMSIR_TEMPLATE_REMINDER_2H`, `SMSIR_TEMPLATE_OTP`, `ADMIN_PHONE`, `ADMIN_EMAIL`, and `ADMIN_PASSWORD`.
+Use one root `.env` file for local CLI commands and application runtime. It contains `DATABASE_URL`, `BETTER_AUTH_SECRET`, `REDIS_URL`, `NEXT_PUBLIC_SITE_URL`, `ZIBAL_MERCHANT`, `ZIBAL_CALLBACK_URL`, `SMSIR_API_KEY`, `SMSIR_TEMPLATE_CONFIRM`, `SMSIR_TEMPLATE_ADMIN`, `SMSIR_TEMPLATE_REMINDER_24H`, `SMSIR_TEMPLATE_REMINDER_2H`, `SMSIR_TEMPLATE_OTP`, `ADMIN_PHONE`, `ADMIN_EMAIL`, and `ADMIN_PASSWORD`.
 
 ## Architecture
 
@@ -42,8 +42,8 @@ Generates 30-minute-interval slots within working hours, subtracting existing bo
 ### Booking Flow
 1. Customer opens `BookingDialog` (popup from home page) or `/book` page
 2. 4-step wizard: Service → Date/Time → Customer Details → Review
-3. `POST /api/bookings/create` → redirects to Zarinpal payment
-4. Zarinpal callback → `GET /api/bookings/verify` → sets status `PAID`, schedules SMS reminder, redirects to `/booking/confirm/[token]`
+3. `POST /api/bookings/create` → redirects to Zibal payment
+4. Zibal callback → `GET /api/bookings/verify` → sets status `PAID`, schedules SMS reminder, redirects to `/booking/confirm/[token]`
 
 ### Admin Area (`/admin/*`)
 Protected by `proxy.ts` matcher. Login at `/admin` (Better Auth email/password). Routes: `/admin/dashboard`, `/admin/bookings`, `/admin/bookings/[id]`, `/admin/schedule`, `/admin/discounts`.
@@ -61,7 +61,7 @@ CSS custom properties in `globals.css` — three layers: `:root` (dark default),
 - All text must use `font-vazir` (Vazirmatn). The font variable is set on `<html>` via `vazir.variable` and registered in `@theme`. Never use `font-mono` on Persian content.
 
 ### Payments & SMS
-- `src/lib/zarinpal.ts` — `zarinpalRequest` / `zarinpalVerify`
+- `src/lib/zibal.ts` — `zibalRequest` / `zibalVerify`; app tomans are converted to gateway rials. Legacy payment column names are retained for compatibility.
 - `src/lib/smsir.ts` — SMS.ir integration for booking reminders
 - `src/lib/queue.ts` — BullMQ job queue for SMS reminder scheduling; worker starts in `src/instrumentation.ts`
 

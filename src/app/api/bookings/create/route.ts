@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { and, eq, inArray, sql } from 'drizzle-orm'
 import { db } from '@/lib/db'
 import { addons, BookingStatus, bookingCustomizations, bookings as bookingsTable, bookingAddons, customizationOptions, discountCodes, services, workingHours } from '@/db/schema'
-import { zarinpalRequest } from '@/lib/zarinpal'
+import { zibalRequest } from '@/lib/zibal'
 import { validatePromoCode, checkLoyaltyDiscount } from '@/lib/discounts'
 import { CUSTOMIZATION_CATALOG, getCustomizationAdditionalPriceFromCatalog, toCustomizationSnapshot, validateCustomizationAgainstCatalog } from '@/lib/booking-customization'
 import { validateHealthIntake } from '@/lib/health-intake'
@@ -217,14 +217,14 @@ export async function POST(req: NextRequest) {
   const payerBooking = createdBookings[0]
 
   try {
-    const mockCallbackUrl = process.env.NODE_ENV !== 'production' && process.env.ZARINPAL_MOCK === 'true'
+    const mockCallbackUrl = process.env.NODE_ENV !== 'production' && process.env.ZIBAL_MOCK === 'true'
       ? new URL('/api/bookings/verify', req.url).toString()
       : undefined
-    const { authority, paymentUrl } = await zarinpalRequest(totalPrice, paymentDescription, payerPhone, mockCallbackUrl)
-    await db.update(bookingsTable).set({ zarinpalAuthority: authority }).where(eq(bookingsTable.id, payerBooking.id))
+    const { trackId, paymentUrl } = await zibalRequest(totalPrice, paymentDescription, payerPhone, mockCallbackUrl)
+    await db.update(bookingsTable).set({ zarinpalAuthority: trackId }).where(eq(bookingsTable.id, payerBooking.id))
     return NextResponse.json({ paymentUrl })
   } catch (err) {
-    console.error('Zarinpal request failed, rolling back bookings', err)
+    console.error('Zibal request failed, rolling back bookings', err)
     try {
       await db.delete(bookingsTable).where(eq(bookingsTable.groupToken, groupToken))
     } catch (deleteErr) {

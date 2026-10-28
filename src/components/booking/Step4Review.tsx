@@ -222,7 +222,7 @@ export function Step4Review({ state, goBack, services, addons, customizationOpti
       <div className="flex gap-3">
         <GhostButton onClick={goBack} className="flex-1">→ برگشت</GhostButton>
         <GoldButton onClick={handlePay} className="flex-1" disabled={loading}>
-          {loading ? 'در حال انتقال...' : '← پرداخت با زرین‌پال'}
+          {loading ? 'در حال انتقال...' : '← پرداخت با زیبال'}
         </GoldButton>
       </div>
     </div>

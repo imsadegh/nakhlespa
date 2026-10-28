@@ -1,26 +1,26 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { and, eq, inArray } from 'drizzle-orm'
 import { db } from '@/lib/db'
-import { BookingStatus, bookings, services, smsReminders } from '@/db/schema'
-import { zarinpalVerify } from '@/lib/zarinpal'
+import { BookingStatus, bookings, bookingCustomizations, services, smsReminders } from '@/db/schema'
+import { zibalVerify } from '@/lib/zibal'
 import { smsQueue } from '@/lib/queue'
 import { sendConfirmSms, sendAdminSms } from '@/lib/smsir'
 
-const MOCK_PAYMENT = process.env.NODE_ENV !== 'production' && process.env.ZARINPAL_MOCK === 'true'
+const MOCK_PAYMENT = process.env.NODE_ENV !== 'production' && process.env.ZIBAL_MOCK === 'true'
 
 export async function GET(req: NextRequest) {
-  const authority = req.nextUrl.searchParams.get('Authority')
-  const status = req.nextUrl.searchParams.get('Status')
+  const trackId = req.nextUrl.searchParams.get('trackId')
+  const success = req.nextUrl.searchParams.get('success')
   const siteUrl = MOCK_PAYMENT ? req.nextUrl.origin : process.env.NEXT_PUBLIC_SITE_URL!
 
-  if (status !== 'OK' || !authority) {
+  if (success !== '1' || !trackId || (!/^[1-9]\d*$/.test(trackId) && !(MOCK_PAYMENT && trackId.startsWith('mock-')))) {
     return NextResponse.redirect(`${siteUrl}/booking/failed`)
   }
 
-  // Payer booking carries the zarinpalAuthority
+  // Keep legacy column names to preserve existing payment records without a migration.
   const [payerBooking] = await db.select({ booking: bookings, service: services }).from(bookings)
     .innerJoin(services, eq(bookings.serviceId, services.id))
-    .where(eq(bookings.zarinpalAuthority, authority)).limit(1)
+    .where(eq(bookings.zarinpalAuthority, trackId)).limit(1)
   if (!payerBooking) return NextResponse.redirect(`${siteUrl}/booking/failed`)
   const payer = { ...payerBooking.booking, service: payerBooking.service }
 
@@ -32,13 +32,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.redirect(`${siteUrl}/booking/failed`)
   }
 
-  // Atomic guard: only one concurrent callback wins
-  const updated = await db.update(bookings).set({ status: BookingStatus.PAID })
-    .where(and(eq(bookings.id, payer.id), eq(bookings.status, BookingStatus.PENDING_PAYMENT))).returning({ id: bookings.id })
-  if (updated.length === 0) {
-    return NextResponse.redirect(`${siteUrl}/booking/confirm/${payer.token}`)
-  }
-
+  let paymentRecorded = false
   try {
     // Total price = sum of all bookings in the group
     const groupToken = payer.groupToken
@@ -60,14 +54,24 @@ export async function GET(req: NextRequest) {
       }, 0)
     })()
 
-    const { refId } = await zarinpalVerify(authority, totalPrice)
+    const customizations = await db.select({ pricePaid: bookingCustomizations.pricePaid }).from(bookingCustomizations)
+      .where(inArray(bookingCustomizations.bookingId, allGroupBookings.map(b => b.id)))
+    const customizationPrice = customizations.reduce((sum, item) => sum + item.pricePaid, 0)
+    const { refId } = await zibalVerify(trackId, Math.max(0, totalPrice + customizationPrice - payer.discountAmount))
 
     // Mark all group bookings PAID and store refId on payer
-    await db.transaction(async tx => {
+    const recorded = await db.transaction(async tx => {
+      // Only a verified payment can claim the booking; one callback sends notifications.
+      const updated = await tx.update(bookings).set({ status: BookingStatus.PAID, zarinpalRefId: refId })
+        .where(and(eq(bookings.id, payer.id), eq(bookings.status, BookingStatus.PENDING_PAYMENT)))
+        .returning({ id: bookings.id })
+      if (updated.length === 0) return false
       await tx.update(bookings).set({ status: BookingStatus.PAID })
         .where(groupToken ? eq(bookings.groupToken, groupToken) : eq(bookings.id, payer.id))
-      await tx.update(bookings).set({ zarinpalRefId: refId }).where(eq(bookings.id, payer.id))
+      return true
     })
+    paymentRecorded = true
+    if (!recorded) return NextResponse.redirect(`${siteUrl}/booking/confirm/${payer.token}`)
 
     // Local mock payments should exercise booking completion without requiring
     // real SMS credentials or a running Redis reminder worker.
@@ -99,7 +103,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.redirect(`${siteUrl}/booking/confirm/${payer.token}`)
   } catch (err) {
     console.error('Booking verify error', err)
-    await db.update(bookings).set({ status: BookingStatus.PENDING_PAYMENT }).where(eq(bookings.id, payer.id)).catch(() => {})
+    if (paymentRecorded) return NextResponse.redirect(`${siteUrl}/booking/confirm/${payer.token}`)
     return NextResponse.redirect(`${siteUrl}/booking/failed`)
   }
 }

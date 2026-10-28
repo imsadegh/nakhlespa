@@ -1,6 +1,6 @@
 # نخلسپا — Nakhlespa
 
-Persian spa booking web app. Customers browse services and book appointments through a guided wizard with Zarinpal payment integration. Admins manage bookings, working hours, and blocked slots through a protected dashboard.
+Persian spa booking web app. Customers browse services and book appointments through a guided wizard with Zibal payment integration. Admins manage bookings, working hours, and blocked slots through a protected dashboard.
 
 **Stack:** Next.js 16 · Drizzle ORM · Better Auth · BullMQ · Redis · Tailwind v4 · Bun
 
@@ -135,9 +135,8 @@ DB_USER=your-production-db-user
 DB_PASSWORD=your-production-db-password
 DB_NAME=nakhlespa
 BETTER_AUTH_SECRET=your-long-random-secret
-ZARINPAL_MERCHANT_ID=your-production-merchant-id
-ZARINPAL_SANDBOX=false
-ZARINPAL_CALLBACK_URL=https://yourdomain.com/api/bookings/verify
+ZIBAL_MERCHANT=your-production-merchant
+ZIBAL_CALLBACK_URL=https://yourdomain.com/api/bookings/verify
 SMSIR_API_KEY=your-production-smsir-api-key
 SMSIR_TEMPLATE_CONFIRM=your-confirm-template-id
 SMSIR_TEMPLATE_ADMIN=your-admin-template-id
@@ -160,9 +159,13 @@ openssl rand -hex 32
 
 Copy each output into its matching Dokploy variable; do not reuse one value for multiple secrets. Hex output contains only URL-safe characters, which is important for `DB_PASSWORD` because Compose embeds it in `DATABASE_URL`. Choose `DB_USER` (for example, `nakhlespa`) and `DB_NAME` yourself. Keep the generated values in a password manager. PostgreSQL initializes its user password when the data volume is first created, so changing `DB_PASSWORD` later also requires changing that PostgreSQL role's password.
 
-Obtain `ZARINPAL_MERCHANT_ID` from your Zarinpal account, `SMSIR_API_KEY` and the five SMS.ir template IDs from SMS.ir, and `DOKPLOY_API_KEY` from Dokploy's API key settings. Use your actual site domain for the callback and public URL, and your own phone/email for the admin contact. Dokploy provides the Compose resource ID; copy it into the GitHub secret `DOKPLOY_COMPOSE_ID`.
+Obtain `ZIBAL_MERCHANT` from your Zibal account, `SMSIR_API_KEY` and the five SMS.ir template IDs from SMS.ir, and `DOKPLOY_API_KEY` from Dokploy's API key settings. Use your actual site domain for the callback and public URL, and your own phone/email for the admin contact. Dokploy provides the Compose resource ID; copy it into the GitHub secret `DOKPLOY_COMPOSE_ID`.
 
-Do not add the local `DATABASE_URL` or `REDIS_URL` values from `.env.example`; those use `127.0.0.1`. The production Compose file supplies `postgresql://${DB_USER}:${DB_PASSWORD}@postgres:5432/${DB_NAME}` and `redis://redis:6379` inside the containers. `ZARINPAL_SANDBOX` should normally be `false`. Use a URL-safe database password containing only letters and numbers because it is embedded in the connection URL, and do not change it after the PostgreSQL volume is initialized without also changing the database role password.
+Do not add the local `DATABASE_URL` or `REDIS_URL` values from `.env.example`; those use `127.0.0.1`. The production Compose file supplies `postgresql://${DB_USER}:${DB_PASSWORD}@postgres:5432/${DB_NAME}` and `redis://redis:6379` inside the containers. Use your live `ZIBAL_MERCHANT` in production; the test value `zibal` is rejected there. Use a URL-safe database password containing only letters and numbers because it is embedded in the connection URL, and do not change it after the PostgreSQL volume is initialized without also changing the database role password.
+
+For local gateway testing, use `ZIBAL_MERCHANT=zibal`. For a local callback without contacting the gateway or sending SMS, use `ZIBAL_MOCK=true` (ignored in production). Prices remain in tomans in the app and are converted to rials for Zibal. The callback uses `trackId` and `success`; payments are confirmed only after server verification of the amount and receipt. Keep the site's browser Referer enabled and register the callback domain with Zibal.
+
+When switching providers, let pending Zarinpal payments finish before deploying: old Zarinpal callbacks are no longer processed. Existing payment history remains in the legacy `zarinpalAuthority` and `zarinpalRefId` database columns; new Zibal track IDs and bank references use those same columns. No database migration is needed.
 
 Add these GitHub Actions repository secrets:
 
@@ -211,7 +214,7 @@ The normal release flow is:
 4. The workflow calls Dokploy's `POST /api/compose.deploy` endpoint with the Compose ID.
 5. Dokploy pulls the new image and recreates the services while retaining named volumes.
 
-Check the public home page, admin login, customer OTP login, booking flow, payment callback, and reminder queue. Confirm `worker-sms` logs show a running BullMQ worker and that PostgreSQL/Redis have no public listener. After verification, enable the Zarinpal callback for the production domain.
+Check the public home page, admin login, customer OTP login, booking flow, payment callback, and reminder queue. Confirm `worker-sms` logs show a running BullMQ worker and that PostgreSQL/Redis have no public listener. After verification, enable the Zibal callback for the production domain.
 
 If the image publish succeeds but the Dokploy call fails, use Dokploy's manual deploy after checking `DOKPLOY_URL`, `DOKPLOY_API_KEY`, and `DOKPLOY_COMPOSE_ID`. If a deployment fails, keep the previous image tag available and redeploy it by temporarily setting `NAKHLESPA_IMAGE` to its commit SHA tag; restore `latest` after the fix. Never delete the database or Redis volumes as a rollback step.
 

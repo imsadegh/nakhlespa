@@ -4,7 +4,7 @@ import { describe, expect, test } from 'bun:test'
 describe('deployment documentation contract', () => {
   test('documents required production variables', () => {
     const env = readFileSync('.env.example', 'utf8')
-    for (const key of ['DB_USER', 'DB_PASSWORD', 'DB_NAME', 'BETTER_AUTH_SECRET', 'ZARINPAL_MERCHANT_ID', 'SMSIR_API_KEY', 'NEXT_PUBLIC_SITE_URL']) {
+    for (const key of ['DB_USER', 'DB_PASSWORD', 'DB_NAME', 'BETTER_AUTH_SECRET', 'ZIBAL_MERCHANT', 'SMSIR_API_KEY', 'NEXT_PUBLIC_SITE_URL']) {
       expect(env).toContain(`${key}=`)
     }
   })
@@ -34,12 +34,12 @@ describe('deployment documentation contract', () => {
     expect(readme).not.toContain('Create `.env.local`')
   })
 
-  test('documents safe production Zarinpal mode and Dokploy URL handling', () => {
+  test('documents production Zibal configuration and Dokploy URL handling', () => {
     const compose = readFileSync('compose.production.yml', 'utf8')
     const readme = readFileSync('README.md', 'utf8')
 
-    expect(compose).toContain('ZARINPAL_SANDBOX: ${ZARINPAL_SANDBOX}')
-    expect(readme).toContain('ZARINPAL_SANDBOX=false')
+    expect(compose).toContain('ZIBAL_MERCHANT: ${ZIBAL_MERCHANT}')
+    expect(readme).toContain('ZIBAL_MERCHANT=your-production-merchant')
     expect(readme).toContain('Do not add the local `DATABASE_URL` or `REDIS_URL`')
     expect(readme).toContain('Dokploy environment variables')
     expect(readme).toContain('DOKPLOY_URL')
