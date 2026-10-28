@@ -27,10 +27,10 @@ export async function checkLoyaltyDiscount(
   phone: string,
   subtotal: number,
 ): Promise<{ eligible: boolean; discountAmount: number; codeId: string }> {
-  const [{ count }] = await db.select({ count: db.$count(bookings, and(
+  const count = await db.$count(bookings, and(
     eq(bookings.customerPhone, phone),
     inArray(bookings.status, [BookingStatus.PAID, BookingStatus.CONFIRMED]),
-  )) }).from(bookings)
+  ))
   if (count % 5 !== 4) {
     return { eligible: false, discountAmount: 0, codeId: '' }
   }
