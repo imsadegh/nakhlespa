@@ -64,6 +64,7 @@ export type SlotDTO = {
   startTime: string      // "HH:mm"
   endTime: string        // "HH:mm"
   taken: boolean
+  expired?: boolean
   availableCount: number
 }
 

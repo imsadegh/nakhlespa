@@ -4,6 +4,7 @@ import { motion } from 'framer-motion'
 import { GoldButton } from '@/components/ui/GoldButton'
 import { GhostButton } from '@/components/ui/GhostButton'
 import type { WizardState, SlotDTO } from '@/types'
+import { getTehranDate, isSlotPast } from '@/lib/slot-time'
 
 type Props = { state: WizardState; update: (p: Partial<WizardState>) => void; goNext: () => void; goBack: () => void }
 
@@ -15,9 +16,10 @@ function toFaNum(n: number) {
   return String(n).replace(/\d/g, d => '۰۱۲۳۴۵۶۷۸۹'[+d])
 }
 
-function getDates(count = 14) {
+function getDates(now: Date, count = 14) {
+  const today = getTehranDate(now)
   return Array.from({ length: count }, (_, i) => {
-    const d = new Date(); d.setDate(d.getDate() + i)
+    const d = new Date(`${today}T00:00:00Z`); d.setUTCDate(d.getUTCDate() + i)
     return d.toISOString().split('T')[0]
   })
 }
@@ -33,7 +35,23 @@ export function Step2DateTime({ state, update, goNext, goBack }: Props) {
   const [slots, setSlots] = useState<SlotDTO[]>([])
   const [loading, setLoading] = useState(false)
   const [closedDays, setClosedDays] = useState<Set<number> | null>(null)
-  const dates = getDates()
+  const [now, setNow] = useState(() => new Date())
+  const dates = getDates(now)
+  const selectedTimeExpired = !!state.date && !!state.startTime && isSlotPast(state.date, state.startTime, now)
+
+  useEffect(() => {
+    const tick = () => setNow(new Date())
+    const timer = window.setInterval(tick, 1000)
+    window.addEventListener('focus', tick)
+    return () => {
+      window.clearInterval(timer)
+      window.removeEventListener('focus', tick)
+    }
+  }, [])
+
+  useEffect(() => {
+    if (selectedTimeExpired) update({ startTime: undefined, endTime: undefined })
+  }, [selectedTimeExpired, update])
 
   const firstServiceId = state.persons[0]?.serviceId
   const personCount = state.persons.length
@@ -125,29 +143,32 @@ export function Step2DateTime({ state, update, goNext, goBack }: Props) {
             <p className="text-xs text-center py-8" style={{ color: 'var(--text-muted)' }}>در حال بارگذاری...</p>
           ) : slots.length === 0 ? (
             <p className="text-xs text-center py-8" style={{ color: 'var(--text-muted)' }}>ظرفیتی برای این روز موجود نیست</p>
-          ) : slots.every(s => s.taken) ? (
-            <p className="text-xs text-center py-8" style={{ color: 'var(--text-muted)' }}>تمام ساعت‌های این روز رزرو شده‌اند</p>
           ) : (
             <motion.div className="flex flex-wrap gap-2 mb-4"
               variants={{ show: { transition: { staggerChildren: 0.05 } } }} initial="hidden" animate="show">
               {slots.map(slot => {
                 const selected = state.startTime === slot.startTime
-                if (slot.taken) {
+                const expired = slot.expired || isSlotPast(state.date!, slot.startTime, now)
+                if (slot.taken || expired) {
                   return (
-                    <motion.div key={slot.startTime} title="این ساعت برای خدمات انتخابی در دسترس نیست"
+                    <motion.button key={slot.startTime} type="button" disabled
+                      title={expired ? 'زمان این نوبت گذشته است' : 'این ساعت برای خدمات انتخابی در دسترس نیست'}
                       variants={{ hidden: { opacity: 0, scale: 0.85 }, show: { opacity: 1, scale: 1 } }}
-                      className="relative px-4 py-2 rounded-xl text-xs select-none cursor-not-allowed overflow-hidden"
+                      className="relative flex flex-col items-center px-4 py-2 rounded-xl text-xs select-none cursor-not-allowed overflow-hidden"
                       style={{ color: 'var(--text-faint)', background: 'var(--bg-surface)', border: '1px solid var(--border-base)', opacity: 0.5 }}>
                       <span className="line-through">{toFaTime(slot.startTime)}</span>
+                      {expired && <span className="text-[9px] mt-0.5">زمان گذشته</span>}
                       <span className="pointer-events-none absolute inset-0 rounded-xl"
                         style={{ backgroundImage: 'repeating-linear-gradient(135deg, transparent, transparent 4px, rgba(255,255,255,0.06) 4px, rgba(255,255,255,0.06) 5px)' }} />
-                    </motion.div>
+                    </motion.button>
                   )
                 }
                 return (
                   <motion.button key={slot.startTime} type="button"
                     variants={{ hidden: { opacity: 0, scale: 0.85 }, show: { opacity: 1, scale: 1 } }}
-                    onClick={() => update({ startTime: slot.startTime, endTime: slot.endTime })}
+                    onClick={() => {
+                      if (!isSlotPast(state.date!, slot.startTime)) update({ startTime: slot.startTime, endTime: slot.endTime })
+                    }}
                     className={`flex flex-col items-center px-4 py-2 rounded-xl text-xs transition-all ${selected ? 'bg-[#C6A55B] text-[#0F3D2E] font-bold shadow-[0_4px_16px_rgba(198,165,91,0.35)]' : ''}`}
                     style={selected ? {} : { color: 'var(--text-muted)', background: 'var(--bg-surface)', border: '1px solid var(--border-base)', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.18)' }}>
                     <span>{toFaTime(slot.startTime)}</span>
@@ -165,7 +186,9 @@ export function Step2DateTime({ state, update, goNext, goBack }: Props) {
 
       <div className="flex gap-3 mt-2">
         <GhostButton onClick={goBack} className="flex-1">→ برگشت</GhostButton>
-        <GoldButton onClick={goNext} className="flex-1" disabled={!state.startTime}>ادامه ←</GoldButton>
+        <GoldButton onClick={() => {
+          if (state.date && state.startTime && !isSlotPast(state.date, state.startTime)) goNext()
+        }} className="flex-1" disabled={!state.startTime || selectedTimeExpired}>ادامه ←</GoldButton>
       </div>
     </div>
   )

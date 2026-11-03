@@ -2,6 +2,7 @@ import { and, eq, inArray, isNotNull, ne } from 'drizzle-orm'
 import { db } from '@/lib/db'
 import { BookingStatus, addons, blockedSlots, bookings, services, workingHours } from '@/db/schema'
 import type { SlotDTO } from '@/types'
+import { isSlotPast } from '@/lib/slot-time'
 
 function timeToMinutes(t: string): number {
   const [h, m] = t.split(':').map(Number)
@@ -64,8 +65,9 @@ export async function getAvailableSlots(
     const slotStartStr = minutesToTime(cursor)
 
     const isAdminBlocked = blockedRanges.some(r => cursor < r.end && slotEnd > r.start)
-    if (isAdminBlocked) {
-      slots.push({ startTime: slotStartStr, endTime: minutesToTime(slotEnd), taken: true, availableCount: 0 })
+    const expired = isSlotPast(date, slotStartStr)
+    if (isAdminBlocked || expired) {
+      slots.push({ startTime: slotStartStr, endTime: minutesToTime(slotEnd), taken: true, availableCount: 0, expired })
       cursor += 30
       continue
     }
@@ -140,8 +142,9 @@ export async function getSlotsForServices(
     const slotStartStr = minutesToTime(cursor)
 
     const isAdminBlocked = blockedRanges.some(r => cursor < r.end && slotEnd > r.start)
-    if (isAdminBlocked) {
-      slots.push({ startTime: slotStartStr, endTime: minutesToTime(slotEnd), taken: true, availableCount: 0 })
+    const expired = isSlotPast(date, slotStartStr)
+    if (isAdminBlocked || expired) {
+      slots.push({ startTime: slotStartStr, endTime: minutesToTime(slotEnd), taken: true, availableCount: 0, expired })
       cursor += 30
       continue
     }
