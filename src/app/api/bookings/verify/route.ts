@@ -17,10 +17,9 @@ export async function GET(req: NextRequest) {
     return NextResponse.redirect(`${siteUrl}/booking/failed`)
   }
 
-  // Keep legacy column names to preserve existing payment records without a migration.
   const [payerBooking] = await db.select({ booking: bookings, service: services }).from(bookings)
     .innerJoin(services, eq(bookings.serviceId, services.id))
-    .where(eq(bookings.zarinpalAuthority, trackId)).limit(1)
+    .where(eq(bookings.zibalTrackId, trackId)).limit(1)
   if (!payerBooking) return NextResponse.redirect(`${siteUrl}/booking/failed`)
   const payer = { ...payerBooking.booking, service: payerBooking.service }
 
@@ -62,7 +61,7 @@ export async function GET(req: NextRequest) {
     // Mark all group bookings PAID and store refId on payer
     const recorded = await db.transaction(async tx => {
       // Only a verified payment can claim the booking; one callback sends notifications.
-      const updated = await tx.update(bookings).set({ status: BookingStatus.PAID, zarinpalRefId: refId })
+      const updated = await tx.update(bookings).set({ status: BookingStatus.PAID, zibalRefId: refId })
         .where(and(eq(bookings.id, payer.id), eq(bookings.status, BookingStatus.PENDING_PAYMENT)))
         .returning({ id: bookings.id })
       if (updated.length === 0) return false

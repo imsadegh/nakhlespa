@@ -169,7 +169,7 @@ function BookingDetail({
           <span>مبلغ پرداخت‌شده</span>
           <span className="text-[#C6A55B]">{totalPaid.toLocaleString('fa-IR')} تومان</span>
         </div>
-        {booking.zarinpalRefId && <DetailRow label="کد پیگیری پرداخت" value={booking.zarinpalRefId} />}
+        {booking.zibalRefId && <DetailRow label="کد پیگیری پرداخت" value={booking.zibalRefId} />}
       </GlassCard>
     </div>
   )

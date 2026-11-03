@@ -104,10 +104,10 @@ export default async function BookingDetailPage({
             </div>
           </div>
 
-          {booking.zarinpalRefId && (
+          {booking.zibalRefId && (
             <div className="flex justify-between text-xs border-t border-white/10 pt-2">
               <span style={{ color: 'var(--text-muted)' }}>کد پیگیری</span>
-              <span style={{ color: 'var(--text-primary)' }}>{booking.zarinpalRefId}</span>
+              <span style={{ color: 'var(--text-primary)' }}>{booking.zibalRefId}</span>
             </div>
           )}
         </GlassCard>

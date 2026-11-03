@@ -70,7 +70,7 @@ beforeEach(() => {
 test('verifies group services, add-ons, customization prices and one group discount before recording payment', async () => {
   const response = await GET(new NextRequest('https://spa.test/api/bookings/verify?success=1&trackId=12345'))
   expect(response.headers.get('location')).toBe('https://spa.test/booking/confirm/confirmation')
-  expect(writes[0]).toEqual({ status: BookingStatus.PAID, zarinpalRefId: '9876' })
+  expect(writes[0]).toEqual({ status: BookingStatus.PAID, zibalRefId: '9876' })
   expect(notifications).toBe(2)
 })
 

@@ -13,7 +13,7 @@ export const CUSTOMER_BOOKING_PROJECTION = {
     startTime: true,
     endTime: true,
     status: true,
-    zarinpalRefId: true,
+    zibalRefId: true,
     addonsPricePaid: true,
     groupToken: true,
     discountAmount: true,

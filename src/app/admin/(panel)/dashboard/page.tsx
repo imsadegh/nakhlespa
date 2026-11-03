@@ -92,7 +92,7 @@ export default async function DashboardPage() {
     customizations: b.customizations.map(item => ({ labelSnapshot: item.labelSnapshot, pricePaid: item.pricePaid })),
     status: b.status,
     notes: b.customerNotes,
-    refId: b.zarinpalRefId,
+    refId: b.zibalRefId,
     gender: b.gender,
     discountAmount: b.discountAmount,
     discountCode: b.discountCode ? { code: b.discountCode.code } : null,

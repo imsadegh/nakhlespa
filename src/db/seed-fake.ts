@@ -44,7 +44,7 @@ async function seedFakeData() {
         endTime: booking.endTime,
         gender: Gender.MALE,
         status: booking.status,
-        zarinpalRefId: booking.refId,
+        zibalRefId: booking.refId,
       }).onConflictDoUpdate({
         target: bookings.token,
         set: { token },

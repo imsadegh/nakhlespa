@@ -14,7 +14,7 @@ export type FullBooking = {
   addonsPricePaid: number
   discountCode: { code: string } | null
   endTime?: string
-  zarinpalRefId?: string | null
+  zibalRefId?: string | null
   addons?: { id: string; pricePaid: number; addon: { nameFa: string } }[]
 }
 

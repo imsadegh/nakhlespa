@@ -43,6 +43,13 @@
       "when": 1791633921377,
       "tag": "0005_addon-duration",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1793691776845,
+      "tag": "0006_zibal-payment-columns",
+      "breakpoints": true
     }
   ]
 }

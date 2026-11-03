@@ -221,7 +221,7 @@ export async function POST(req: NextRequest) {
       ? new URL('/api/bookings/verify', req.url).toString()
       : undefined
     const { trackId, paymentUrl } = await zibalRequest(totalPrice, paymentDescription, payerPhone, mockCallbackUrl)
-    await db.update(bookingsTable).set({ zarinpalAuthority: trackId }).where(eq(bookingsTable.id, payerBooking.id))
+    await db.update(bookingsTable).set({ zibalTrackId: trackId }).where(eq(bookingsTable.id, payerBooking.id))
     return NextResponse.json({ paymentUrl })
   } catch (err) {
     console.error('Zibal request failed, rolling back bookings', err)

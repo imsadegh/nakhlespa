@@ -65,7 +65,7 @@ CSS custom properties in `globals.css` — three layers: `:root` (dark default),
 - All text must use `font-vazir` (Vazirmatn). The font variable is set on `<html>` via `vazir.variable` and registered in `@theme`. Never use `font-mono` on Persian content.
 
 ### Payments & SMS
-- `src/lib/zibal.ts` — `zibalRequest` / `zibalVerify`; app tomans are converted to gateway rials. Legacy payment column names are retained for compatibility.
+- `src/lib/zibal.ts` — `zibalRequest` / `zibalVerify`; app tomans are converted to gateway rials. Payment columns are `zibalTrackId` and `zibalRefId`; migration `0006_zibal-payment-columns` preserves existing values when renaming them.
 - `src/lib/smsir.ts` — SMS.ir integration for booking reminders
 - `src/lib/queue.ts` — BullMQ job queue for SMS reminder scheduling; worker starts in `src/instrumentation.ts`
 

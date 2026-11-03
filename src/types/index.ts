@@ -153,5 +153,5 @@ export type CustomerBookingDTO = {
   totalPaid: number
   discountAmount: number
   discountCode: string | null
-  zarinpalRefId: string | null
+  zibalRefId: string | null
 }

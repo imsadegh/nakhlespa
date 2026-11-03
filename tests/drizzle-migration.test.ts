@@ -176,7 +176,7 @@ describe('legacy PostgreSQL text fidelity', () => {
       blockedSlots: ['id', 'startTime', 'endTime', 'reason'],
       bookings: [
         'id', 'token', 'serviceId', 'customerName', 'customerPhone', 'customerNotes',
-        'startTime', 'endTime', 'zarinpalAuthority', 'zarinpalRefId', 'groupToken', 'discountCodeId',
+        'startTime', 'endTime', 'zibalTrackId', 'zibalRefId', 'groupToken', 'discountCodeId',
       ],
       bookingAddons: ['id', 'bookingId', 'addonId'],
       smsReminders: ['id', 'bookingId'],

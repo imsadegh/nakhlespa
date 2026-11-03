@@ -165,7 +165,7 @@ Do not add the local `DATABASE_URL` or `REDIS_URL` values from `.env.example`; t
 
 For local gateway testing, use `ZIBAL_MERCHANT=zibal`. For a local callback without contacting the gateway or sending SMS, use `ZIBAL_MOCK=true` (ignored in production). Prices remain in tomans in the app and are converted to rials for Zibal. The callback uses `trackId` and `success`; payments are confirmed only after server verification of the amount and receipt. Keep the site's browser Referer enabled and register the callback domain with Zibal.
 
-When switching providers, let pending Zarinpal payments finish before deploying: old Zarinpal callbacks are no longer processed. Existing payment history remains in the legacy `zarinpalAuthority` and `zarinpalRefId` database columns; new Zibal track IDs and bank references use those same columns. No database migration is needed.
+Payment identifiers are stored in `zibalTrackId` and `zibalRefId`. Migration `0006_zibal-payment-columns` renames the previous provider's columns in place, preserving all existing values. Run `bun run db:migrate` before starting this version (production Compose does this automatically). Back up PostgreSQL and stop old web instances before the migration, then start the new version. Older application versions require the previous column names, so rolling back requires reversing both renames before restarting the old application. A push to `master` triggers CI and production deployment.
 
 Add these GitHub Actions repository secrets:
 
