@@ -144,7 +144,7 @@ SMSIR_TEMPLATE_REMINDER_24H=your-24h-template-id
 SMSIR_TEMPLATE_REMINDER_2H=your-2h-template-id
 SMSIR_TEMPLATE_OTP=your-otp-template-id
 NEXT_PUBLIC_SITE_URL=https://yourdomain.com
-ADMIN_PHONE=your-admin-phone
+ADMIN_PHONE=+989XXXXXXXXX,+989YYYYYYYYY # Comma-separated notification recipients
 ADMIN_EMAIL=admin@yourdomain.com
 ADMIN_PASSWORD=your-production-admin-password
 ```

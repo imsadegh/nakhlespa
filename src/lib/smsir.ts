@@ -40,13 +40,14 @@ export async function sendConfirmSms(mobile: string, params: { name: string; ser
 }
 
 export async function sendAdminSms(mobile: string, params: { name: string; service: string; date: string; time: string; phone: string }) {
-  return sendPattern(mobile, TEMPLATE_IDS.admin, [
+  const recipients = [...new Set((mobile ?? '').split(',').map(number => number.trim()).filter(Boolean))]
+  return Promise.all(recipients.map(recipient => sendPattern(recipient, TEMPLATE_IDS.admin, [
     { name: 'name',    value: params.name },
     { name: 'service', value: params.service },
     { name: 'date',    value: params.date },
     { name: 'time',    value: params.time },
     { name: 'phone',   value: params.phone },
-  ])
+  ])))
 }
 
 export async function sendReminderSms(mobile: string, template: 'reminder24h' | 'reminder2h', params: { name: string; service: string; time: string }) {
