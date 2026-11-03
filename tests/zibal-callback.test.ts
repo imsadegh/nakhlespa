@@ -6,7 +6,7 @@ process.env.NEXT_PUBLIC_SITE_URL = 'https://spa.test'
 process.env.ZIBAL_MOCK = 'false'
 
 const payer = {
-  id: 'payer', token: 'confirmation', serviceId: 'service', groupToken: 'group',
+  id: 'payer', token: 'confirmation', bookingCode: 'NS-1234ABCD', serviceId: 'service', groupToken: 'group',
   status: BookingStatus.PENDING_PAYMENT, discountAmount: 50, addonsPricePaid: 20,
   date: new Date('2026-11-01'), startTime: '10:00', customerName: 'Customer', customerPhone: '09123456789',
 }
@@ -53,7 +53,8 @@ mock.module('@/lib/queue', () => ({ smsQueue: { add: async () => {
   notifications++
   if (failSms) throw new Error('queue unavailable')
 } } }))
-mock.module('@/lib/smsir', () => ({ sendConfirmSms: async () => {}, sendAdminSms: async () => {} }))
+const confirmSms = mock(async (_mobile: string, _params: unknown) => {})
+mock.module('@/lib/smsir', () => ({ sendConfirmSms: confirmSms, sendAdminSms: async () => {} }))
 const { GET } = await import('../src/app/api/bookings/verify/route')
 
 beforeEach(() => {
@@ -62,6 +63,7 @@ beforeEach(() => {
   failSms = false
   writes = []
   notifications = 0
+  confirmSms.mockClear()
   payer.status = BookingStatus.PENDING_PAYMENT
   customizations = [{ pricePaid: 30 }]
   expectedAmount = 210
@@ -72,6 +74,7 @@ test('verifies group services, add-ons, customization prices and one group disco
   expect(response.headers.get('location')).toBe('https://spa.test/booking/confirm/confirmation')
   expect(writes[0]).toEqual({ status: BookingStatus.PAID, zibalRefId: '9876' })
   expect(notifications).toBe(2)
+  expect(confirmSms.mock.calls[0][1]).toMatchObject({ bookingCode: 'NS-1234ABCD' })
 })
 
 test('never records a failed verification as paid', async () => {

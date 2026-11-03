@@ -228,15 +228,19 @@ For emergency database access, use Dokploy's terminal or an SSH tunnel through t
 
 ### SMS.ir Template Setup
 
-This app uses SMS.ir's **Verify** API (`POST /v1/send/verify`) with five separate templates — one per message type. Each template uses named parameters (`{name}`, `{service}`, etc.). Create and approve the templates in the SMS.ir panel, then copy their numeric IDs into the Dokploy environment variables.
+This app uses SMS.ir's **Verify** API (`POST /v1/send/verify`) with five separate templates — one per message type. Template placeholders use hash delimiters, such as `#NAME#` and `#SERVICE#`. Create and approve the templates in the SMS.ir panel, then copy their numeric IDs into the Dokploy environment variables. Run both `web` and `worker-sms`; the worker processes the delayed reminder jobs through Redis.
 
 | Env var | Template body |
 |---------|---------------|
 | `SMSIR_TEMPLATE_CONFIRM` | `#NAME# عزیز، رزرو شما برای #SERVICE# در تاریخ #DATE# ساعت #TIME# تأیید شد. کد پیگیری: #ORDER_NUMBER# — نخلسپا` |
-| `SMSIR_TEMPLATE_ADMIN` | `رزرو جدید: {name} — {service} — {date} {time} — تلفن: {phone}` |
+| `SMSIR_TEMPLATE_ADMIN` | `رزرو جدید: #NAME# — #SERVICE# — #DATE# #TIME# — تلفن: #PHONE#` |
 | `SMSIR_TEMPLATE_REMINDER_24H` | `#NAME# عزیز، یادآوری: نوبت #SERVICE# شما فردا ساعت #TIME# است — نخلسپا` |
 | `SMSIR_TEMPLATE_REMINDER_2H` | `#NAME# عزیز، یادآوری: نوبت #SERVICE# شما ۲ ساعت دیگر ساعت #TIME# است — نخلسپا` |
 | `SMSIR_TEMPLATE_OTP` | `کد ورود شما به نخلسپا: #CODE#` |
+
+The confirmation's `#ORDER_NUMBER#` receives the payer's `bookingCode` (for example, `NS-1234ABCD`), the same booking code used by the app. It is separate from the bank reference stored in `zibalRefId`. Keep `#ORDER_NUMBER#` in the approved confirmation template; the app sends the parameter named `ORDER_NUMBER`, not `refId`. For group payments, the confirmation contains the payer's booking code.
+
+If a delivered message still contains a literal placeholder such as `#ORDER_NUMBER#`, check the approved template body and its configured template ID against the parameters sent by `src/lib/smsir.ts`. New confirmations use the corrected value after deployment; previously delivered SMS messages cannot be changed.
 
 | Template | Trigger | Recipient |
 |----------|---------|-----------|

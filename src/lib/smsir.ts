@@ -29,13 +29,13 @@ async function sendPattern(mobile: string, templateId: number, parameters: { nam
   }
 }
 
-export async function sendConfirmSms(mobile: string, params: { name: string; service: string; date: string; time: string; refId: string }) {
+export async function sendConfirmSms(mobile: string, params: { name: string; service: string; date: string; time: string; bookingCode: string }) {
   return sendPattern(mobile, TEMPLATE_IDS.confirm, [
     { name: 'name',    value: params.name },
     { name: 'service', value: params.service },
     { name: 'date',    value: params.date },
     { name: 'time',    value: params.time },
-    { name: 'refId',   value: params.refId },
+    { name: 'ORDER_NUMBER', value: params.bookingCode },
   ])
 }
 

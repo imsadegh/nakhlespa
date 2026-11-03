@@ -95,7 +95,7 @@ export async function GET(req: NextRequest) {
     await Promise.all([
       smsQueue.add('reminder-24h', { reminderId: reminder24.id, phone: payer.customerPhone, template: 'reminder24h', params: reminderParams }, { delay: delay24h }),
       smsQueue.add('reminder-2h',  { reminderId: reminder2.id,  phone: payer.customerPhone, template: 'reminder2h', params: reminderParams }, { delay: delay2h }),
-      sendConfirmSms(payer.customerPhone, { name: payer.customerName, service: payer.service.nameFa, date: dateFa, time: payer.startTime, refId: String(refId) }),
+      sendConfirmSms(payer.customerPhone, { name: payer.customerName, service: payer.service.nameFa, date: dateFa, time: payer.startTime, bookingCode: payer.bookingCode }),
       sendAdminSms(process.env.ADMIN_PHONE!, { name: payer.customerName, service: payer.service.nameFa, date: dateFa, time: payer.startTime, phone: payer.customerPhone }),
     ])
 
