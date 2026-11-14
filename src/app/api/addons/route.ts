@@ -1,14 +1,15 @@
 import { NextResponse } from 'next/server'
 import { addons } from '@/db/schema'
 import { db } from '@/lib/db'
-import { asc, eq } from 'drizzle-orm'
+import { and, asc, eq, ne } from 'drizzle-orm'
+import { PAUSED_BATH_ADDON } from '@/lib/spa-packages'
 
 export const dynamic = 'force-dynamic'
 
 export async function GET() {
   try {
     const rows = await db.select({ id: addons.id, nameFa: addons.nameFa, price: addons.price, durationMinutes: addons.durationMinutes, requiresTier: addons.requiresTier })
-      .from(addons).where(eq(addons.isActive, true)).orderBy(asc(addons.requiresTier))
+      .from(addons).where(and(eq(addons.isActive, true), ne(addons.nameFa, PAUSED_BATH_ADDON))).orderBy(asc(addons.requiresTier))
     return NextResponse.json(rows)
   } catch (err) {
     console.error('Addons fetch error', err)

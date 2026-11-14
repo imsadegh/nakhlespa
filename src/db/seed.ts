@@ -12,6 +12,7 @@ import {
   workingHours,
 } from './schema'
 import { CUSTOMIZATION_CATALOG } from '../lib/booking-customization'
+import { CONSULTATION_DESCRIPTION, CONSULTATION_NAME, PAUSED_BATH_ADDON } from '../lib/spa-packages'
 import { BATH_ADDON_DURATION_MINUTES, PACKAGE_DURATION_MINUTES } from './seed-durations-data'
 
 async function seedDatabase() {
@@ -46,8 +47,8 @@ async function seedDatabase() {
     }
 
     const consultation = {
-      nameFa: 'مشاوره',
-      descriptionFa: 'مشاوره تخصصی',
+      nameFa: CONSULTATION_NAME,
+      descriptionFa: CONSULTATION_DESCRIPTION,
       durationMinutes: 30,
       price: 500000,
       color: null,
@@ -66,10 +67,10 @@ async function seedDatabase() {
 
     await tx.update(services).set({ isActive: false }).where(eq(services.nameFa, 'حمام طهورا'))
 
-    const bathAddon = { nameFa: 'حمام طهورا', price: 1200000, durationMinutes: BATH_ADDON_DURATION_MINUTES, requiresTier: false }
+    const bathAddon = { nameFa: PAUSED_BATH_ADDON, price: 1200000, durationMinutes: BATH_ADDON_DURATION_MINUTES, requiresTier: false, isActive: false }
     await tx.insert(addons).values(bathAddon).onConflictDoUpdate({
       target: addons.nameFa,
-      set: { price: bathAddon.price, durationMinutes: bathAddon.durationMinutes, requiresTier: bathAddon.requiresTier, isActive: true },
+      set: bathAddon,
     })
 
     const drink = { nameFa: 'نوشیدنی ایوان گلاب', price: 150000, requiresTier: false }
@@ -87,7 +88,7 @@ async function seedDatabase() {
         additionalPrice: option.additionalPrice ?? 0,
         requiresTier: option.requiresTier ?? null,
         sortOrder: option.sortOrder ?? 0,
-        isActive: true,
+        isActive: option.isActive ?? true,
       }).onConflictDoUpdate({
         target: [customizationOptions.category, customizationOptions.code],
         set: {
@@ -96,7 +97,7 @@ async function seedDatabase() {
           additionalPrice: option.additionalPrice ?? 0,
           requiresTier: option.requiresTier ?? null,
           sortOrder: option.sortOrder ?? 0,
-          isActive: true,
+          isActive: option.isActive ?? true,
         },
       })
     }

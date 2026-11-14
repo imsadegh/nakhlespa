@@ -1,0 +1,1 @@
+ALTER TABLE "blocked_slots" ADD COLUMN "gender" "Gender";

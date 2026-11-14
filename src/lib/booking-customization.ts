@@ -4,12 +4,18 @@ import type {
   CustomizationOption,
 } from '@/types'
 
+export const CUPPING_NOTICE = 'پس از بادکش ممکن است جای بادکش، کبودی یا تغییر رنگ موقت پوست تا چند روز باقی بماند.'
+
+export function isBookableCustomization(category: string, code: string) {
+  return !(category === 'loofah' && code === 'PUBLIC') && !(category === 'poultice' && code !== 'NONE')
+}
+
 export const CUSTOMIZATION_DEFAULTS: BookingCustomization = {
   musicGenre: 'INSTRUMENTAL',
   pressureLevel: 'MEDIUM',
   soap: 'TRADITIONAL',
-  loofah: 'PUBLIC',
-  poultice: 'GENERAL_SEDR_HENNA',
+  loofah: 'BRINGS_OWN',
+  poultice: 'NONE',
   fanTherapy: 'NONE',
 }
 
@@ -41,6 +47,7 @@ export const CUSTOMIZATION_OPTIONS: {
     { value: 'VIP_FREE_NEW', label: 'کیسه و لیف نو رایگان (شاهانه)', description: 'مخصوص بسته شاهانه، به‌صورت خودکار انتخاب می‌شود.' },
   ],
   poultice: [
+    { value: 'NONE', label: 'بدون ضماد', description: 'ضماد فعلاً در دسترس نیست.' },
     {
       value: 'GENERAL_SEDR_HENNA',
       label: 'عمومی سدر و حنا',
@@ -61,7 +68,7 @@ export const CUSTOMIZATION_OPTIONS: {
   ],
   fanTherapy: [
     { value: 'NONE', label: 'بدون بادکش', description: 'بدون استفاده از بادکش' },
-    { value: 'FAN_THERAPY', label: 'بادکش', description: 'پس از بادکش ممکن است کبودی و تغییر رنگ پوست ایجاد شود و تا ۱۰ روز باقی بماند.' },
+    { value: 'FAN_THERAPY', label: 'بادکش', description: CUPPING_NOTICE },
   ],
 }
 
@@ -86,6 +93,7 @@ export const CUSTOMIZATION_CATALOG: readonly CustomizationCatalogOption[] =
       description: option.description,
       additionalPrice: option.additionalPrice ?? 0,
       requiresTier: option.value === 'VIP_FREE_NEW' ? 3 : null,
+      isActive: isBookableCustomization(category, option.value),
       sortOrder,
     })),
   )
@@ -147,6 +155,7 @@ export function getCustomizationAdditionalPriceFromCatalog(
   if (!customization || (!isSpaPackage && (serviceTier === null || serviceTier === undefined))) return 0
   return (Object.keys(CUSTOMIZATION_OPTIONS) as CustomizationKey[]).reduce((total, category) => {
     const code = customization[category]
+    if (category === 'poultice' && code === 'NONE') return total
     const option = catalog.find(item => item.category === category && item.code === code)
     return total + (option?.additionalPrice ?? 0)
   }, 0)
@@ -161,6 +170,7 @@ export function toCustomizationSnapshot(
   if (!isSpaPackage && (serviceTier === null || serviceTier === undefined)) return []
   return (Object.keys(CUSTOMIZATION_OPTIONS) as CustomizationKey[]).flatMap(category => {
     const code = customization[category]
+    if (category === 'poultice' && code === 'NONE') return []
     const option = catalog.find(item => item.category === category && item.code === code)
     return option ? [{ category, optionId: option.id ?? null, codeSnapshot: option.code, labelSnapshot: option.label, pricePaid: option.additionalPrice ?? 0 }] : []
   })
@@ -171,7 +181,7 @@ export function normalizeCustomization(
   serviceTier?: number | null,
 ): BookingCustomization {
   if (serviceTier === 3) return { ...customization, loofah: 'VIP_FREE_NEW' }
-  if (customization.loofah === 'VIP_FREE_NEW') return { ...customization, loofah: 'PUBLIC' }
+  if (customization.loofah === 'VIP_FREE_NEW') return { ...customization, loofah: CUSTOMIZATION_DEFAULTS.loofah }
   return { ...customization }
 }
 
@@ -218,6 +228,10 @@ export function validateCustomizationAgainstCatalog(
   const legacy = validateCustomization(input, isSpaPackage && serviceTier === null ? undefined : serviceTier)
   if (!legacy.valid || legacy.value === null) return legacy
   for (const category of Object.keys(CUSTOMIZATION_DEFAULTS) as CustomizationKey[]) {
+    if (!isBookableCustomization(category, legacy.value[category])) {
+      return { valid: false, error: `Invalid or inactive customization value for ${category}` }
+    }
+    if (category === 'poultice') continue
     const option = catalog.find(item => item.category === category && item.code === legacy.value![category])
     if (!option || option.isActive === false) return { valid: false, error: `Invalid or inactive customization value for ${category}` }
     if (option.requiresTier !== null && option.requiresTier !== undefined && option.requiresTier !== serviceTier) {

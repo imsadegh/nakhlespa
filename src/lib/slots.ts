@@ -1,168 +1,100 @@
-import { and, eq, inArray, isNotNull, ne } from 'drizzle-orm'
+import { and, eq, gte, inArray, lte, ne, or } from 'drizzle-orm'
 import { db } from '@/lib/db'
 import { BookingStatus, addons, blockedSlots, bookings, services, workingHours } from '@/db/schema'
-import type { SlotDTO } from '@/types'
+import type { Gender, SlotDTO } from '@/types'
 import { isSlotPast } from '@/lib/slot-time'
+import { getCustomizationTier, PAUSED_BATH_ADDON } from '@/lib/spa-packages'
+import { getAvailablePlaces, getReservedMinutes } from '@/lib/booking-timing'
 
-function timeToMinutes(t: string): number {
-  const [h, m] = t.split(':').map(Number)
-  if (isNaN(h) || isNaN(m)) throw new Error(`Invalid time format: "${t}"`)
-  return h * 60 + m
+function timeToMinutes(time: string) {
+  const [hours, minutes] = time.split(':').map(Number)
+  return hours * 60 + minutes
 }
 
-function minutesToTime(m: number) {
-  return `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`
-}
-
-function parseDateUTC(date: string) {
-  const [year, month, day] = date.split('-').map(Number)
-  return new Date(Date.UTC(year, month - 1, day))
-}
-
-async function getWorkingDay(jsDate: Date, gender: 'FEMALE' | 'MALE') {
-  const jsDayMap: Record<number, number> = { 6: 0, 0: 1, 1: 2, 2: 3, 3: 4, 4: 5, 5: 6 }
-  const dayOfWeek = jsDayMap[jsDate.getUTCDay()]
-  const [row] = await db.select().from(workingHours).where(and(eq(workingHours.dayOfWeek, dayOfWeek), eq(workingHours.gender, gender), eq(workingHours.isOpen, true))).limit(1)
-  return row
-}
-
-async function getBlockedRanges(jsDate: Date) {
-  const blocked = await db.select({ startTime: blockedSlots.startTime, endTime: blockedSlots.endTime }).from(blockedSlots).where(eq(blockedSlots.date, jsDate))
-  return blocked.map(b => ({ start: timeToMinutes(b.startTime), end: timeToMinutes(b.endTime) }))
-}
-
-export async function getAvailableSlots(
-  date: string,
-  durationMinutes: number,
-  count = 1,
-  gender: 'FEMALE' | 'MALE',
-): Promise<SlotDTO[]> {
-  const jsDate = parseDateUTC(date)
-  const workingDay = await getWorkingDay(jsDate, gender)
-  if (!workingDay) return []
-
-  const open = timeToMinutes(workingDay.openTime)
-  const close = timeToMinutes(workingDay.closeTime)
-
-  const [{ totalRooms }] = await db.select({ totalRooms: db.$count(services, and(eq(services.isActive, true), isNotNull(services.tier))) }).from(services)
-
-  const existingBookings = await db.select({ startTime: bookings.startTime, endTime: bookings.endTime }).from(bookings).where(and(eq(bookings.date, jsDate), ne(bookings.status, BookingStatus.CANCELLED), eq(bookings.gender, gender)))
-
-  const existingBookingRanges = existingBookings.map(b => ({
-    start: timeToMinutes(b.startTime),
-    end: timeToMinutes(b.endTime),
-  }))
-
-  const bookingsForSlot = (slotStart: number, slotEnd: number): number =>
-    existingBookingRanges.filter(r => r.start < slotEnd && r.end > slotStart).length
-
-  const blockedRanges = await getBlockedRanges(jsDate)
-
-  const slots: SlotDTO[] = []
-  let cursor = open
-  while (cursor + durationMinutes <= close) {
-    const slotEnd = cursor + durationMinutes
-    const slotStartStr = minutesToTime(cursor)
-
-    const isAdminBlocked = blockedRanges.some(r => cursor < r.end && slotEnd > r.start)
-    const expired = isSlotPast(date, slotStartStr)
-    if (isAdminBlocked || expired) {
-      slots.push({ startTime: slotStartStr, endTime: minutesToTime(slotEnd), taken: true, availableCount: 0, expired })
-      cursor += 30
-      continue
-    }
-
-    const booked = bookingsForSlot(cursor, slotEnd)
-    const availableCount = Math.max(0, totalRooms - booked)
-    slots.push({
-      startTime: slotStartStr,
-      endTime: minutesToTime(slotEnd),
-      taken: availableCount < count,
-      availableCount,
-    })
-    cursor += 30
-  }
-  return slots
+function minutesToTime(minutes: number) {
+  return `${String(Math.floor(minutes / 60)).padStart(2, '0')}:${String(minutes % 60).padStart(2, '0')}`
 }
 
 export async function getSlotsForServices(
   date: string,
   bookingPlans: { serviceId: string; addonIds: string[] }[],
-  gender: 'FEMALE' | 'MALE',
+  gender: Gender,
+  reader: Pick<typeof db, 'select'> = db,
 ): Promise<SlotDTO[]> {
-  if (bookingPlans.length === 0) return []
+  if (bookingPlans.length === 0 || bookingPlans.length > 4 || !/^\d{4}-\d{2}-\d{2}$/.test(date)) return []
 
-  const jsDate = parseDateUTC(date)
-  const workingDay = await getWorkingDay(jsDate, gender)
+  const jsDate = new Date(`${date}T00:00:00Z`)
+  if (Number.isNaN(jsDate.getTime()) || jsDate.toISOString().slice(0, 10) !== date) return []
+  const dayOfWeek = (jsDate.getUTCDay() + 1) % 7
+  const [workingDay] = await reader.select().from(workingHours).where(and(eq(workingHours.dayOfWeek, dayOfWeek), eq(workingHours.gender, gender), eq(workingHours.isOpen, true))).limit(1)
   if (!workingDay) return []
 
-  const open = timeToMinutes(workingDay.openTime)
-  const close = timeToMinutes(workingDay.closeTime)
-
   const serviceIds = [...new Set(bookingPlans.map(plan => plan.serviceId))]
-  const serviceRows = await db.select({ id: services.id, durationMinutes: services.durationMinutes, tier: services.tier }).from(services).where(and(inArray(services.id, serviceIds), eq(services.isActive, true)))
+  const serviceRows = await reader.select().from(services).where(and(inArray(services.id, serviceIds), eq(services.isActive, true)))
   if (serviceRows.length !== serviceIds.length) return []
   const serviceMap = new Map(serviceRows.map(service => [service.id, service]))
   const addonIds = [...new Set(bookingPlans.flatMap(plan => plan.addonIds))]
   const addonRows = addonIds.length
-    ? await db.select({ id: addons.id, durationMinutes: addons.durationMinutes }).from(addons).where(and(inArray(addons.id, addonIds), eq(addons.isActive, true)))
+    ? await reader.select({ id: addons.id, durationMinutes: addons.durationMinutes }).from(addons).where(and(inArray(addons.id, addonIds), eq(addons.isActive, true), ne(addons.nameFa, PAUSED_BATH_ADDON)))
     : []
   if (addonRows.length !== addonIds.length) return []
   const addonDurationMap = new Map(addonRows.map(addon => [addon.id, addon.durationMinutes]))
-  const durationMinutes = Math.max(...bookingPlans.map(plan =>
-    serviceMap.get(plan.serviceId)!.durationMinutes + [...new Set(plan.addonIds)].reduce((sum, id) => sum + addonDurationMap.get(id)!, 0)
-  ))
-  const roomServiceIds = [...new Set(bookingPlans.filter(plan => serviceMap.get(plan.serviceId)!.tier !== null).map(plan => plan.serviceId))]
+  const plans = bookingPlans.map(plan => {
+    const service = serviceMap.get(plan.serviceId)!
+    const addonMinutes = [...new Set(plan.addonIds)].reduce((sum, id) => sum + addonDurationMap.get(id)!, 0)
+    return { service, duration: getReservedMinutes(service.durationMinutes + addonMinutes) }
+  }).sort((a, b) => b.duration - a.duration)
 
-  const bookingsByRoom = roomServiceIds.length === 0 ? [] : await db.select({ serviceId: bookings.serviceId, startTime: bookings.startTime, endTime: bookings.endTime }).from(bookings).where(and(inArray(bookings.serviceId, roomServiceIds), eq(bookings.date, jsDate), ne(bookings.status, BookingStatus.CANCELLED), eq(bookings.gender, gender)))
-
-  const roomRanges = new Map<string, { start: number; end: number }[]>()
-  for (const id of roomServiceIds) roomRanges.set(id, [])
-  for (const b of bookingsByRoom) {
-    roomRanges.get(b.serviceId)!.push({
-      start: timeToMinutes(b.startTime),
-      end: timeToMinutes(b.endTime),
-    })
-  }
-
-  const blockedRanges = await getBlockedRanges(jsDate)
-
-  const [{ totalRooms }] = await db.select({ totalRooms: db.$count(services, and(eq(services.isActive, true), isNotNull(services.tier))) }).from(services)
-
-  const allBookings = await db.select({ startTime: bookings.startTime, endTime: bookings.endTime }).from(bookings).where(and(eq(bookings.date, jsDate), ne(bookings.status, BookingStatus.CANCELLED), eq(bookings.gender, gender)))
-  const allRanges = allBookings.map(b => ({
-    start: timeToMinutes(b.startTime),
-    end: timeToMinutes(b.endTime),
+  const existing = await reader.select({
+    serviceId: bookings.serviceId, startTime: bookings.startTime, endTime: bookings.endTime,
+    nameFa: services.nameFa, tier: services.tier,
+  }).from(bookings).innerJoin(services, eq(bookings.serviceId, services.id))
+    .where(and(eq(bookings.date, jsDate), ne(bookings.status, BookingStatus.CANCELLED)))
+  const ranges = existing.map(booking => ({
+    serviceId: booking.serviceId,
+    start: timeToMinutes(booking.startTime),
+    end: timeToMinutes(booking.endTime),
+    vip: getCustomizationTier(booking.nameFa, booking.tier) === 3,
   }))
-
+  const blocked = await reader.select().from(blockedSlots).where(or(
+    eq(blockedSlots.date, jsDate),
+    and(lte(blockedSlots.date, jsDate), gte(blockedSlots.endDate, jsDate)),
+  ))
+  const blockedRanges = blocked
+    .filter(range => range.gender === null || range.gender === gender)
+    .map(range => ({ start: timeToMinutes(range.startTime), end: timeToMinutes(range.endTime) }))
+  const regularRanges = ranges.filter(range => !range.vip)
+  const vipRanges = ranges.filter(range => range.vip)
+  const longest = plans[0].duration
+  const close = timeToMinutes(workingDay.closeTime)
   const slots: SlotDTO[] = []
-  let cursor = open
-  while (cursor + durationMinutes <= close) {
-    const slotEnd = cursor + durationMinutes
-    const slotStartStr = minutesToTime(cursor)
 
-    const isAdminBlocked = blockedRanges.some(r => cursor < r.end && slotEnd > r.start)
-    const expired = isSlotPast(date, slotStartStr)
-    if (isAdminBlocked || expired) {
-      slots.push({ startTime: slotStartStr, endTime: minutesToTime(slotEnd), taken: true, availableCount: 0, expired })
-      cursor += 30
+  for (let start = timeToMinutes(workingDay.openTime); start + longest <= close; start += 30) {
+    const startTime = minutesToTime(start)
+    const endTime = minutesToTime(start + longest)
+    const expired = isSlotPast(date, startTime)
+    if (expired || blockedRanges.some(range => start < range.end && start + longest > range.start)) {
+      slots.push({ startTime, endTime, taken: true, availableCount: 0, expired })
       continue
     }
 
-    const hasConflict = roomServiceIds.some(id =>
-      roomRanges.get(id)!.some(r => r.start < slotEnd && r.end > cursor)
-    )
-
-    const booked = allRanges.filter(r => r.start < slotEnd && r.end > cursor).length
-    const availableCount = Math.max(0, totalRooms - booked)
-
-    slots.push({
-      startTime: slotStartStr,
-      endTime: minutesToTime(slotEnd),
-      taken: hasConflict || availableCount < bookingPlans.length,
-      availableCount,
-    })
-    cursor += 30
+    let taken = false
+    const groupRanges = { regular: [...regularRanges], vip: [...vipRanges] }
+    let availableCount = plans.length
+    for (const { service, duration } of plans) {
+      const vip = getCustomizationTier(service.nameFa, service.tier) === 3
+      const pool = vip ? groupRanges.vip : groupRanges.regular
+      const end = start + duration
+      const remaining = getAvailablePlaces(vip ? 1 : 3, pool, start, end)
+      if (plans.length === 1) availableCount = remaining
+      const roomTaken = service.tier !== null && pool.some(range => range.serviceId === service.id && range.start < end && range.end > start)
+      if (remaining < 1 || roomTaken) {
+        taken = true
+        break
+      }
+      pool.push({ serviceId: service.id, start, end, vip })
+    }
+    slots.push({ startTime, endTime, taken, availableCount: taken ? 0 : availableCount })
   }
   return slots
 }

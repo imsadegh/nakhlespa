@@ -31,6 +31,7 @@ const calls = { slotLookup: 0, discountLookup: 0, payment: 0, transaction: 0, pa
 let requestedServiceIds: string[] = []
 
 const db = {
+  execute: async () => [],
   select() {
     return {
       from(table: unknown) {

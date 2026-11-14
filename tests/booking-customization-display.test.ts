@@ -35,7 +35,7 @@ describe('booking customization display', () => {
       { key: 'soap', label: 'صابون حمام', value: 'لوکس', description: 'صابون لوکس' },
       { key: 'loofah', label: 'کیسه و لیف', value: 'همراه داشتن کیسه و لیف شخصی', description: 'مشتری کیسه و لیف شخصی خود را همراه دارد.' },
       { key: 'poultice', label: 'ضماد', value: 'خصوصی با آرد جو سبوس‌دار و سرکه سیب طبیعی', description: 'ضماد سرد با آرد جو سبوس‌دار و سرکه سیب طبیعی' },
-      { key: 'fanTherapy', label: 'بادکش', value: 'بادکش', description: 'پس از بادکش ممکن است کبودی و تغییر رنگ پوست ایجاد شود و تا ۱۰ روز باقی بماند.' },
+      { key: 'fanTherapy', label: 'بادکش', value: 'بادکش', description: 'پس از بادکش ممکن است جای بادکش، کبودی یا تغییر رنگ موقت پوست تا چند روز باقی بماند.' },
     ])
   })
 
@@ -68,11 +68,11 @@ describe('booking customization display', () => {
     expect(await missing.json()).toEqual({ error: 'Booking not found' })
   })
 
-  test('maps all five formatter rows in customer/admin displays and keeps preferences out of prices', () => {
+  test('hides poultice at checkout and preserves historical preferences in admin displays', () => {
     const review = readFileSync('src/components/booking/Step4Review.tsx', 'utf8')
     const detailDialog = readFileSync('src/app/admin/(panel)/bookings/BookingDetailDialog.tsx', 'utf8')
 
-    expect(review).toMatch(/formatCustomization\(person\.customization\)\.map\(row =>/)
+    expect(review).toMatch(/formatCustomization\(person\.customization\)\.filter\(row => row\.key !== 'poultice'\)\.map\(row =>/)
     expect(detailDialog).toMatch(/formatCustomization\(booking\.customization\)\.map\(row =>/)
 
     for (const source of [review, detailDialog]) {

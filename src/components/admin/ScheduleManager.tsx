@@ -9,11 +9,16 @@ import { TimePicker } from '@/components/ui/TimePicker'
 import { Label } from '@/components/ui/label'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { CalendarDays, Clock3, LockKeyhole, Trash2 } from 'lucide-react'
+import type { BlockedSlot } from '@/db/schema'
+import type { Gender } from '@/types'
 
 const DAY_NAMES = ['شنبه', 'یکشنبه', 'دوشنبه', 'سه‌شنبه', 'چهارشنبه', 'پنجشنبه', 'جمعه']
 
 type Hour = { id: string; dayOfWeek: number; gender: 'FEMALE' | 'MALE'; openTime: string; closeTime: string; isOpen: boolean }
-type Block = { id: string; date: Date; startTime: string; endTime: string; reason: string | null }
+type Block = Pick<BlockedSlot, 'id' | 'date' | 'endDate' | 'startTime' | 'endTime' | 'reason' | 'gender'>
+const GENDER_LABELS = { FEMALE: 'بانوان', MALE: 'آقایان' }
+const SELECT_CLASS = 'glass h-10 rounded-xl px-3 text-sm text-foreground focus-visible:ring-2 focus-visible:ring-ring'
+const EMPTY_BLOCK = { date: '', endDate: '', startTime: '', endTime: '', reason: '', allDay: false }
 
 function toFaDate(date: Date) {
   return new Date(date.toISOString().split('T')[0] + 'T12:00:00').toLocaleDateString('fa-IR')
@@ -25,11 +30,14 @@ function toFaTime(t: string) {
 
 export function ScheduleManager({ hours, blocks }: { hours: Hour[]; blocks: Block[] }) {
   const [localHours, setLocalHours] = useState(hours)
-  const [newBlock, setNewBlock] = useState({ date: '', startTime: '', endTime: '', reason: '' })
+  const [newBlock, setNewBlock] = useState(EMPTY_BLOCK)
   const [activeTab, setActiveTab] = useState<'FEMALE' | 'MALE'>('FEMALE')
+  const [blockGender, setBlockGender] = useState<Gender | ''>('')
+  const [blockFilter, setBlockFilter] = useState<Gender | ''>('')
   const router = useRouter()
 
   const tabHours = localHours.filter(h => h.gender === activeTab)
+  const visibleBlocks = blocks.filter(block => !blockFilter || block.gender === null || block.gender === blockFilter)
 
   function updateHour(id: string, patch: Partial<Hour>) {
     setLocalHours(prev => prev.map(h => h.id === id ? { ...h, ...patch } : h))
@@ -47,18 +55,26 @@ export function ScheduleManager({ hours, blocks }: { hours: Hour[]; blocks: Bloc
   }
 
   async function addBlock() {
-    if (!newBlock.date || !newBlock.startTime || !newBlock.endTime) {
+    if (!newBlock.date || (!newBlock.allDay && (!newBlock.startTime || !newBlock.endTime))) {
       toast.error('تاریخ و ساعت را تکمیل کنید')
+      return
+    }
+    if (newBlock.endDate && newBlock.endDate < newBlock.date) {
+      toast.error('تاریخ پایان نباید قبل از تاریخ شروع باشد')
+      return
+    }
+    if (!newBlock.allDay && newBlock.startTime >= newBlock.endTime) {
+      toast.error('ساعت پایان باید بعد از ساعت شروع باشد')
       return
     }
     const res = await fetch('/api/admin/schedule/block', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(newBlock),
+      body: JSON.stringify({ ...newBlock, endDate: newBlock.endDate || null, gender: blockGender || null }),
     })
     if (res.ok) {
       toast.success('بازه مسدود شد')
-      setNewBlock({ date: '', startTime: '', endTime: '', reason: '' })
+      setNewBlock(EMPTY_BLOCK)
     } else {
       toast.error('خطا در افزودن بلاک')
     }
@@ -173,11 +189,38 @@ export function ScheduleManager({ hours, blocks }: { hours: Hour[]; blocks: Bloc
 
         <GlassCard className="space-y-5 p-5 sm:p-6">
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div className="flex min-w-0 flex-col gap-2 sm:col-span-2">
+              <Label htmlFor="block-gender">مسدود کردن برای</Label>
+              <select id="block-gender" value={blockGender} onChange={e => setBlockGender(e.target.value as Gender | '')} className={`${SELECT_CLASS} w-full sm:w-56`}>
+                <option value="">بانوان و آقایان</option>
+                <option value="FEMALE">بانوان</option>
+                <option value="MALE">آقایان</option>
+              </select>
+            </div>
             <div className="flex min-w-0 flex-col gap-2">
-              <Label htmlFor="block-date">تاریخ</Label>
+              <Label htmlFor="block-date">تاریخ شروع</Label>
               <DatePicker id="block-date" value={newBlock.date} onChange={v => setNewBlock(b => ({ ...b, date: v }))} className="h-10 w-full" />
             </div>
             <div className="flex min-w-0 flex-col gap-2">
+              <Label htmlFor="block-end-date">تاریخ پایان <span className="font-normal text-muted-foreground">(اختیاری)</span></Label>
+              <DatePicker id="block-end-date" value={newBlock.endDate} onChange={v => setNewBlock(b => ({ ...b, endDate: v }))} placeholder="فقط روز شروع" className="h-10 w-full" />
+              {newBlock.endDate && <button type="button" onClick={() => setNewBlock(b => ({ ...b, endDate: '' }))} className="self-start text-xs text-muted-foreground underline">پاک کردن تاریخ پایان</button>}
+            </div>
+            <label className="flex items-center gap-2 text-sm sm:col-span-2">
+              <input type="checkbox" checked={newBlock.allDay} onChange={e => setNewBlock(b => ({ ...b, allDay: e.target.checked }))} />
+              تمام روز
+            </label>
+            {!newBlock.allDay && <>
+              <div className="flex min-w-0 flex-col gap-2">
+                <Label htmlFor="block-start">از ساعت</Label>
+                <TimePicker id="block-start" value={newBlock.startTime} onChange={v => setNewBlock(b => ({ ...b, startTime: v }))} placeholder="انتخاب ساعت" className="h-10 w-full text-sm" />
+              </div>
+              <div className="flex min-w-0 flex-col gap-2">
+                <Label htmlFor="block-end">تا ساعت</Label>
+                <TimePicker id="block-end" value={newBlock.endTime} onChange={v => setNewBlock(b => ({ ...b, endTime: v }))} placeholder="انتخاب ساعت" className="h-10 w-full text-sm" />
+              </div>
+            </>}
+            <div className="flex min-w-0 flex-col gap-2 sm:col-span-2">
               <Label htmlFor="block-reason">دلیل <span className="font-normal" style={{ color: 'var(--text-faint)' }}>(اختیاری)</span></Label>
               <input
                 id="block-reason"
@@ -188,14 +231,6 @@ export function ScheduleManager({ hours, blocks }: { hours: Hour[]; blocks: Bloc
                 style={{ color: 'var(--text-primary)' }}
               />
             </div>
-            <div className="flex min-w-0 flex-col gap-2">
-              <Label htmlFor="block-start">از ساعت</Label>
-              <TimePicker id="block-start" value={newBlock.startTime} onChange={v => setNewBlock(b => ({ ...b, startTime: v }))} placeholder="انتخاب ساعت" className="h-10 w-full text-sm" />
-            </div>
-            <div className="flex min-w-0 flex-col gap-2">
-              <Label htmlFor="block-end">تا ساعت</Label>
-              <TimePicker id="block-end" value={newBlock.endTime} onChange={v => setNewBlock(b => ({ ...b, endTime: v }))} placeholder="انتخاب ساعت" className="h-10 w-full text-sm" />
-            </div>
           </div>
           <div className="flex justify-start border-t border-white/10 pt-4">
             <GoldButton onClick={addBlock} className="w-full sm:w-auto sm:min-w-44">افزودن بازه مسدود</GoldButton>
@@ -204,7 +239,7 @@ export function ScheduleManager({ hours, blocks }: { hours: Hour[]; blocks: Bloc
       </section>
 
       <section className="space-y-4">
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
           <div className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-white/5" style={{ color: 'var(--text-muted)' }}>
             <CalendarDays aria-hidden="true" className="size-5" />
           </div>
@@ -212,19 +247,28 @@ export function ScheduleManager({ hours, blocks }: { hours: Hour[]; blocks: Bloc
             <h2 className="text-base font-semibold" style={{ color: 'var(--text-primary)' }}>بازه‌های مسدودشده</h2>
             <p className="text-xs" style={{ color: 'var(--text-muted)' }}>زمان‌هایی که امکان رزرو ندارند.</p>
           </div>
+          <select aria-label="فیلتر بازه‌های مسدودشده" value={blockFilter} onChange={e => setBlockFilter(e.target.value as Gender | '')} className={`${SELECT_CLASS} sm:ms-auto`}>
+            <option value="">همه بازه‌ها</option>
+            <option value="FEMALE">بانوان</option>
+            <option value="MALE">آقایان</option>
+          </select>
         </div>
         <GlassCard className="divide-y divide-white/10 p-0">
-          {blocks.length === 0 ? (
-            <p className="p-5 text-sm" style={{ color: 'var(--text-muted)' }}>هنوز بازه‌ای مسدود نشده است.</p>
-          ) : blocks.map(b => (
+          {visibleBlocks.length === 0 ? (
+            <p className="p-5 text-sm" style={{ color: 'var(--text-muted)' }}>بازه مسدودشده‌ای برای این فیلتر وجود ندارد.</p>
+          ) : visibleBlocks.map(b => (
             <div key={b.id} className="flex items-center gap-3 p-4 sm:px-5">
               <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-white/5" style={{ color: 'var(--text-muted)' }}>
                 <CalendarDays aria-hidden="true" className="size-4" />
               </div>
               <div className="min-w-0 flex-1 space-y-1">
                 <div className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
-                  {toFaDate(b.date)} <span dir="ltr" className="inline-block">{toFaTime(b.startTime)}–{toFaTime(b.endTime)}</span>
+                  {toFaDate(b.date)}{b.endDate && ` تا ${toFaDate(b.endDate)}`}{' · '}
+                  {b.startTime === '00:00' && b.endTime === '24:00'
+                    ? 'تمام روز'
+                    : <span dir="ltr" className="inline-block">{toFaTime(b.startTime)}–{toFaTime(b.endTime)}</span>}
                 </div>
+                <div className="text-xs text-muted-foreground">{b.gender ? GENDER_LABELS[b.gender] : 'بانوان و آقایان'}</div>
                 {b.reason && <div className="truncate text-xs" style={{ color: 'var(--text-faint)' }}>{b.reason}</div>}
               </div>
               <button type="button" onClick={() => removeBlock(b.id)} aria-label="حذف بازه مسدودشده" className="inline-flex size-9 shrink-0 items-center justify-center rounded-lg text-red-400 transition-colors hover:bg-red-400/10 hover:text-red-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400">

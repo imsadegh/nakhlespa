@@ -3,7 +3,7 @@ import { and, asc, eq } from 'drizzle-orm'
 import { bookings } from '@/db/schema'
 import { db } from '@/lib/db'
 import { HEALTH_INTAKE_SECTIONS, type HealthIntake } from '@/lib/health-intake'
-import { CUSTOMIZATION_FIELD_LABELS, formatCustomization } from '@/lib/booking-customization'
+import { CUPPING_NOTICE, CUSTOMIZATION_FIELD_LABELS, formatCustomization } from '@/lib/booking-customization'
 import { PrintHealthFormButton } from '@/components/admin/PrintHealthFormButton'
 import type { BookingCustomization, CustomizationKey } from '@/types'
 
@@ -18,7 +18,7 @@ type PrintableBooking = {
   groupToken: string | null
   healthIntake: HealthIntake | null
   customization: BookingCustomization | null
-  customizations: { id: string; category: string; labelSnapshot: string; pricePaid: number }[]
+  customizations: { id: string; category: string; codeSnapshot: string; labelSnapshot: string; pricePaid: number }[]
   service: { nameFa: string }
 }
 
@@ -51,6 +51,8 @@ export function HealthFormPage({ booking }: { booking: PrintableBooking }) {
           pricePaid: 0,
         }))
       : []
+  const cuppingSelected = booking.customization?.fanTherapy === 'FAN_THERAPY'
+    || booking.customizations.some(item => item.category === 'fanTherapy' && item.codeSnapshot === 'FAN_THERAPY')
 
   return (
     <section dir="rtl" data-health-form-page className="health-form-page mx-auto max-w-3xl bg-white p-8 text-[#17251e]">
@@ -91,6 +93,7 @@ export function HealthFormPage({ booking }: { booking: PrintableBooking }) {
               </div>
             ))}
           </div>
+          {cuppingSelected && <p className="mt-3">{CUPPING_NOTICE}</p>}
         </div>
       )}
 

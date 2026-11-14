@@ -57,15 +57,15 @@ describe('booking customization step', () => {
   test('updates each customization field independently for only the selected person', () => {
     const state = { persons: [person('tier-2'), person('tier-2')] }
     const updates: Partial<WizardState>[] = []
-    const selections = ['POP', 'FIRM', 'LUXURY', 'BRINGS_OWN', 'PRIVATE_BARLEY_COLD', 'FAN_THERAPY']
-    const fields = ['musicGenre', 'pressureLevel', 'soap', 'loofah', 'poultice', 'fanTherapy'] as const
+    const selections = ['POP', 'FIRM', 'LUXURY', 'BUYS_FROM_US', 'FAN_THERAPY']
+    const fields = ['musicGenre', 'pressureLevel', 'soap', 'loofah', 'fanTherapy'] as const
 
     const secondPerson = <StepCustomization {...props(state, patch => updates.push(patch))} defaultExpanded />
-    findToggleGroups(StepCustomization(secondPerson.props)).slice(6, 12).forEach((group, index) => {
+    findToggleGroups(StepCustomization(secondPerson.props)).slice(fields.length).forEach((group, index) => {
       group.props.onValueChange([selections[index]])
     })
 
-    expect(updates).toHaveLength(6)
+    expect(updates).toHaveLength(fields.length)
     updates.forEach((patch, index) => {
       expect(patch.persons?.[0].customization).toEqual(getDefaultCustomization())
       expect(patch.persons?.[0].addonIds).toEqual(['addon-1'])
@@ -87,7 +87,7 @@ describe('booking customization step', () => {
     expectPressedButton(html, 'کیسه و لیف نو رایگان')
     expect(html).toContain('ارغوان')
     CUSTOMIZATION_OPTIONS.loofah
-      .filter(option => option.value !== 'VIP_FREE_NEW')
+      .filter(option => option.value === 'BRINGS_OWN' || option.value === 'BUYS_FROM_US')
       .forEach(option => expectDisabledButton(html, option.label))
     expect(normalizeCustomization(state.persons[0].customization, 3).loofah).toBe('VIP_FREE_NEW')
   })
@@ -103,6 +103,11 @@ describe('booking customization step', () => {
     expect(html).not.toContain('مخصوص VIP ارغوان، به‌صورت خودکار انتخاب می‌شود.')
     expect(html).not.toContain('موسیقی سنتی رایگان')
     expect(html).not.toContain('فشار ملایم رایگان')
+    expect(html).not.toContain('کیسه و لیف پشمی عمومی')
+    expect(html).toContain('به‌زودی')
+    CUSTOMIZATION_OPTIONS.poultice
+      .filter(option => option.value !== 'NONE')
+      .forEach(option => expectDisabledButton(html, option.label))
     expect(html.match(/data-slot="field-set"/g)?.length).toBe(6)
     expect(html).toContain('rounded-xl border border-border/70')
     expect(html).toContain('!bg-foreground')

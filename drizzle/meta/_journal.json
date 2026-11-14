@@ -50,6 +50,20 @@
       "when": 1793691776845,
       "tag": "0006_zibal-payment-columns",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1794681347233,
+      "tag": "0007_blocked-slot-gender",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1794681608661,
+      "tag": "0008_blocked-slot-date-range",
+      "breakpoints": true
     }
   ]
 }

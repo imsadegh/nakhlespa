@@ -3,7 +3,7 @@ import { Crown, Feather, MessageCircle, Sparkles, Waves, Wind, type LucideIcon }
 import { GlassCard } from '@/components/ui/GlassCard'
 import { GoldButton } from '@/components/ui/GoldButton'
 import { getCustomizationAdditionalPrice, getDefaultCustomization, normalizeCustomization } from '@/lib/booking-customization'
-import { getCustomizationTier, ONLINE_BOOKABLE_SERVICES, SPA_PACKAGE_NAMES } from '@/lib/spa-packages'
+import { CONSULTATION_DESCRIPTION, CONSULTATION_NAME, getCustomizationTier, ONLINE_BOOKABLE_SERVICES, SPA_PACKAGE_NAMES } from '@/lib/spa-packages'
 import type { ServiceDTO, AddonDTO, WizardState, Person } from '@/types'
 
 type Props = {
@@ -41,7 +41,13 @@ function updatePerson(persons: Person[], index: number, patch: Partial<Person>):
 
 export function Step1Service({ state, update, goNext, services, addons }: Props) {
   const persons = state.persons
-  const bookableServices = services.filter(service => ONLINE_BOOKABLE_SERVICES.has(service.nameFa))
+  const bookableServices = services
+    .filter(service => ONLINE_BOOKABLE_SERVICES.has(service.nameFa))
+    .sort((a, b) => {
+      if (a.nameFa === CONSULTATION_NAME) return b.nameFa === CONSULTATION_NAME ? 0 : 1
+      if (b.nameFa === CONSULTATION_NAME) return -1
+      return a.price - b.price
+    })
 
   const totalPrice = persons.reduce((sum, person) => {
     const svc = services.find(s => s.id === person.serviceId)
@@ -51,6 +57,10 @@ export function Step1Service({ state, update, goNext, services, addons }: Props)
   }, 0)
 
   const allPersonsHaveService = persons.every(p => p.serviceId !== '')
+  const vipCount = persons.filter(person =>
+    bookableServices.some(service => service.id === person.serviceId && getCustomizationTier(service.nameFa, service.tier) === 3),
+  ).length
+  const exceedsCapacity = vipCount > 1 || (allPersonsHaveService && persons.length - vipCount > 3)
 
   function setPerson(index: number, patch: Partial<Person>) {
     update({ persons: updatePerson(persons, index, patch) })
@@ -117,6 +127,7 @@ export function Step1Service({ state, update, goNext, services, addons }: Props)
                 {bookableServices.map(svc => {
                   const selected = person.serviceId === svc.id
                   const { icon: Icon, color } = SERVICE_ICONS[svc.nameFa]
+                  const details = svc.descriptionFa?.split(/[،؛\n]+/).map(detail => detail.trim()).filter(Boolean)
                   return (
                     <button
                       key={svc.id}
@@ -136,7 +147,18 @@ export function Step1Service({ state, update, goNext, services, addons }: Props)
                             {svc.durationMinutes.toLocaleString('fa-IR')} دقیقه
                           </span>
                         </div>
-                        <p className="line-clamp-2 min-h-8 w-full text-xs leading-5" style={{ color: 'var(--text-muted)' }}>{svc.descriptionFa}</p>
+                        {svc.nameFa === CONSULTATION_NAME ? (
+                          <p className="w-full text-xs leading-5" style={{ color: 'var(--text-muted)' }}>{CONSULTATION_DESCRIPTION}</p>
+                        ) : !!details?.length && (
+                          <span role="list" className="w-full space-y-1 text-xs leading-5" style={{ color: 'var(--text-muted)' }}>
+                            {details.map((detail, index) => (
+                              <span key={index} role="listitem" className="flex gap-2">
+                                <span aria-hidden="true">•</span>
+                                <span>{detail}</span>
+                              </span>
+                            ))}
+                          </span>
+                        )}
                         <div className="mt-auto flex w-full items-center justify-between border-t pt-2" style={{ borderColor: 'var(--border-base)' }}>
                           <span className="text-[10px]" style={{ color: 'var(--text-faint)' }}>{selected ? 'انتخاب شده' : 'انتخاب بسته'}</span>
                           <span className="text-sm font-bold text-[#C6A55B]">{svc.price.toLocaleString('fa-IR')} تومان</span>
@@ -180,7 +202,7 @@ export function Step1Service({ state, update, goNext, services, addons }: Props)
       </div>
 
       {/* Add person button — only show when all current persons have a service selected */}
-      {allPersonsHaveService && (
+      {allPersonsHaveService && persons.length < 4 && (
         <button type="button" onClick={addPerson}
           className="w-full mt-3 py-2.5 rounded-xl text-xs transition-all"
           style={{ color: '#C6A55B', border: '1px dashed rgba(198,165,91,0.5)', background: 'rgba(198,165,91,0.04)' }}>
@@ -195,7 +217,8 @@ export function Step1Service({ state, update, goNext, services, addons }: Props)
         </div>
       )}
 
-      <GoldButton className="w-full" onClick={goNext} disabled={!allPersonsHaveService}>ادامه ←</GoldButton>
+      {exceedsCapacity && <p role="status" className="mb-3 text-xs text-muted-foreground">برای هر نوبت می‌توانید حداکثر سه خدمت عادی و یک بسته شاهانه رزرو کنید.</p>}
+      <GoldButton className="w-full" onClick={goNext} disabled={!allPersonsHaveService || exceedsCapacity}>ادامه ←</GoldButton>
     </div>
   )
 }

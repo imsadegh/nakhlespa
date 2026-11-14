@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { and, eq, inArray, sql } from 'drizzle-orm'
+import { and, eq, inArray, ne, sql } from 'drizzle-orm'
 import { db } from '@/lib/db'
 import { addons, BookingStatus, bookingCustomizations, bookings as bookingsTable, bookingAddons, customizationOptions, discountCodes, services, workingHours } from '@/db/schema'
 import { zibalRequest } from '@/lib/zibal'
@@ -7,7 +7,8 @@ import { validatePromoCode, checkLoyaltyDiscount } from '@/lib/discounts'
 import { CUSTOMIZATION_CATALOG, getCustomizationAdditionalPriceFromCatalog, toCustomizationSnapshot, validateCustomizationAgainstCatalog } from '@/lib/booking-customization'
 import { validateHealthIntake } from '@/lib/health-intake'
 import { getSlotsForServices } from '@/lib/slots'
-import { getCustomizationTier, ONLINE_BOOKABLE_SERVICES, SPA_PACKAGE_NAMES } from '@/lib/spa-packages'
+import { getCustomizationTier, ONLINE_BOOKABLE_SERVICES, PAUSED_BATH_ADDON, SPA_PACKAGE_NAMES } from '@/lib/spa-packages'
+import { getReservedMinutes } from '@/lib/booking-timing'
 import type { Booking } from '@/db/schema'
 import { randomUUID } from 'crypto'
 import type { BookingCreateInput, BookingCustomization, Gender } from '@/types'
@@ -32,8 +33,8 @@ export async function POST(req: NextRequest) {
   }
 
   const { bookings, promoCode } = body
-  if (!Array.isArray(bookings) || bookings.length === 0) {
-    return NextResponse.json({ error: 'bookings must be a non-empty array' }, { status: 400 })
+  if (!Array.isArray(bookings) || bookings.length === 0 || bookings.length > 4) {
+    return NextResponse.json({ error: 'bookings must contain one to four guests' }, { status: 400 })
   }
 
   for (const b of bookings) {
@@ -46,6 +47,14 @@ export async function POST(req: NextRequest) {
     if (b.addonIds !== undefined && !Array.isArray(b.addonIds)) {
       return NextResponse.json({ error: 'addonIds must be an array' }, { status: 400 })
     }
+  }
+
+  if (bookings.some(b => b.date !== bookings[0].date || b.startTime !== bookings[0].startTime)) {
+    return NextResponse.json({ error: 'All bookings in a group must share a date and start time' }, { status: 400 })
+  }
+  const jsDate = new Date(`${bookings[0].date}T00:00:00Z`)
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(bookings[0].date) || Number.isNaN(jsDate.getTime()) || jsDate.toISOString().slice(0, 10) !== bookings[0].date) {
+    return NextResponse.json({ error: 'Invalid booking date' }, { status: 400 })
   }
 
   // All bookings in a group must share the same gender
@@ -101,7 +110,7 @@ export async function POST(req: NextRequest) {
 
   const allAddonIds = [...new Set(bookings.flatMap(b => b.addonIds ?? []))]
   const fetchedAddons = allAddonIds.length > 0
-    ? await db.select({ id: addons.id, price: addons.price, durationMinutes: addons.durationMinutes, requiresTier: addons.requiresTier }).from(addons).where(and(inArray(addons.id, allAddonIds), eq(addons.isActive, true)))
+    ? await db.select({ id: addons.id, price: addons.price, durationMinutes: addons.durationMinutes, requiresTier: addons.requiresTier }).from(addons).where(and(inArray(addons.id, allAddonIds), eq(addons.isActive, true), ne(addons.nameFa, PAUSED_BATH_ADDON)))
     : []
   if (fetchedAddons.length !== allAddonIds.length) {
     return NextResponse.json({ error: 'One or more add-ons are invalid' }, { status: 400 })
@@ -125,8 +134,6 @@ export async function POST(req: NextRequest) {
   }
 
   // Server-side gender window enforcement
-  const [year, month, day] = bookings[0].date.split('-').map(Number)
-  const jsDate = new Date(Date.UTC(year, month - 1, day))
   const jsDayMap: Record<number, number> = { 6: 0, 0: 1, 1: 2, 2: 3, 3: 4, 4: 5, 5: 6 }
   const dayOfWeek = jsDayMap[jsDate.getUTCDay()]
   const [workingDay] = await db.select().from(workingHours).where(and(eq(workingHours.dayOfWeek, dayOfWeek), eq(workingHours.gender, gender), eq(workingHours.isOpen, true))).limit(1)
@@ -149,7 +156,7 @@ export async function POST(req: NextRequest) {
     const selectedAddons = addonIds.map(id => addonMap.get(id)!)
     const addonsPricePaid = selectedAddons.reduce((s, a) => s + a.price, 0)
     const durationMinutes = svc.durationMinutes + selectedAddons.reduce((sum, addon) => sum + addon.durationMinutes, 0)
-    const endTime = addMinutesToTime(b.startTime, durationMinutes)
+    const endTime = addMinutesToTime(b.startTime, getReservedMinutes(durationMinutes))
     const validatedCustomization = validatedCustomizations.get(b)!
     const validatedHealthIntake = validatedHealthIntakes.get(b)!
     const isSpaPackage = SPA_PACKAGE_NAMES.has(svc.nameFa)
@@ -158,12 +165,6 @@ export async function POST(req: NextRequest) {
     const customizationSnapshots = toCustomizationSnapshot(validatedCustomization!, customizationTier, catalog, isSpaPackage)
     return { b, svc, selectedAddons, addonsPricePaid, customizationPricePaid, customizationSnapshots, endTime, validatedCustomization, validatedHealthIntake }
   })
-
-  const slotsForDate = await getSlotsForServices(bookings[0].date, bookingData.map(({ b, svc }) => ({ serviceId: svc.id, addonIds: b.addonIds ?? [] })), gender)
-  const requestedSlot = slotsForDate.find(s => s.startTime === bookings[0].startTime)
-  if (!requestedSlot || requestedSlot.taken) {
-    return NextResponse.json({ error: 'Requested time slot is no longer available' }, { status: 409 })
-  }
 
   const subtotal = bookingData.reduce((s, { svc, addonsPricePaid, customizationPricePaid }) => s + svc.price + addonsPricePaid + customizationPricePaid, 0)
   const payerPhone = bookings[0].customerPhone
@@ -192,6 +193,10 @@ export async function POST(req: NextRequest) {
     : `رزرو گروهی ${bookings.length} غرفه — نخلسپا`
 
   const createdBookings = await db.transaction(async tx => {
+    await tx.execute(sql`select pg_advisory_xact_lock(hashtext('booking-capacity'), hashtext(${bookingDate.toISOString()}))`)
+    const slots = await getSlotsForServices(bookings[0].date, bookingData.map(({ b }) => ({ serviceId: b.serviceId, addonIds: b.addonIds ?? [] })), gender, tx)
+    if (!slots.some(slot => slot.startTime === bookings[0].startTime && !slot.taken)) return []
+
     const created: Booking[] = []
     for (const { b, selectedAddons, addonsPricePaid, customizationSnapshots, endTime, validatedCustomization, validatedHealthIntake } of bookingData) {
       const [booking] = await tx.insert(bookingsTable).values({
@@ -215,6 +220,9 @@ export async function POST(req: NextRequest) {
   })
 
   const payerBooking = createdBookings[0]
+  if (!payerBooking) {
+    return NextResponse.json({ error: 'Requested time slot is no longer available' }, { status: 409 })
+  }
 
   try {
     const mockCallbackUrl = process.env.NODE_ENV !== 'production' && process.env.ZIBAL_MOCK === 'true'

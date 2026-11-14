@@ -43,6 +43,7 @@ describe('booking customization contract', () => {
       'VIP_FREE_NEW',
     ])
     expect(CUSTOMIZATION_OPTIONS.poultice.map(option => option.value)).toEqual([
+      'NONE',
       'GENERAL_SEDR_HENNA',
       'PRIVATE_WHEAT_WARM',
       'PRIVATE_BARLEY_COLD',
@@ -53,7 +54,7 @@ describe('booking customization contract', () => {
   test('includes optional fan therapy with a bruising warning', () => {
     expect(CUSTOMIZATION_OPTIONS.fanTherapy.map(option => option.value)).toEqual(['NONE', 'FAN_THERAPY'])
     expect(CUSTOMIZATION_OPTIONS.fanTherapy[1].label).toBe('بادکش')
-    expect(CUSTOMIZATION_OPTIONS.fanTherapy[1].description).toContain('۱۰ روز')
+    expect(CUSTOMIZATION_OPTIONS.fanTherapy[1].description).toContain('چند روز')
   })
 
   test('exposes the documented defaults and returns fresh default objects', () => {
@@ -61,8 +62,8 @@ describe('booking customization contract', () => {
       musicGenre: 'INSTRUMENTAL',
       pressureLevel: 'MEDIUM',
       soap: 'TRADITIONAL',
-      loofah: 'PUBLIC',
-      poultice: 'GENERAL_SEDR_HENNA',
+      loofah: 'BRINGS_OWN',
+      poultice: 'NONE',
       fanTherapy: 'NONE',
     })
 
@@ -87,7 +88,7 @@ describe('booking customization contract', () => {
     expect(normalizeCustomization(customization, 2)).toEqual(customization)
     expect(normalizeCustomization({ ...customization, loofah: 'VIP_FREE_NEW' }, 2)).toEqual({
       ...customization,
-      loofah: 'PUBLIC',
+      loofah: 'BRINGS_OWN',
     })
   })
 

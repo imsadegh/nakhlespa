@@ -172,10 +172,10 @@ export function Step2DateTime({ state, update, goNext, goBack }: Props) {
                     className={`flex flex-col items-center px-4 py-2 rounded-xl text-xs transition-all ${selected ? 'bg-[#C6A55B] text-[#0F3D2E] font-bold shadow-[0_4px_16px_rgba(198,165,91,0.35)]' : ''}`}
                     style={selected ? {} : { color: 'var(--text-muted)', background: 'var(--bg-surface)', border: '1px solid var(--border-base)', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.18)' }}>
                     <span>{toFaTime(slot.startTime)}</span>
-                    <span className={`text-[9px] mt-0.5 ${slot.availableCount === 1 ? 'text-amber-400' : selected ? 'text-[#0F3D2E]/70' : ''}`}
+                    {personCount === 1 && <span className={`text-[9px] mt-0.5 ${slot.availableCount === 1 ? 'text-amber-400' : selected ? 'text-[#0F3D2E]/70' : ''}`}
                       style={slot.availableCount > 1 && !selected ? { color: 'var(--text-faint)' } : {}}>
                       {toFaNum(slot.availableCount)} غرفه خالی
-                    </span>
+                    </span>}
                   </motion.button>
                 )
               })}

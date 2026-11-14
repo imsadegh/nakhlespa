@@ -161,7 +161,7 @@ export function Step4Review({ state, goBack, services, addons, customizationOpti
               {isCustomizable && <div className="border-t border-[rgba(198,165,91,0.15)] pt-1.5 mt-1.5">
                 <p className="text-[10px] font-medium mb-1" style={{ color: 'var(--text-faint)' }}>سفارشی‌سازی</p>
                 <div className="space-y-1">
-                  {formatCustomization(person.customization).map(row => (
+                  {formatCustomization(person.customization).filter(row => row.key !== 'poultice').map(row => (
                     <div key={row.key} className="flex justify-between gap-3 text-xs">
                       <span style={{ color: 'var(--text-muted)' }}>{row.label}</span>
                       <span className="text-end" style={{ color: 'var(--text-primary)' }}>{row.value}</span>

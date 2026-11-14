@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { eq } from 'drizzle-orm'
 import { db } from '@/lib/db'
 import { services } from '@/db/schema'
-import { getAvailableSlots, getSlotsForServices } from '@/lib/slots'
+import { getSlotsForServices } from '@/lib/slots'
 import type { Gender } from '@/types'
 
 type SlotBookingPlan = { serviceId: string; addonIds: string[] }
@@ -48,10 +48,13 @@ export async function GET(req: NextRequest) {
       return NextResponse.json(slots)
     }
 
-    const count = countParam ? Math.max(1, parseInt(countParam, 10)) : 1
+    const count = countParam ? Number(countParam) : 1
+    if (!Number.isInteger(count) || count < 1 || count > 4) {
+      return NextResponse.json({ error: 'Invalid booking count' }, { status: 400 })
+    }
     const [service] = await db.select().from(services).where(eq(services.id, serviceId)).limit(1)
     if (!service) return NextResponse.json({ error: 'Service not found' }, { status: 404 })
-    const slots = await getAvailableSlots(date, service.durationMinutes, count, gender)
+    const slots = await getSlotsForServices(date, Array.from({ length: count }, () => ({ serviceId, addonIds: [] })), gender)
     return NextResponse.json(slots)
   } catch (err) {
     console.error('Slots fetch error', err)

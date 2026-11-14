@@ -100,6 +100,8 @@ export const workingHours = pgTable(
 export const blockedSlots = pgTable('blocked_slots', {
   id: text('id').primaryKey().$defaultFn(() => randomUUID()),
   date: date('date', { mode: 'date' }).notNull(),
+  endDate: date('endDate', { mode: 'date' }),
+  gender: genderEnum('gender'),
   startTime: text('startTime').notNull(),
   endTime: text('endTime').notNull(),
   reason: text('reason'),

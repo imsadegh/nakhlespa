@@ -20,8 +20,8 @@ const serviceRows = [
   { id: 'service-consultation', nameFa: 'مشاوره', descriptionFa: null, durationMinutes: 30, price: 75, color: null, symbol: null, tier: null, isActive: true },
 ]
 const addonRows = [
-  { id: 'addon-one', price: 10, requiresTier: false },
-  { id: 'addon-two', price: 20, requiresTier: false },
+  { id: 'addon-one', price: 10, requiresTier: false, durationMinutes: 0 },
+  { id: 'addon-two', price: 20, requiresTier: false, durationMinutes: 0 },
 ]
 const workingDay = { id: 'working-day', dayOfWeek: 1, gender: 'FEMALE', openTime: '09:00', closeTime: '18:00', isOpen: true }
 
@@ -30,6 +30,7 @@ const calls = { addonLookup: 0, slotLookup: 0, discountLookup: 0, payment: 0, tr
 let requestedServiceIds: string[] = []
 
 const db = {
+  execute: async () => [],
   select() {
     return {
       from(table: unknown) {
@@ -129,6 +130,7 @@ describe('POST /api/bookings/create customization boundary', () => {
     const response = await POST(request([booking('service-one', first, ['addon-one']), booking('service-two', second, ['addon-two'])]) as never)
     expect(response.status).toBe(200)
     expect(persistedBookings.map(row => row.customization)).toEqual([first, second])
+    expect(persistedBookings.map(row => row.endTime)).toEqual(['11:07', '11:37'])
     expect(persistedBookings[0].customization).not.toBe(persistedBookings[1].customization)
   })
 
@@ -136,6 +138,8 @@ describe('POST /api/bookings/create customization boundary', () => {
     ['missing customization', undefined],
     ['malformed customization', { musicGenre: 'POP' }],
     ['unknown customization value', { ...getDefaultCustomization(), soap: 'UNKNOWN' }],
+    ['shared loofah', { ...getDefaultCustomization(), loofah: 'PUBLIC' }],
+    ['paid poultice', { ...getDefaultCustomization(), poultice: 'PRIVATE_BARLEY_COLD' }],
   ])('returns HTTP 400 for %s', async (_label, customization) => {
     resetSpies()
     const response = await POST(request([booking('service-one', customization)]) as never)
@@ -173,10 +177,10 @@ describe('POST /api/bookings/create customization boundary', () => {
 
   test('includes paid customization choices in the payment amount', async () => {
     resetSpies()
-    const customization = { ...getDefaultCustomization(), loofah: 'BUYS_FROM_US' as const, poultice: 'PRIVATE_BARLEY_COLD' as const }
+    const customization = { ...getDefaultCustomization(), loofah: 'BUYS_FROM_US' as const }
     const response = await POST(request([booking('service-one', customization)]) as never)
     expect(response.status).toBe(200)
-    expect(calls.paymentAmount).toBe(100 + 300000 + 600000)
+    expect(calls.paymentAmount).toBe(100 + 300000)
   })
 
   test('persists null customization for non-tier services', async () => {

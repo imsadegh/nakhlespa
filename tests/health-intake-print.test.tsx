@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs'
 import { describe, expect, mock, test } from 'bun:test'
 import React from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
+import { CUPPING_NOTICE, getDefaultCustomization } from '@/lib/booking-customization'
 
 let requestedId = ''
 const sampleBookings = new Map<string, any>()
@@ -71,6 +72,20 @@ describe('admin health intake print page', () => {
     expect(html).toContain('تاریخ')
     expect(html).toContain('@page')
     expect(html).toContain('page-break-after')
+    expect(html).not.toContain(CUPPING_NOTICE)
+  })
+
+  test('prints the Badkesh notice for saved preferences and catalog snapshots', async () => {
+    sampleBookings.clear()
+    sampleBookings.set('booking-1', booking({
+      customization: { ...getDefaultCustomization(), fanTherapy: 'FAN_THERAPY' },
+    }))
+    expect(await renderPage()).toContain(CUPPING_NOTICE)
+
+    sampleBookings.set('booking-1', booking({
+      customizations: [{ id: 'cupping', category: 'fanTherapy', codeSnapshot: 'FAN_THERAPY', labelSnapshot: 'بادکش', pricePaid: 0 }],
+    }))
+    expect(await renderPage()).toContain(CUPPING_NOTICE)
   })
 
   test('prints one page per group member and omits pregnancy for male data', async () => {

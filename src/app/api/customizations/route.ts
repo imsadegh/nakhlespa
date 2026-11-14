@@ -2,6 +2,7 @@ import { asc, eq } from 'drizzle-orm'
 import { NextResponse } from 'next/server'
 import { customizationOptions } from '@/db/schema'
 import { db } from '@/lib/db'
+import { isBookableCustomization } from '@/lib/booking-customization'
 
 export const dynamic = 'force-dynamic'
 
@@ -19,7 +20,7 @@ export async function GET() {
     }).from(customizationOptions)
       .where(eq(customizationOptions.isActive, true))
       .orderBy(asc(customizationOptions.category), asc(customizationOptions.sortOrder))
-    return NextResponse.json(rows.map(option => option.code === 'VIP_FREE_NEW'
+    return NextResponse.json(rows.filter(option => isBookableCustomization(option.category, option.code)).map(option => option.code === 'VIP_FREE_NEW'
       ? { ...option, label: 'کیسه و لیف نو رایگان (شاهانه)', description: 'مخصوص بسته شاهانه، به‌صورت خودکار انتخاب می‌شود.' }
       : option))
   } catch (error) {
