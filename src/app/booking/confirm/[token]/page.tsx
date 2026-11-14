@@ -103,7 +103,7 @@ export default async function ConfirmPage({ params }: { params: Promise<{ token:
                 <span className="text-sm font-medium text-site-primary">{b.service.nameFa}</span>
               </div>
               <div className="mt-3 flex items-center justify-between gap-3 border-t border-[var(--border-base)] pt-3">
-                <span className="text-xs text-site-muted">مراجع</span>
+                <span className="text-xs text-site-muted">نام و نام خانوادگی</span>
                 <span dir="rtl" className="flex min-w-0 items-center gap-2 text-sm font-medium text-site-primary">
                   <span className={`shrink-0 rounded-md px-2 py-1 text-[10px] ${b.gender === 'FEMALE' ? 'bg-[#BD6D87]/10 text-[#974B66] dark:text-[#E7A8BC]' : 'bg-[#258273]/10 text-[#176457] dark:text-[#7CC8B7]'}`}>
                     {b.gender === 'FEMALE' ? 'خانم' : 'آقای'}
