@@ -1,7 +1,6 @@
 import { BookingStatus, bookings } from '@/db/schema'
 import { db } from '@/lib/db'
 import { and, asc, count, desc, eq, gte, gt, lt, ne } from 'drizzle-orm'
-import { GlassCard } from '@/components/ui/GlassCard'
 import { BookingDetailDialog } from '../bookings/BookingDetailDialog'
 import type { BookingRow } from '../bookings/columns'
 
@@ -104,14 +103,14 @@ export default async function DashboardPage() {
     <div>
       <h1 className="text-xl font-light mb-6" style={{ color: 'var(--text-primary)' }}>داشبورد</h1>
 
-      <div className="grid grid-cols-3 gap-4 mb-8">
+      <dl aria-label="آمار رزروها" className="mb-8 grid grid-cols-3 overflow-hidden rounded-3xl border border-border bg-card text-card-foreground">
         {([['رزرو امروز', todayCount], ['رزرو آینده', upcomingCount], ['پرداخت موفق', totalPaid]] as [string, number][]).map(([label, val]) => (
-          <GlassCard key={label} className="p-4 text-center">
-            <div className="text-2xl font-bold text-[#C6A55B] mb-1">{val.toLocaleString('fa-IR')}</div>
-            <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-faint)' }}>{label}</div>
-          </GlassCard>
+          <div key={label} className="flex min-w-0 flex-col gap-2 border-s border-border px-2.5 py-4 first:border-s-0 sm:gap-3 sm:px-6 sm:py-5">
+            <dt className="text-xs font-medium leading-5 text-muted-foreground sm:text-sm">{label}</dt>
+            <dd className="text-2xl font-semibold leading-none tabular-nums sm:text-4xl">{val.toLocaleString('fa-IR')}</dd>
+          </div>
         ))}
-      </div>
+      </dl>
 
       <h2 className="text-sm mb-4" style={{ color: 'var(--text-muted)' }}>رزروهای پیش رو</h2>
 

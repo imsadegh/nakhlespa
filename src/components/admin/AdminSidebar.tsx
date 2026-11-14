@@ -38,7 +38,12 @@ export function AdminSidebar() {
   }
 
   return (
-    <Sidebar side="right" dir="rtl" collapsible="icon">
+    <Sidebar
+      side="right"
+      dir="rtl"
+      collapsible="icon"
+      className="my-3 h-auto border-l-0! [&>[data-slot=sidebar-inner]]:overflow-hidden [&>[data-slot=sidebar-inner]]:rounded-l-3xl [&>[data-slot=sidebar-inner]]:border-y [&>[data-slot=sidebar-inner]]:border-l [&>[data-slot=sidebar-inner]]:border-sidebar-border"
+    >
       <SidebarHeader className="border-b border-sidebar-border px-3 py-4">
         <div className="flex items-center gap-2">
           <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-sidebar-primary/15 text-sidebar-primary group-data-[collapsible=icon]:hidden">
@@ -55,7 +60,7 @@ export function AdminSidebar() {
             variant="ghost"
             size="icon"
             onClick={toggleSidebar}
-            aria-label={open ? 'جمع کردن نوار کناری' : 'باز نگه داشتن نوار کناری'}
+            aria-label={open ? 'جمع کردن نوار کناری' : 'باز کردن نوار کناری'}
             title={open ? 'جمع کردن نوار کناری' : 'باز نگه داشتن نوار کناری'}
             className="hidden size-8 shrink-0 rounded-lg text-sidebar-foreground/65 hover:bg-sidebar-accent hover:text-sidebar-primary md:inline-flex group-data-[collapsible=icon]:mx-auto"
           >
@@ -75,13 +80,15 @@ export function AdminSidebar() {
                   <SidebarMenuItem key={href}>
                     <SidebarMenuButton
                       render={<Link href={href} />}
+                      aria-label={label}
+                      aria-current={active ? 'page' : undefined}
                       isActive={active}
                       size="lg"
                       tooltip={{ children: label, side: 'left' }}
-                      className="h-11 rounded-xl px-3 text-[0.9rem] font-medium transition-colors data-[active=true]:border-r-2 data-[active=true]:border-sidebar-primary data-[active=true]:bg-sidebar-primary/12 data-[active=true]:font-semibold data-[active=true]:text-sidebar-primary"
+                      className="h-11 rounded-xl px-3 text-[0.9rem] font-medium transition-colors data-[active=true]:border-r-2 data-[active=true]:border-sidebar-primary data-[active=true]:bg-sidebar-primary/12 data-[active=true]:font-semibold data-[active=true]:text-sidebar-primary group-data-[collapsible=icon]:mx-auto group-data-[collapsible=icon]:size-10! group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:data-[active=true]:border-r-0"
                     >
                       <Icon />
-                      <span>{label}</span>
+                      <span className="group-data-[collapsible=icon]:hidden">{label}</span>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 )
@@ -92,10 +99,10 @@ export function AdminSidebar() {
       </SidebarContent>
 
       <SidebarFooter className="gap-2 border-t border-sidebar-border px-2 pb-4 pt-3">
-        <ThemeToggle className="group-data-[collapsible=icon]:size-8 group-data-[collapsible=icon]:p-0 group-data-[collapsible=icon]:[&_span]:hidden" />
-        <SidebarMenuButton onClick={handleLogout} size="lg" className="h-11 rounded-xl px-3 text-destructive hover:bg-destructive/10 hover:text-destructive group-data-[collapsible=icon]:[&>span:last-child]:hidden">
+        <ThemeToggle className="group-data-[collapsible=icon]:mx-auto group-data-[collapsible=icon]:size-10 group-data-[collapsible=icon]:rounded-xl group-data-[collapsible=icon]:p-0 group-data-[collapsible=icon]:[&_span]:hidden" />
+        <SidebarMenuButton onClick={handleLogout} aria-label="خروج" size="lg" className="h-11 rounded-xl px-3 text-destructive hover:bg-destructive/10 hover:text-destructive group-data-[collapsible=icon]:mx-auto group-data-[collapsible=icon]:size-10! group-data-[collapsible=icon]:justify-center">
           <LogOut />
-          <span>خروج</span>
+          <span className="group-data-[collapsible=icon]:hidden">خروج</span>
         </SidebarMenuButton>
       </SidebarFooter>
     </Sidebar>
