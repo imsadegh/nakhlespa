@@ -3,6 +3,7 @@ import { eq } from 'drizzle-orm'
 import { db } from '@/lib/db'
 import { services } from '@/db/schema'
 import { getSlotsForServices } from '@/lib/slots'
+import { MAX_SIMULTANEOUS_BOOKINGS } from '@/lib/booking-timing'
 import type { Gender } from '@/types'
 
 type SlotBookingPlan = { serviceId: string; addonIds: string[] }
@@ -49,7 +50,7 @@ export async function GET(req: NextRequest) {
     }
 
     const count = countParam ? Number(countParam) : 1
-    if (!Number.isInteger(count) || count < 1 || count > 4) {
+    if (!Number.isInteger(count) || count < 1 || count > MAX_SIMULTANEOUS_BOOKINGS) {
       return NextResponse.json({ error: 'Invalid booking count' }, { status: 400 })
     }
     const [service] = await db.select().from(services).where(eq(services.id, serviceId)).limit(1)

@@ -4,7 +4,7 @@ import { BookingStatus, addons, blockedSlots, bookings, services, workingHours }
 import type { Gender, SlotDTO } from '@/types'
 import { isSlotPast } from '@/lib/slot-time'
 import { getCustomizationTier, PAUSED_BATH_ADDON } from '@/lib/spa-packages'
-import { getAvailablePlaces, getReservedMinutes } from '@/lib/booking-timing'
+import { getAvailablePlaces, getReservedMinutes, MAX_SIMULTANEOUS_BOOKINGS } from '@/lib/booking-timing'
 
 function timeToMinutes(time: string) {
   const [hours, minutes] = time.split(':').map(Number)
@@ -21,7 +21,7 @@ export async function getSlotsForServices(
   gender: Gender,
   reader: Pick<typeof db, 'select'> = db,
 ): Promise<SlotDTO[]> {
-  if (bookingPlans.length === 0 || bookingPlans.length > 4 || !/^\d{4}-\d{2}-\d{2}$/.test(date)) return []
+  if (bookingPlans.length === 0 || bookingPlans.length > MAX_SIMULTANEOUS_BOOKINGS || !/^\d{4}-\d{2}-\d{2}$/.test(date)) return []
 
   const jsDate = new Date(`${date}T00:00:00Z`)
   if (Number.isNaN(jsDate.getTime()) || jsDate.toISOString().slice(0, 10) !== date) return []
@@ -63,8 +63,6 @@ export async function getSlotsForServices(
   const blockedRanges = blocked
     .filter(range => range.gender === null || range.gender === gender)
     .map(range => ({ start: timeToMinutes(range.startTime), end: timeToMinutes(range.endTime) }))
-  const regularRanges = ranges.filter(range => !range.vip)
-  const vipRanges = ranges.filter(range => range.vip)
   const longest = plans[0].duration
   const close = timeToMinutes(workingDay.closeTime)
   const slots: SlotDTO[] = []
@@ -79,20 +77,20 @@ export async function getSlotsForServices(
     }
 
     let taken = false
-    const groupRanges = { regular: [...regularRanges], vip: [...vipRanges] }
+    const groupRanges = [...ranges]
     let availableCount = plans.length
     for (const { service, duration } of plans) {
       const vip = getCustomizationTier(service.nameFa, service.tier) === 3
-      const pool = vip ? groupRanges.vip : groupRanges.regular
       const end = start + duration
-      const remaining = getAvailablePlaces(vip ? 1 : 3, pool, start, end)
-      if (plans.length === 1) availableCount = remaining
-      const roomTaken = service.tier !== null && pool.some(range => range.serviceId === service.id && range.start < end && range.end > start)
-      if (remaining < 1 || roomTaken) {
+      const remaining = getAvailablePlaces(MAX_SIMULTANEOUS_BOOKINGS, groupRanges, start, end)
+      const vipTaken = vip && groupRanges.some(range => range.vip && range.start < end && range.end > start)
+      if (plans.length === 1) availableCount = vip ? Math.min(1, remaining) : remaining
+      const roomTaken = service.tier !== null && groupRanges.some(range => range.serviceId === service.id && range.start < end && range.end > start)
+      if (remaining < 1 || vipTaken || roomTaken) {
         taken = true
         break
       }
-      pool.push({ serviceId: service.id, start, end, vip })
+      groupRanges.push({ serviceId: service.id, start, end, vip })
     }
     slots.push({ startTime, endTime, taken, availableCount: taken ? 0 : availableCount })
   }

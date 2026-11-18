@@ -4,6 +4,7 @@ import { GlassCard } from '@/components/ui/GlassCard'
 import { GoldButton } from '@/components/ui/GoldButton'
 import { getCustomizationAdditionalPrice, getDefaultCustomization, normalizeCustomization } from '@/lib/booking-customization'
 import { CONSULTATION_DESCRIPTION, CONSULTATION_NAME, getCustomizationTier, ONLINE_BOOKABLE_SERVICES, SPA_PACKAGE_NAMES } from '@/lib/spa-packages'
+import { MAX_SIMULTANEOUS_BOOKINGS } from '@/lib/booking-timing'
 import type { ServiceDTO, AddonDTO, WizardState, Person } from '@/types'
 
 type Props = {
@@ -60,7 +61,7 @@ export function Step1Service({ state, update, goNext, services, addons }: Props)
   const vipCount = persons.filter(person =>
     bookableServices.some(service => service.id === person.serviceId && getCustomizationTier(service.nameFa, service.tier) === 3),
   ).length
-  const exceedsCapacity = vipCount > 1 || (allPersonsHaveService && persons.length - vipCount > 3)
+  const exceedsCapacity = vipCount > 1 || persons.length > MAX_SIMULTANEOUS_BOOKINGS
 
   function setPerson(index: number, patch: Partial<Person>) {
     update({ persons: updatePerson(persons, index, patch) })
@@ -202,7 +203,7 @@ export function Step1Service({ state, update, goNext, services, addons }: Props)
       </div>
 
       {/* Add person button — only show when all current persons have a service selected */}
-      {allPersonsHaveService && persons.length < 4 && (
+      {allPersonsHaveService && persons.length < MAX_SIMULTANEOUS_BOOKINGS && (
         <button type="button" onClick={addPerson}
           className="w-full mt-3 py-2.5 rounded-xl text-xs transition-all"
           style={{ color: '#C6A55B', border: '1px dashed rgba(198,165,91,0.5)', background: 'rgba(198,165,91,0.04)' }}>
@@ -217,7 +218,7 @@ export function Step1Service({ state, update, goNext, services, addons }: Props)
         </div>
       )}
 
-      {exceedsCapacity && <p role="status" className="mb-3 text-xs text-muted-foreground">برای هر نوبت می‌توانید حداکثر سه خدمت عادی و یک بسته شاهانه رزرو کنید.</p>}
+      {exceedsCapacity && <p role="status" className="mb-3 text-xs text-muted-foreground">برای هر نوبت می‌توانید برای دو نفر رزرو کنید. در هر نوبت فقط یک بسته شاهانه قابل رزرو است.</p>}
       <GoldButton className="w-full" onClick={goNext} disabled={!allPersonsHaveService || exceedsCapacity}>ادامه ←</GoldButton>
     </div>
   )

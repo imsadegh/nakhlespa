@@ -1,3 +1,5 @@
+export const MAX_SIMULTANEOUS_BOOKINGS = 2
+
 type TimeRange = { start: number; end: number }
 
 export function getReservedMinutes(sessionMinutes: number) {

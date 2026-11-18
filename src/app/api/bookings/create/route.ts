@@ -8,7 +8,7 @@ import { CUSTOMIZATION_CATALOG, getCustomizationAdditionalPriceFromCatalog, toCu
 import { validateHealthIntake } from '@/lib/health-intake'
 import { getSlotsForServices } from '@/lib/slots'
 import { getCustomizationTier, ONLINE_BOOKABLE_SERVICES, PAUSED_BATH_ADDON, SPA_PACKAGE_NAMES } from '@/lib/spa-packages'
-import { getReservedMinutes } from '@/lib/booking-timing'
+import { getReservedMinutes, MAX_SIMULTANEOUS_BOOKINGS } from '@/lib/booking-timing'
 import type { Booking } from '@/db/schema'
 import { randomUUID } from 'crypto'
 import type { BookingCreateInput, BookingCustomization, Gender } from '@/types'
@@ -33,8 +33,8 @@ export async function POST(req: NextRequest) {
   }
 
   const { bookings, promoCode } = body
-  if (!Array.isArray(bookings) || bookings.length === 0 || bookings.length > 4) {
-    return NextResponse.json({ error: 'bookings must contain one to four guests' }, { status: 400 })
+  if (!Array.isArray(bookings) || bookings.length === 0 || bookings.length > MAX_SIMULTANEOUS_BOOKINGS) {
+    return NextResponse.json({ error: 'bookings must contain one or two guests' }, { status: 400 })
   }
 
   for (const b of bookings) {
