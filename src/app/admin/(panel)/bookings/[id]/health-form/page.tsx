@@ -28,7 +28,7 @@ function formatDate(date: Date) {
   return new Date(`${date.toISOString().split('T')[0]}T12:00:00`).toLocaleDateString('fa-IR')
 }
 
-export function HealthFormPage({ booking }: { booking: PrintableBooking }) {
+function HealthFormPage({ booking }: { booking: PrintableBooking }) {
   const intake = booking.healthIntake
   const sections = HEALTH_INTAKE_SECTIONS.map(section => ({
     ...section,

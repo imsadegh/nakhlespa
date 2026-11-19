@@ -3,14 +3,14 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
-import { BookingStatus } from '@/db/schema'
+import { BookingStatus, type BookingStatusValue } from '@/db/enums'
 
-export function BookingActions({ bookingId, currentStatus }: { bookingId: string; currentStatus: BookingStatus }) {
+export function BookingActions({ bookingId, currentStatus }: { bookingId: string; currentStatus: BookingStatusValue }) {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
-  async function updateStatus(status: BookingStatus) {
+  async function updateStatus(status: BookingStatusValue) {
     setLoading(true)
     setError('')
     try {

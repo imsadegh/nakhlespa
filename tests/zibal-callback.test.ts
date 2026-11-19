@@ -10,19 +10,34 @@ const payer = {
   status: BookingStatus.PENDING_PAYMENT, discountAmount: 50, addonsPricePaid: 20,
   date: new Date('2026-11-01'), startTime: '10:00', customerName: 'Customer', customerPhone: '09123456789',
 }
+const friend = {
+  ...payer, id: 'friend', token: 'friend-confirmation', bookingCode: 'NS-FRIEND1',
+  addonsPricePaid: 10, customerName: 'Friend', customerPhone: '09876543210',
+}
+const groupRows = [
+  { booking: payer, service: { nameFa: 'spa', price: 100 } },
+  { booking: friend, service: { nameFa: 'spa', price: 100 } },
+]
 let verified = false
 let rejectPayment = false
 let failSms = false
 let expectedAmount = 190
 let writes: Record<string, unknown>[] = []
 let notifications = 0
+let joinedReads = 0
+let queuedJobs: { name: string; data: { phone: string; template: string } }[] = []
 let customizations = [{ pricePaid: 30 }]
 
 const db = {
   select() {
     return { from(table: unknown) {
       return {
-        innerJoin() { return { where() { return { limit: async () => [{ booking: payer, service: { nameFa: 'spa' } }] } } } },
+        innerJoin() { return { where() {
+          joinedReads++
+          return joinedReads === 1
+            ? { limit: async () => [{ booking: payer, service: { nameFa: 'spa', price: 100 } }] }
+            : Promise.resolve(groupRows)
+        } } },
         where: async () => table === services ? [{ id: 'service', price: 100 }]
           : table === bookingCustomizations ? customizations : [payer, { ...payer, id: 'second', addonsPricePaid: 10 }],
       }
@@ -49,12 +64,14 @@ mock.module('@/lib/zibal', () => ({ zibalVerify: async (trackId: string, amount:
   verified = true
   return { refId: '9876' }
 } }))
-mock.module('@/lib/queue', () => ({ smsQueue: { add: async () => {
+mock.module('@/lib/queue', () => ({ smsQueue: { add: async (name: string, data: { phone: string; template: string }) => {
   notifications++
+  queuedJobs.push({ name, data })
   if (failSms) throw new Error('queue unavailable')
 } } }))
 const confirmSms = mock(async (_mobile: string, _params: unknown) => {})
-mock.module('@/lib/smsir', () => ({ sendConfirmSms: confirmSms, sendAdminSms: async () => {} }))
+const adminSms = mock(async (_mobile: string, _params: unknown) => {})
+mock.module('@/lib/smsir', () => ({ sendConfirmSms: confirmSms, sendAdminSms: adminSms }))
 const { GET } = await import('../src/app/api/bookings/verify/route')
 
 beforeEach(() => {
@@ -63,18 +80,31 @@ beforeEach(() => {
   failSms = false
   writes = []
   notifications = 0
+  joinedReads = 0
+  queuedJobs = []
   confirmSms.mockClear()
+  adminSms.mockClear()
   payer.status = BookingStatus.PENDING_PAYMENT
   customizations = [{ pricePaid: 30 }]
   expectedAmount = 210
 })
 
-test('verifies group services, add-ons, customization prices and one group discount before recording payment', async () => {
+test('sends each group member confirmations and reminders and notifies admin per booking', async () => {
   const response = await GET(new NextRequest('https://spa.test/api/bookings/verify?success=1&trackId=12345'))
   expect(response.headers.get('location')).toBe('https://spa.test/booking/confirm/confirmation')
   expect(writes[0]).toEqual({ status: BookingStatus.PAID, zibalRefId: '9876' })
-  expect(notifications).toBe(2)
-  expect(confirmSms.mock.calls[0][1]).toMatchObject({ bookingCode: 'NS-1234ABCD' })
+  expect(notifications).toBe(4)
+  expect(confirmSms.mock.calls.map(([phone, params]) => [phone, params.bookingCode])).toEqual([
+    ['09123456789', 'NS-1234ABCD'], ['09876543210', 'NS-FRIEND1'],
+  ])
+  expect(adminSms.mock.calls.map(([phone, params]) => [phone, params.name, params.phone])).toEqual([
+    [process.env.ADMIN_PHONE, 'Customer', '09123456789'],
+    [process.env.ADMIN_PHONE, 'Friend', '09876543210'],
+  ])
+  expect(queuedJobs.map(({ name, data }) => [name, data.phone]).sort()).toEqual([
+    ['reminder-24h', '09123456789'], ['reminder-24h', '09876543210'],
+    ['reminder-2h', '09123456789'], ['reminder-2h', '09876543210'],
+  ].sort())
 })
 
 test('never records a failed verification as paid', async () => {

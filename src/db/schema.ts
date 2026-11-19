@@ -1,5 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { relations } from 'drizzle-orm'
+import { BookingStatus } from './enums'
+export { BookingStatus } from './enums'
 import type { BookingCustomization } from '@/types'
 import type { HealthIntake } from '@/lib/health-intake'
 import {
@@ -26,12 +28,6 @@ export const smsReminderStatusEnum = pgEnum('SmsReminderStatus', ['PENDING', 'SE
 export const discountTypeEnum = pgEnum('DiscountType', ['PERCENT', 'FIXED'])
 
 export const Gender = { FEMALE: 'FEMALE', MALE: 'MALE' } as const
-export const BookingStatus = {
-  PENDING_PAYMENT: 'PENDING_PAYMENT',
-  PAID: 'PAID',
-  CONFIRMED: 'CONFIRMED',
-  CANCELLED: 'CANCELLED',
-} as const
 export const SmsReminderStatus = { PENDING: 'PENDING', SENDING: 'SENDING', SENT: 'SENT', FAILED: 'FAILED' } as const
 export const DiscountType = { PERCENT: 'PERCENT', FIXED: 'FIXED' } as const
 

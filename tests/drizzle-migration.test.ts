@@ -301,11 +301,11 @@ describe('Task 5 admin, customer, and public migration', () => {
     }
   })
 
-  test('uses shared Drizzle enum values for UI-facing status and gender types', () => {
+  test('uses shared enum values without importing Drizzle schema into client UI', () => {
     expect(readFileSync('src/types/index.ts', 'utf8')).toContain("from '@/db/schema'")
+    expect(readFileSync('src/components/admin/BookingActions.tsx', 'utf8')).toContain("from '@/db/enums'")
     for (const file of [
       'src/components/customer/BookingHistoryList.tsx',
-      'src/components/admin/BookingActions.tsx',
       'src/app/admin/(panel)/bookings/columns.tsx',
       'src/app/my/bookings/page.tsx',
       'src/app/my/bookings/[token]/page.tsx',

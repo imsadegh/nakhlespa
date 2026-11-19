@@ -4,7 +4,7 @@ import { useState } from "react"
 import type { ReactNode } from "react"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
-import { BookingStatus } from "@/db/schema"
+import { BookingStatus, type BookingStatusValue } from "@/db/enums"
 import {
   Dialog,
   DialogContent,
@@ -23,14 +23,14 @@ import type { BookingRow, BookingAddonRow, BookingCustomizationPriceRow } from "
 import { formatCustomization } from '@/lib/booking-customization'
 import { HEALTH_INTAKE_SECTIONS } from '@/lib/health-intake'
 
-const statusLabel: Record<BookingStatus, string> = {
+const statusLabel: Record<BookingStatusValue, string> = {
   PENDING_PAYMENT: "در انتظار پرداخت",
   PAID: "پرداخت شده",
   CONFIRMED: "تأیید شده",
   CANCELLED: "لغو شده",
 }
 
-const statusStyle: Record<BookingStatus, string> = {
+const statusStyle: Record<BookingStatusValue, string> = {
   PENDING_PAYMENT: "bg-yellow-400/10 text-yellow-400",
   PAID: "bg-[rgba(198,165,91,0.15)] text-[#C6A55B]",
   CONFIRMED: "bg-[rgba(31,94,70,0.3)] text-[#4F6F52]",
@@ -51,9 +51,9 @@ export function BookingDetailDialog({
   const [cancelOpen, setCancelOpen] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
-  const [status, setStatus] = useState<BookingStatus>(booking.status)
+  const [status, setStatus] = useState<BookingStatusValue>(booking.status)
 
-  async function updateStatus(next: BookingStatus) {
+  async function updateStatus(next: BookingStatusValue) {
     setLoading(true)
     setError("")
     try {

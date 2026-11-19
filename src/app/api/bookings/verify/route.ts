@@ -36,25 +36,17 @@ export async function GET(req: NextRequest) {
     // Total price = sum of all bookings in the group
     const groupToken = payer.groupToken
     const allGroupBookings = groupToken
-      ? await db.select().from(bookings).where(eq(bookings.groupToken, groupToken))
-      : [payer]
+      ? await db.select({ booking: bookings, service: services }).from(bookings)
+        .innerJoin(services, eq(bookings.serviceId, services.id)).where(eq(bookings.groupToken, groupToken))
+      : [{ booking: payer, service: payer.service }]
 
     const totalPrice = allGroupBookings.reduce(
-      (s, b) => s + b.addonsPricePaid,
-      0
-    ) + await (async () => {
-      const svcIds = [...new Set(allGroupBookings.map(b => b.serviceId))]
-      const svcs = await db.select({ id: services.id, price: services.price }).from(services).where(inArray(services.id, svcIds))
-      const svcMap = new Map(svcs.map(s => [s.id, s.price]))
-      return allGroupBookings.reduce((s, b) => {
-        const price = svcMap.get(b.serviceId)
-        if (price === undefined) throw new Error(`Service ${b.serviceId} not found during verify`)
-        return s + price
-      }, 0)
-    })()
+      (sum, { booking, service }) => sum + booking.addonsPricePaid + service.price,
+      0,
+    )
 
     const customizations = await db.select({ pricePaid: bookingCustomizations.pricePaid }).from(bookingCustomizations)
-      .where(inArray(bookingCustomizations.bookingId, allGroupBookings.map(b => b.id)))
+      .where(inArray(bookingCustomizations.bookingId, allGroupBookings.map(({ booking }) => booking.id)))
     const customizationPrice = customizations.reduce((sum, item) => sum + item.pricePaid, 0)
     const { refId } = await zibalVerify(trackId, Math.max(0, totalPrice + customizationPrice - payer.discountAmount))
 
@@ -76,28 +68,26 @@ export async function GET(req: NextRequest) {
     // real SMS credentials or a running Redis reminder worker.
     if (MOCK_PAYMENT) return NextResponse.redirect(`${siteUrl}/booking/confirm/${payer.token}`)
 
-    // Schedule SMS reminders for payer only
-    const [h, m] = payer.startTime.split(':').map(Number)
-    const appointmentMs = payer.date.getTime() + (h * 60 + m) * 60 * 1000
-    const delay24h = Math.max(0, appointmentMs - 24 * 60 * 60 * 1000 - Date.now())
-    const delay2h = Math.max(0, appointmentMs - 2 * 60 * 60 * 1000 - Date.now())
+    await Promise.all(allGroupBookings.map(async ({ booking, service }) => {
+      const [h, m] = booking.startTime.split(':').map(Number)
+      const appointmentMs = booking.date.getTime() + (h * 60 + m) * 60 * 1000
+      const delay24h = Math.max(0, appointmentMs - 24 * 60 * 60 * 1000 - Date.now())
+      const delay2h = Math.max(0, appointmentMs - 2 * 60 * 60 * 1000 - Date.now())
+      const [reminder24, reminder2] = await db.transaction(async tx => {
+        const [reminder24] = await tx.insert(smsReminders).values({ bookingId: booking.id, sendAt: new Date(appointmentMs - 24 * 60 * 60 * 1000) }).returning()
+        const [reminder2] = await tx.insert(smsReminders).values({ bookingId: booking.id, sendAt: new Date(appointmentMs - 2 * 60 * 60 * 1000) }).returning()
+        return [reminder24, reminder2]
+      })
 
-    const reminders = await db.transaction(async tx => {
-      const [reminder24] = await tx.insert(smsReminders).values({ bookingId: payer.id, sendAt: new Date(appointmentMs - 24 * 60 * 60 * 1000) }).returning()
-      const [reminder2] = await tx.insert(smsReminders).values({ bookingId: payer.id, sendAt: new Date(appointmentMs - 2 * 60 * 60 * 1000) }).returning()
-      return [reminder24, reminder2]
-    })
-    const [reminder24, reminder2] = reminders
-
-    const dateFa = payer.date.toLocaleDateString('fa-IR')
-    const reminderParams = { name: payer.customerName, service: payer.service.nameFa, time: payer.startTime }
-
-    await Promise.all([
-      smsQueue.add('reminder-24h', { reminderId: reminder24.id, phone: payer.customerPhone, template: 'reminder24h', params: reminderParams }, { delay: delay24h }),
-      smsQueue.add('reminder-2h',  { reminderId: reminder2.id,  phone: payer.customerPhone, template: 'reminder2h', params: reminderParams }, { delay: delay2h }),
-      sendConfirmSms(payer.customerPhone, { name: payer.customerName, service: payer.service.nameFa, date: dateFa, time: payer.startTime, bookingCode: payer.bookingCode }),
-      sendAdminSms(process.env.ADMIN_PHONE!, { name: payer.customerName, service: payer.service.nameFa, date: dateFa, time: payer.startTime, phone: payer.customerPhone }),
-    ])
+      const dateFa = booking.date.toLocaleDateString('fa-IR')
+      const reminderParams = { name: booking.customerName, service: service.nameFa, time: booking.startTime }
+      await Promise.all([
+        smsQueue.add('reminder-24h', { reminderId: reminder24.id, phone: booking.customerPhone, template: 'reminder24h', params: reminderParams }, { delay: delay24h }),
+        smsQueue.add('reminder-2h', { reminderId: reminder2.id, phone: booking.customerPhone, template: 'reminder2h', params: reminderParams }, { delay: delay2h }),
+        sendConfirmSms(booking.customerPhone, { ...reminderParams, date: dateFa, bookingCode: booking.bookingCode }),
+        sendAdminSms(process.env.ADMIN_PHONE!, { ...reminderParams, date: dateFa, phone: booking.customerPhone }),
+      ])
+    }))
 
     return NextResponse.redirect(`${siteUrl}/booking/confirm/${payer.token}`)
   } catch (err) {
