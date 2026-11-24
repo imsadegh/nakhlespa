@@ -24,11 +24,12 @@ export const bookingStatusEnum = pgEnum('BookingStatus', [
   'CONFIRMED',
   'CANCELLED',
 ])
-export const smsReminderStatusEnum = pgEnum('SmsReminderStatus', ['PENDING', 'SENDING', 'SENT', 'FAILED'])
+export const smsReminderStatusEnum = pgEnum('SmsReminderStatus', ['PENDING', 'SENDING', 'SENT', 'FAILED', 'SKIPPED'])
+export const bookingSmsTemplateEnum = pgEnum('BookingSmsTemplate', ['confirm', 'reminder24h', 'reminder2h'])
 export const discountTypeEnum = pgEnum('DiscountType', ['PERCENT', 'FIXED'])
 
 export const Gender = { FEMALE: 'FEMALE', MALE: 'MALE' } as const
-export const SmsReminderStatus = { PENDING: 'PENDING', SENDING: 'SENDING', SENT: 'SENT', FAILED: 'FAILED' } as const
+export const SmsReminderStatus = { PENDING: 'PENDING', SENDING: 'SENDING', SENT: 'SENT', FAILED: 'FAILED', SKIPPED: 'SKIPPED' } as const
 export const DiscountType = { PERCENT: 'PERCENT', FIXED: 'FIXED' } as const
 
 export const services = pgTable(
@@ -193,6 +194,10 @@ export const smsReminders = pgTable(
       .notNull()
       .references(() => bookings.id, { onDelete: 'cascade', onUpdate: 'cascade' }),
     sendAt: timestamp('sendAt', { precision: 3 }).notNull(),
+    template: bookingSmsTemplateEnum('template'),
+    attempts: integer('attempts').notNull().default(0),
+    nextAttemptAt: timestamp('nextAttemptAt', { precision: 3 }),
+    providerMessageId: text('providerMessageId'),
     status: smsReminderStatusEnum('status').notNull().default('PENDING'),
     sentAt: timestamp('sentAt', { precision: 3 }),
     createdAt: timestamp('createdAt', { precision: 3 }).notNull().defaultNow(),

@@ -15,3 +15,7 @@ export function getTehranDate(now = new Date()): string {
 export function isSlotPast(date: string, startTime: string, now = new Date()): boolean {
   return `${date}T${startTime}` <= tehranDateTime(now)
 }
+
+export function getAppointmentTime(date: Date, startTime: string): number {
+  return Date.parse(`${date.toISOString().slice(0, 10)}T${startTime}+03:30`)
+}

@@ -64,6 +64,13 @@
       "when": 1794681608661,
       "tag": "0008_blocked-slot-date-range",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1795522077960,
+      "tag": "0009_booking-sms-outbox",
+      "breakpoints": true
     }
   ]
 }

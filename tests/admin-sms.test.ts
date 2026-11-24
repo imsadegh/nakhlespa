@@ -8,20 +8,20 @@ afterEach(() => post.mockReset())
 afterAll(() => post.mockRestore())
 
 test('sends to each distinct comma-separated admin number', async () => {
-  post.mockResolvedValue({ data: {} })
+  post.mockResolvedValue({ data: { status: 1 } })
   await sendAdminSms('09111111111, 09222222222, ,09111111111', params)
   expect(post.mock.calls.map(call => (call[1] as { mobile: string }).mobile)).toEqual(['09111111111', '09222222222'])
 })
 
 test('preserves single-recipient support and skips empty configuration', async () => {
-  post.mockResolvedValue({ data: {} })
+  post.mockResolvedValue({ data: { status: 1 } })
   await sendAdminSms('09111111111', params)
   await sendAdminSms('', params)
   expect(post).toHaveBeenCalledTimes(1)
 })
 
 test('attempts every recipient even when one delivery fails', async () => {
-  post.mockRejectedValueOnce(new Error('unavailable')).mockResolvedValueOnce({ data: {} })
+  post.mockRejectedValueOnce(new Error('unavailable')).mockResolvedValueOnce({ data: { status: 1 } })
   await expect(sendAdminSms('09111111111,09222222222', params)).rejects.toThrow('SMS send failed')
   expect(post).toHaveBeenCalledTimes(2)
 })

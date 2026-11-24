@@ -2,7 +2,7 @@
 
 Persian spa booking web app. Customers browse services and book appointments through a guided wizard with Zibal payment integration. Admins manage bookings, working hours, and blocked slots through a protected dashboard.
 
-**Stack:** Next.js 16 · Drizzle ORM · Better Auth · BullMQ · Redis · Tailwind v4 · Bun
+**Stack:** Next.js 16 · PostgreSQL · Drizzle ORM · Better Auth · Tailwind v4 · Bun
 
 ---
 
@@ -214,7 +214,7 @@ The normal release flow is:
 4. The workflow calls Dokploy's `POST /api/compose.deploy` endpoint with the Compose ID.
 5. Dokploy pulls the new image and recreates the services while retaining named volumes.
 
-Check the public home page, admin login, customer OTP login, booking flow, payment callback, and reminder queue. Confirm `worker-sms` logs show a running BullMQ worker and that PostgreSQL/Redis have no public listener. After verification, enable the Zibal callback for the production domain.
+Check the public home page, admin login, customer OTP login, booking flow, payment callback, and booking SMS. Confirm `worker-sms` logs show `Booking SMS worker started` and that PostgreSQL/Redis have no public listener. After verification, enable the Zibal callback for the production domain.
 
 If the image publish succeeds but the Dokploy call fails, use Dokploy's manual deploy after checking `DOKPLOY_URL`, `DOKPLOY_API_KEY`, and `DOKPLOY_COMPOSE_ID`. If a deployment fails, keep the previous image tag available and redeploy it by temporarily setting `NAKHLESPA_IMAGE` to its commit SHA tag; restore `latest` after the fix. Never delete the database or Redis volumes as a rollback step.
 
@@ -246,6 +246,10 @@ If a delivered message still contains a literal placeholder such as `#ORDER_NUMB
 |----------|---------|-----------|
 | `CONFIRM` | Payment verified | Customer |
 | `ADMIN` | Payment verified | `ADMIN_PHONE` |
-| `REMINDER_24H` | 24h before appointment (BullMQ delayed job) | Customer |
-| `REMINDER_2H` | 2h before appointment (BullMQ delayed job) | Customer |
+| `REMINDER_24H` | 24h before appointment | Customer |
+| `REMINDER_2H` | 2h before appointment | Customer |
 | `OTP` | Customer requests login to `/my/bookings` | Customer |
+
+On the first deployment of the PostgreSQL SMS worker, stop the old web and SMS worker containers before applying the migration. The migration corrects the scheduled times of pending reminders, and the new worker sends from the database. Leave the Redis volume intact during the rollout.
+
+To investigate a delayed customer SMS, run `bun run src/workers/sms-report.ts NS-1234ABCD` in the deployment environment. It prints the scheduled and submission times, retry count, and the SMS.ir delivery report when a provider message ID is available.

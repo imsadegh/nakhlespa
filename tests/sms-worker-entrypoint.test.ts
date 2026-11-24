@@ -1,60 +1,63 @@
 import { readFileSync } from 'node:fs'
-import { describe, expect, test } from 'bun:test'
-import { processSmsJob, type SmsJobData } from '@/lib/queue'
+import { afterEach, expect, mock, test } from 'bun:test'
+import { BookingStatus, SmsReminderStatus } from '@/db/schema'
+import { processSmsJob } from '@/lib/queue'
 
-const jobData: SmsJobData = {
-  reminderId: 'missing-reminder',
-  phone: '09123456789',
-  template: 'reminder24h',
-  params: { name: 'Test', service: 'Massage', time: '10:00' },
-}
+const writes: Record<string, unknown>[] = []
+let claimSucceeds = true
+type Dependencies = NonNullable<Parameters<typeof processSmsJob>[1]>
+const database = {
+  update: () => ({ set: (values: Record<string, unknown>) => {
+    writes.push(values)
+    return { where: () => ({ returning: async () => claimSucceeds ? [{ id: 'sms' }] : [] }) }
+  } }),
+} as unknown as Dependencies['database']
+const sendConfirm = mock(async () => 'provider-456')
+const sendReminder = mock(async () => 'provider-123')
+const dependencies = { database, sendConfirm, sendReminder }
 
-describe('production SMS worker boundary', () => {
-  test('does not send SMS when the reminder claim updates no rows', async () => {
-    const updates: string[] = []
-    let sent = false
+const due = {
+  sms: { id: 'sms', template: 'reminder2h', attempts: 0, status: SmsReminderStatus.PENDING, nextAttemptAt: new Date(0) },
+  booking: { status: BookingStatus.PAID, date: new Date('2090-01-01'), startTime: '10:00' },
+  serviceName: 'Massage',
+} as Parameters<typeof processSmsJob>[0]
 
-    await expect(
-      processSmsJob(jobData, {
-        updateReminder: async status => {
-          updates.push(status)
-          return false
-        },
-        sendSms: async () => {
-          sent = true
-        },
-      }),
-    ).rejects.toThrow('SMS reminder was not found')
+afterEach(() => {
+  writes.length = 0
+  claimSucceeds = true
+  sendConfirm.mockClear()
+  sendReminder.mockClear()
+})
 
-    expect(sent).toBe(false)
-    expect(updates).toEqual(['SENDING'])
+test('skips a reminder after its Tehran appointment', async () => {
+  await processSmsJob({ ...due, booking: { ...due.booking, date: new Date('2020-01-01') } }, dependencies)
+  expect(sendReminder).not.toHaveBeenCalled()
+  expect(writes[1]).toEqual({ status: SmsReminderStatus.SKIPPED, nextAttemptAt: null })
+})
+
+test('does not send when another worker has claimed the same message', async () => {
+  claimSucceeds = false
+  await processSmsJob(due, dependencies)
+  expect(sendReminder).not.toHaveBeenCalled()
+  expect(writes).toHaveLength(1)
+})
+
+test('retries a failed confirmation and saves its provider message ID on success', async () => {
+  const confirmation = { ...due, sms: { ...due.sms, template: 'confirm' as const } }
+  sendConfirm.mockRejectedValueOnce(new Error('provider unavailable'))
+  await processSmsJob(confirmation, dependencies)
+  expect(writes[1]).toMatchObject({ status: SmsReminderStatus.PENDING, nextAttemptAt: expect.any(Date) })
+  await processSmsJob({ ...confirmation, sms: { ...confirmation.sms, attempts: 1 } }, dependencies)
+  expect(writes[3]).toMatchObject({
+    status: SmsReminderStatus.SENT, providerMessageId: 'provider-456', sentAt: expect.any(Date),
   })
+})
 
-  test('sends SMS and marks the claimed reminder sent', async () => {
-    const updates: Array<{ status: string; sentAt?: Date }> = []
-
-    await processSmsJob(jobData, {
-      updateReminder: async (status, sentAt) => {
-        updates.push({ status, sentAt })
-        return true
-      },
-      sendSms: async () => {},
-    })
-
-    expect(updates.map(update => update.status)).toEqual(['SENDING', 'SENT'])
-    expect(updates[1]?.sentAt).toBeInstanceOf(Date)
-  })
-
-  test('does not start BullMQ from Next instrumentation', () => {
-    const source = readFileSync('src/instrumentation.ts', 'utf8')
-    expect(source).not.toContain('startSmsWorker()')
-  })
-
-  test('standalone worker owns startup and shutdown', () => {
-    const source = readFileSync('src/workers/sms.worker.ts', 'utf8')
-    expect(source).toContain("import { startSmsWorker } from '@/lib/queue'")
-    expect(source).toContain('startSmsWorker()')
-    expect(source).toContain("process.on('SIGTERM'")
-    expect(source).toContain("process.on('SIGINT'")
-  })
+test('standalone worker owns startup and shutdown', () => {
+  const instrumentation = readFileSync('src/instrumentation.ts', 'utf8')
+  const source = readFileSync('src/workers/sms.worker.ts', 'utf8')
+  expect(instrumentation).not.toContain('startSmsWorker()')
+  expect(source).toContain('startSmsWorker()')
+  expect(source).toContain("process.on('SIGTERM'")
+  expect(source).toContain("process.on('SIGINT'")
 })

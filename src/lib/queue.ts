@@ -1,67 +1,129 @@
-import { Queue, Worker, type Job } from 'bullmq'
-import { eq } from 'drizzle-orm'
+import { setTimeout as sleep } from 'node:timers/promises'
+import { and, asc, eq, inArray, lte } from 'drizzle-orm'
 import { db } from '@/lib/db'
-import { smsReminders, SmsReminderStatus, type SmsReminderStatusValue } from '@/db/schema'
-import { sendReminderSms } from '@/lib/smsir'
+import { bookings, BookingStatus, services, smsReminders, SmsReminderStatus } from '@/db/schema'
+import { sendConfirmSms, sendReminderSms } from '@/lib/smsir'
+import { getAppointmentTime } from '@/lib/slot-time'
 
-const connectionOpts = { url: process.env.REDIS_URL!, maxRetriesPerRequest: null as null }
+const POLL_MS = 5_000
+const CLAIM_MS = 120_000
+const RETRY_MS = [30_000, 120_000, 300_000]
 
-export const smsQueue = new Queue('sms-reminders', { connection: connectionOpts })
-
-export interface SmsJobData {
-  reminderId: string
-  phone: string
-  template: 'reminder24h' | 'reminder2h'
-  params: { name: string; service: string; time: string }
+async function findDueMessage(now: Date) {
+  const [message] = await db.select({
+    sms: smsReminders,
+    booking: bookings,
+    serviceName: services.nameFa,
+  }).from(smsReminders)
+    .innerJoin(bookings, eq(smsReminders.bookingId, bookings.id))
+    .innerJoin(services, eq(bookings.serviceId, services.id))
+    .where(and(
+      inArray(smsReminders.status, [SmsReminderStatus.PENDING, SmsReminderStatus.SENDING]),
+      lte(smsReminders.nextAttemptAt, now),
+    ))
+    .orderBy(asc(smsReminders.nextAttemptAt), asc(smsReminders.id))
+    .limit(1)
+  return message
 }
 
-type UpdateReminder = (status: SmsReminderStatusValue, sentAt?: Date) => Promise<boolean>
+type DueMessage = NonNullable<Awaited<ReturnType<typeof findDueMessage>>>
 
-interface SmsJobDependencies {
-  updateReminder?: UpdateReminder
-  sendSms?: typeof sendReminderSms
+export function shouldSkipBookingSms(
+  booking: Pick<DueMessage['booking'], 'status' | 'date' | 'startTime'>,
+  now: Date,
+): boolean {
+  return (booking.status !== BookingStatus.PAID && booking.status !== BookingStatus.CONFIRMED)
+    || now.getTime() >= getAppointmentTime(booking.date, booking.startTime)
 }
 
-async function updateReminderStatus(reminderId: string, status: SmsReminderStatusValue, sentAt?: Date) {
-  const updated = await db
-    .update(smsReminders)
-    .set(sentAt ? { status, sentAt } : { status })
-    .where(eq(smsReminders.id, reminderId))
-    .returning({ id: smsReminders.id })
+export async function processSmsJob(
+  { sms, booking, serviceName }: DueMessage,
+  { database = db, sendConfirm = sendConfirmSms, sendReminder = sendReminderSms }: {
+    database?: Pick<typeof db, 'update'>
+    sendConfirm?: typeof sendConfirmSms
+    sendReminder?: typeof sendReminderSms
+  } = {},
+) {
+  if (!sms.template || !sms.nextAttemptAt) return
 
-  return updated.length > 0
-}
+  const now = new Date()
+  const attempts = sms.attempts + 1
+  const [claimed] = await database.update(smsReminders).set({
+    status: SmsReminderStatus.SENDING,
+    attempts,
+    nextAttemptAt: new Date(now.getTime() + CLAIM_MS),
+  }).where(and(
+    eq(smsReminders.id, sms.id),
+    eq(smsReminders.status, sms.status),
+    eq(smsReminders.attempts, sms.attempts),
+    eq(smsReminders.nextAttemptAt, sms.nextAttemptAt),
+  )).returning({ id: smsReminders.id })
+  if (!claimed) return
 
-export async function processSmsJob(data: SmsJobData, dependencies: SmsJobDependencies = {}) {
-  const updateReminder = dependencies.updateReminder ?? ((status, sentAt) => updateReminderStatus(data.reminderId, status, sentAt))
-  const sendSms = dependencies.sendSms ?? sendReminderSms
-
-  const claimed = await updateReminder(SmsReminderStatus.SENDING)
-  if (!claimed) throw new Error('SMS reminder was not found')
-
-  try {
-    await sendSms(data.phone, data.template, data.params)
-
-    const markedSent = await updateReminder(SmsReminderStatus.SENT, new Date())
-    if (!markedSent) throw new Error('SMS reminder was not found')
-  } catch (err) {
-    await updateReminder(SmsReminderStatus.FAILED)
-    throw err
+  const claim = and(eq(smsReminders.id, sms.id), eq(smsReminders.attempts, attempts))
+  if (shouldSkipBookingSms(booking, new Date())) {
+    await database.update(smsReminders).set({
+      status: SmsReminderStatus.SKIPPED, nextAttemptAt: null,
+    }).where(claim)
+    return
   }
+  if (attempts > RETRY_MS.length + 1) {
+    await database.update(smsReminders).set({
+      status: SmsReminderStatus.FAILED, nextAttemptAt: null,
+    }).where(claim)
+    return
+  }
+
+  const params = { name: booking.customerName, service: serviceName, time: booking.startTime }
+  let providerMessageId: string | null
+  try {
+    providerMessageId = sms.template === 'confirm'
+      ? await sendConfirm(booking.customerPhone, {
+        ...params, bookingCode: booking.bookingCode,
+        date: booking.date.toLocaleDateString('fa-IR', { timeZone: 'UTC' }),
+      })
+      : await sendReminder(booking.customerPhone, sms.template, params)
+  } catch (error) {
+    const delay = RETRY_MS[attempts - 1]
+    await database.update(smsReminders).set({
+      status: delay === undefined ? SmsReminderStatus.FAILED : SmsReminderStatus.PENDING,
+      nextAttemptAt: delay === undefined ? null : new Date(Date.now() + delay),
+    }).where(claim)
+    console.error(`Booking SMS ${sms.id} attempt ${attempts} failed`, error)
+    return
+  }
+
+  await database.update(smsReminders).set({
+    status: SmsReminderStatus.SENT,
+    sentAt: new Date(),
+    nextAttemptAt: null,
+    providerMessageId,
+  }).where(claim)
 }
 
 export function startSmsWorker() {
-  const worker = new Worker<SmsJobData>(
-    'sms-reminders',
-    async (job: Job<SmsJobData>) => {
-      await processSmsJob(job.data)
+  let closing = false
+  const run = async () => {
+    console.log('Booking SMS worker started')
+    while (!closing) {
+      try {
+        const message = await findDueMessage(new Date())
+        if (message && !closing) {
+          await processSmsJob(message)
+          continue
+        }
+      } catch (error) {
+        console.error('Booking SMS worker error', error)
+      }
+      if (!closing) await sleep(POLL_MS)
+    }
+  }
+
+  const running = run()
+  return {
+    async close() {
+      closing = true
+      await running
     },
-    { connection: connectionOpts }
-  )
-
-  worker.on('failed', (job: Job<SmsJobData> | undefined, err: Error) => {
-    console.error(`SMS job ${job?.id} failed:`, err)
-  })
-
-  return worker
+  }
 }

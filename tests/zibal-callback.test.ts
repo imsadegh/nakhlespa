@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, expect, mock, spyOn, test } from 'bun:test'
 import { NextRequest } from 'next/server'
-import { bookings, services, bookingCustomizations, BookingStatus } from '../src/db/schema'
+import { services, bookingCustomizations, BookingStatus } from '../src/db/schema'
 
 process.env.NEXT_PUBLIC_SITE_URL = 'https://spa.test'
 process.env.ZIBAL_MOCK = 'false'
@@ -23,9 +23,8 @@ let rejectPayment = false
 let failSms = false
 let expectedAmount = 190
 let writes: Record<string, unknown>[] = []
-let notifications = 0
 let joinedReads = 0
-let queuedJobs: { name: string; data: { phone: string; template: string }; delay: number }[] = []
+let messages: { bookingId: string; template: string; sendAt: Date; nextAttemptAt: Date }[] = []
 let customizations = [{ pricePaid: 30 }]
 
 const db = {
@@ -52,7 +51,7 @@ const db = {
       } }
     } }
   },
-  insert() { return { values() { return { returning: async () => [{ id: 'reminder' }] } } } },
+  insert() { return { values: async (rows: typeof messages) => { messages.push(...rows) } } },
   async transaction(callback: (tx: any) => Promise<unknown>): Promise<unknown> { return callback(db) },
 }
 mock.module('@/lib/db', () => ({ db }))
@@ -64,14 +63,10 @@ mock.module('@/lib/zibal', () => ({ zibalVerify: async (trackId: string, amount:
   verified = true
   return { refId: '9876' }
 } }))
-mock.module('@/lib/queue', () => ({ smsQueue: { add: async (name: string, data: { phone: string; template: string }, { delay }: { delay: number }) => {
-  notifications++
-  queuedJobs.push({ name, data, delay })
-  if (failSms) throw new Error('queue unavailable')
-} } }))
-const confirmSms = mock(async (_mobile: string, _params: unknown) => {})
-const adminSms = mock(async (_mobile: string, _params: unknown) => {})
-mock.module('@/lib/smsir', () => ({ sendConfirmSms: confirmSms, sendAdminSms: adminSms }))
+const adminSms = mock(async (_mobile: string, _params: { name: string; phone: string }) => {
+  if (failSms) throw new Error('SMS unavailable')
+})
+mock.module('@/lib/smsir', () => ({ sendAdminSms: adminSms }))
 const { GET } = await import('../src/app/api/bookings/verify/route')
 
 let clock: ReturnType<typeof spyOn<typeof Date, 'now'>>
@@ -82,10 +77,8 @@ beforeEach(() => {
   rejectPayment = false
   failSms = false
   writes = []
-  notifications = 0
   joinedReads = 0
-  queuedJobs = []
-  confirmSms.mockClear()
+  messages = []
   adminSms.mockClear()
   payer.status = BookingStatus.PENDING_PAYMENT
   customizations = [{ pricePaid: 30 }]
@@ -97,18 +90,19 @@ afterEach(() => clock.mockRestore())
 test('schedules both reminder offsets in Tehran time', async () => {
   await GET(new NextRequest('https://spa.test/api/bookings/verify?success=1&trackId=12345'))
   const hour = 60 * 60 * 1000
-  expect(queuedJobs.map(({ name, delay }) => [name, delay]).sort()).toEqual([
-    ['reminder-24h', 24 * hour], ['reminder-24h', 24 * hour],
-    ['reminder-2h', 46 * hour], ['reminder-2h', 46 * hour],
+  expect(messages.map(({ template, sendAt }) => [template, sendAt.getTime() - Date.now()]).sort()).toEqual([
+    ['confirm', 0], ['confirm', 0],
+    ['reminder24h', 24 * hour], ['reminder24h', 24 * hour],
+    ['reminder2h', 46 * hour], ['reminder2h', 46 * hour],
   ])
 })
 
-test('for a booking three hours away, sends confirmation and queues only the two-hour reminder', async () => {
+test('for a booking three hours away, schedules confirmation and only the two-hour reminder', async () => {
   clock.mockReturnValue(Date.parse('2026-11-01T03:30:00Z'))
   await GET(new NextRequest('https://spa.test/api/bookings/verify?success=1&trackId=12345'))
-  expect(confirmSms).toHaveBeenCalledTimes(2)
-  expect(queuedJobs.map(({ name, delay }) => [name, delay])).toEqual([
-    ['reminder-2h', 60 * 60 * 1000], ['reminder-2h', 60 * 60 * 1000],
+  expect(messages.map(({ template, nextAttemptAt }) => [template, nextAttemptAt.getTime() - Date.now()]).sort()).toEqual([
+    ['confirm', 0], ['confirm', 0],
+    ['reminder2h', 60 * 60 * 1000], ['reminder2h', 60 * 60 * 1000],
   ])
 })
 
@@ -116,17 +110,14 @@ test('sends each group member confirmations and reminders and notifies admin per
   const response = await GET(new NextRequest('https://spa.test/api/bookings/verify?success=1&trackId=12345'))
   expect(response.headers.get('location')).toBe('https://spa.test/booking/confirm/confirmation')
   expect(writes[0]).toEqual({ status: BookingStatus.PAID, zibalRefId: '9876' })
-  expect(notifications).toBe(4)
-  expect(confirmSms.mock.calls.map(([phone, params]) => [phone, params.bookingCode])).toEqual([
-    ['09123456789', 'NS-1234ABCD'], ['09876543210', 'NS-FRIEND1'],
-  ])
   expect(adminSms.mock.calls.map(([phone, params]) => [phone, params.name, params.phone])).toEqual([
     [process.env.ADMIN_PHONE, 'Customer', '09123456789'],
     [process.env.ADMIN_PHONE, 'Friend', '09876543210'],
   ])
-  expect(queuedJobs.map(({ name, data }) => [name, data.phone]).sort()).toEqual([
-    ['reminder-24h', '09123456789'], ['reminder-24h', '09876543210'],
-    ['reminder-2h', '09123456789'], ['reminder-2h', '09876543210'],
+  expect(messages.map(({ template, bookingId }) => [template, bookingId]).sort()).toEqual([
+    ['confirm', 'payer'], ['confirm', 'friend'],
+    ['reminder24h', 'payer'], ['reminder24h', 'friend'],
+    ['reminder2h', 'payer'], ['reminder2h', 'friend'],
   ].sort())
 })
 
@@ -135,6 +126,7 @@ test('never records a failed verification as paid', async () => {
   const response = await GET(new NextRequest('https://spa.test/api/bookings/verify?success=1&trackId=12345'))
   expect(response.headers.get('location')).toBe('https://spa.test/booking/failed')
   expect(writes).toHaveLength(0)
+  expect(messages).toHaveLength(0)
 })
 
 test('keeps payment confirmed when notifications fail', async () => {
@@ -142,6 +134,7 @@ test('keeps payment confirmed when notifications fail', async () => {
   const response = await GET(new NextRequest('https://spa.test/api/bookings/verify?success=1&trackId=12345'))
   expect(response.headers.get('location')).toBe('https://spa.test/booking/confirm/confirmation')
   expect(writes.every(values => values.status === BookingStatus.PAID)).toBe(true)
+  expect(messages.filter(({ template }) => template === 'confirm')).toHaveLength(2)
 })
 
 test('a repeated callback does not send notifications again', async () => {
@@ -149,7 +142,7 @@ test('a repeated callback does not send notifications again', async () => {
   const response = await GET(new NextRequest('https://spa.test/api/bookings/verify?success=1&trackId=12345'))
   expect(response.headers.get('location')).toBe('https://spa.test/booking/confirm/confirmation')
   expect(verified).toBe(false)
-  expect(notifications).toBe(0)
+  expect(messages).toHaveLength(0)
 })
 
 test('rejects cancelled and malformed callbacks', async () => {

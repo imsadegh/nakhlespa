@@ -1,6 +1,11 @@
 import axios from 'axios'
 
 const API_KEY = process.env.SMSIR_API_KEY!
+const API_URL = 'https://api.sms.ir/v1/send'
+const requestOptions = {
+  timeout: 10_000,
+  headers: { 'x-api-key': API_KEY, Accept: 'application/json' },
+}
 
 const TEMPLATE_IDS = {
   confirm:     Number(process.env.SMSIR_TEMPLATE_CONFIRM!),
@@ -13,20 +18,29 @@ export type SmsTemplate = keyof typeof TEMPLATE_IDS
 
 async function sendPattern(mobile: string, templateId: number, parameters: { name: string; value: string }[]) {
   try {
-    await axios.post(
-      'https://api.sms.ir/v1/send/verify',
+    const { data } = await axios.post<{ status: number; data?: { messageId?: number } }>(
+      `${API_URL}/verify`,
       { mobile, templateId, parameters },
-      {
-        headers: {
-          'x-api-key': API_KEY,
-          'Content-Type': 'application/json',
-          'Accept': 'text/plain',
-        },
-      }
+      requestOptions,
     )
-  } catch (err: any) {
-    throw new Error(`SMS send failed for ${mobile}: ${err?.response?.data?.message ?? err?.message}`)
+    if (data?.status !== 1) throw new Error(`SMS.ir response status ${data?.status ?? 'missing'}`)
+    return data.data?.messageId == null ? null : String(data.data.messageId)
+  } catch (error) {
+    const reason = axios.isAxiosError(error)
+      ? error.response?.status ?? error.code ?? 'request failed'
+      : error instanceof Error ? error.message : 'request failed'
+    throw new Error(`SMS send failed (${reason})`)
   }
+}
+
+export async function getSmsDeliveryReport(messageId: string) {
+  const { data } = await axios.get<{
+    status: number
+    data?: { sendDateTime: number; deliveryState: number | null; deliveryDateTime: number | null }
+  }>(`${API_URL}/${encodeURIComponent(messageId)}`, requestOptions)
+  if (data?.status !== 1 || !data.data) throw new Error('SMS.ir delivery report unavailable')
+  const { sendDateTime, deliveryState, deliveryDateTime } = data.data
+  return { sendDateTime, deliveryState, deliveryDateTime }
 }
 
 export async function sendConfirmSms(mobile: string, params: { name: string; service: string; date: string; time: string; bookingCode: string }) {
