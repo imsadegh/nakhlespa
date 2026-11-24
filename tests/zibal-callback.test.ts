@@ -1,4 +1,4 @@
-import { beforeEach, expect, mock, test } from 'bun:test'
+import { afterEach, beforeEach, expect, mock, spyOn, test } from 'bun:test'
 import { NextRequest } from 'next/server'
 import { bookings, services, bookingCustomizations, BookingStatus } from '../src/db/schema'
 
@@ -25,7 +25,7 @@ let expectedAmount = 190
 let writes: Record<string, unknown>[] = []
 let notifications = 0
 let joinedReads = 0
-let queuedJobs: { name: string; data: { phone: string; template: string } }[] = []
+let queuedJobs: { name: string; data: { phone: string; template: string }; delay: number }[] = []
 let customizations = [{ pricePaid: 30 }]
 
 const db = {
@@ -64,9 +64,9 @@ mock.module('@/lib/zibal', () => ({ zibalVerify: async (trackId: string, amount:
   verified = true
   return { refId: '9876' }
 } }))
-mock.module('@/lib/queue', () => ({ smsQueue: { add: async (name: string, data: { phone: string; template: string }) => {
+mock.module('@/lib/queue', () => ({ smsQueue: { add: async (name: string, data: { phone: string; template: string }, { delay }: { delay: number }) => {
   notifications++
-  queuedJobs.push({ name, data })
+  queuedJobs.push({ name, data, delay })
   if (failSms) throw new Error('queue unavailable')
 } } }))
 const confirmSms = mock(async (_mobile: string, _params: unknown) => {})
@@ -74,7 +74,10 @@ const adminSms = mock(async (_mobile: string, _params: unknown) => {})
 mock.module('@/lib/smsir', () => ({ sendConfirmSms: confirmSms, sendAdminSms: adminSms }))
 const { GET } = await import('../src/app/api/bookings/verify/route')
 
+let clock: ReturnType<typeof spyOn<typeof Date, 'now'>>
+
 beforeEach(() => {
+  clock = spyOn(Date, 'now').mockReturnValue(Date.parse('2026-10-30T06:30:00Z'))
   verified = false
   rejectPayment = false
   failSms = false
@@ -87,6 +90,26 @@ beforeEach(() => {
   payer.status = BookingStatus.PENDING_PAYMENT
   customizations = [{ pricePaid: 30 }]
   expectedAmount = 210
+})
+
+afterEach(() => clock.mockRestore())
+
+test('schedules both reminder offsets in Tehran time', async () => {
+  await GET(new NextRequest('https://spa.test/api/bookings/verify?success=1&trackId=12345'))
+  const hour = 60 * 60 * 1000
+  expect(queuedJobs.map(({ name, delay }) => [name, delay]).sort()).toEqual([
+    ['reminder-24h', 24 * hour], ['reminder-24h', 24 * hour],
+    ['reminder-2h', 46 * hour], ['reminder-2h', 46 * hour],
+  ])
+})
+
+test('for a booking three hours away, sends confirmation and queues only the two-hour reminder', async () => {
+  clock.mockReturnValue(Date.parse('2026-11-01T03:30:00Z'))
+  await GET(new NextRequest('https://spa.test/api/bookings/verify?success=1&trackId=12345'))
+  expect(confirmSms).toHaveBeenCalledTimes(2)
+  expect(queuedJobs.map(({ name, delay }) => [name, delay])).toEqual([
+    ['reminder-2h', 60 * 60 * 1000], ['reminder-2h', 60 * 60 * 1000],
+  ])
 })
 
 test('sends each group member confirmations and reminders and notifies admin per booking', async () => {

@@ -7,6 +7,11 @@ import { smsQueue } from '@/lib/queue'
 import { sendConfirmSms, sendAdminSms } from '@/lib/smsir'
 
 const MOCK_PAYMENT = process.env.NODE_ENV !== 'production' && process.env.ZIBAL_MOCK === 'true'
+const HOUR_MS = 60 * 60 * 1000
+const REMINDERS = [
+  { hoursBefore: 24, name: 'reminder-24h', template: 'reminder24h' },
+  { hoursBefore: 2, name: 'reminder-2h', template: 'reminder2h' },
+] as const
 
 export async function GET(req: NextRequest) {
   const trackId = req.nextUrl.searchParams.get('trackId')
@@ -69,21 +74,21 @@ export async function GET(req: NextRequest) {
     if (MOCK_PAYMENT) return NextResponse.redirect(`${siteUrl}/booking/confirm/${payer.token}`)
 
     await Promise.all(allGroupBookings.map(async ({ booking, service }) => {
-      const [h, m] = booking.startTime.split(':').map(Number)
-      const appointmentMs = booking.date.getTime() + (h * 60 + m) * 60 * 1000
-      const delay24h = Math.max(0, appointmentMs - 24 * 60 * 60 * 1000 - Date.now())
-      const delay2h = Math.max(0, appointmentMs - 2 * 60 * 60 * 1000 - Date.now())
-      const [reminder24, reminder2] = await db.transaction(async tx => {
-        const [reminder24] = await tx.insert(smsReminders).values({ bookingId: booking.id, sendAt: new Date(appointmentMs - 24 * 60 * 60 * 1000) }).returning()
-        const [reminder2] = await tx.insert(smsReminders).values({ bookingId: booking.id, sendAt: new Date(appointmentMs - 2 * 60 * 60 * 1000) }).returning()
-        return [reminder24, reminder2]
-      })
-
+      const bookingDay = booking.date.toISOString().slice(0, 10)
+      const appointmentMs = Date.parse(`${bookingDay}T${booking.startTime}+03:30`)
       const dateFa = booking.date.toLocaleDateString('fa-IR')
       const reminderParams = { name: booking.customerName, service: service.nameFa, time: booking.startTime }
+      const now = Date.now()
       await Promise.all([
-        smsQueue.add('reminder-24h', { reminderId: reminder24.id, phone: booking.customerPhone, template: 'reminder24h', params: reminderParams }, { delay: delay24h }),
-        smsQueue.add('reminder-2h', { reminderId: reminder2.id, phone: booking.customerPhone, template: 'reminder2h', params: reminderParams }, { delay: delay2h }),
+        ...REMINDERS.map(async ({ hoursBefore, name, template }) => {
+          const sendAt = appointmentMs - hoursBefore * HOUR_MS
+          if (sendAt < now) return
+          const [reminder] = await db.insert(smsReminders)
+            .values({ bookingId: booking.id, sendAt: new Date(sendAt) }).returning()
+          await smsQueue.add(name, { reminderId: reminder.id, phone: booking.customerPhone, template, params: reminderParams }, {
+            delay: Math.max(0, sendAt - Date.now()),
+          })
+        }),
         sendConfirmSms(booking.customerPhone, { ...reminderParams, date: dateFa, bookingCode: booking.bookingCode }),
         sendAdminSms(process.env.ADMIN_PHONE!, { ...reminderParams, date: dateFa, phone: booking.customerPhone }),
       ])
